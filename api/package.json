@@ -1,0 +1,29 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "tsc": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node build/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.7",
+    "@types/express": "4.17.21",
+    "@types/simple-oauth2": "5.0.7",
+    "typescript": "5.4.5"
+  },
+  "dependencies": {
+    "@types/jsforce": "^1.11.5",
+    "cookie-parser": "1.4.6",
+    "express": "4.19.2",
+    "jsforce": "1.11.1",
+    "simple-oauth2": "5.0.1",
+    "ts-node": "10.9.2"
+  }
+}

@@ -1,0 +1,154 @@
+:root {
+
+  --color-data_background: #111111;
+  --color-data_text: rgb(32, 109, 42);
+  --color-data_hover:white;
+  --color-data_Select:white;
+  --background-data_Select:var(--color-data_text);
+  --color-data_Select_hover:var(--color-data_background);
+
+  font-family: system-ui, sans-serif;
+  
+  
+
+  color-scheme: light dark;
+  color: white;
+  background-color: #242424;
+
+
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+
+.dataContainer {
+  display:grid;
+  padding: 10px;
+  margin-left: 10px;
+  background-color: var(--color-data_background);
+  font-family:monospace;
+  color: var(--color-data_text);
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.25s;
+  justify-content: left;
+}
+
+.titleSection {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  margin-left: 1rem;
+  border-bottom: 1px solid rgba(83, 80, 80, 0.5);
+}
+
+.gridHeader {
+  font-family: monospace,Arial, Helvetica, sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  margin-left: 1rem;
+  width: 100%;
+}
+
+.gridCell {
+  font-family: monospace,Arial, Helvetica, sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  margin-left: 1rem;
+  justify-content: left;
+}
+
+.boxContainer {
+  display:flex;
+  flex-direction: column;
+  padding: 10px;
+  margin-right: 10px;
+  margin-bottom: 10px;
+  padding: 10px;;
+  background-color: var(--color-data_background);
+  color: var(--color-data_text);
+  cursor: pointer;
+  transition: background-color 0.25s;
+  justify-content: left;
+  flex-grow: 1;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+}
+.boxContainer:hover {
+  border: 1px solid rgba(83, 80, 80, 0.5);
+}
+
+.boxOption {
+  font-family: Helvetica, sans-serif;
+  font-size: 1.0rem;
+  
+  margin-bottom: 0.5rem;
+  margin-left: 1rem;
+  border-bottom:  2px solid transparent
+}
+.boxOption:hover {
+  color: #535bf2;
+  border-bottom:  2px solid #535bf2;
+}
+
+
+header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0;
+  display:  inline-block;
+  justify-content: space-between;
+  align-items: center;
+  background-color: black
+
+}
+nav {
+  display: inline-block;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.Option {
+  display: grid;
+  grid-template-columns: 10px 1fr auto auto;
+  gap: 10px;
+  background-color: #161616;
+  color: #ffffff;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.25s;
+  justify-content: left;
+}
+.Option:hover {
+  background-color: #3f3f41;
+}
+
+.Tree {
+  background-color: #9c1919;
+  color: #ffffff;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.25s;
+  justify-content: left;
+}
+
+.Caption {
+  text-align: left;
+  color: #ffffff;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+

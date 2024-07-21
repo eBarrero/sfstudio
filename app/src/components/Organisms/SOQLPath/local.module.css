@@ -1,0 +1,10 @@
+.container {
+    background-color: rgb(98, 86, 167);
+    color: white;
+    font-size: 1rem;
+    font-family: monospace;
+    padding: 10px;
+    border-radius: 10px;
+    margin: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}

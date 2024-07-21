@@ -1,0 +1,40 @@
+.svgIcon {
+    cursor: pointer;
+}
+
+.size_small {
+    width: 20px;
+    height: 20px;
+}
+
+.svgIcon path {
+    fill: none;
+    stroke:    green
+    
+}
+
+.svgIcon:hover path {
+    stroke: beige;
+}
+
+/* Tooltip oculto por defecto */
+.tooltip {
+    visibility: hidden;
+    opacity: 0; /* Añadido para transición */
+    transition: visibility 0s, opacity 0.3s ease-in-out; /* Transición suave */
+    border: 1px solid #858181;
+    background-color: rgb(194, 177, 177);
+    border-radius: 4px; /* Añadido para bordes redondeados */
+    position: absolute; /* Asegúrate de posicionar correctamente el tooltip */
+    z-index: 10; /* Para asegurarse de que esté por encima de otros elementos */
+    margin-left: 10px; /* Añadido para separar el tooltip del iconContainer */
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/* Muestra el tooltip al hacer hover en el iconContainer */
+.container:hover .tooltip {
+    visibility: visible;
+    opacity: 1; /* Añadido para transición */
+}
+

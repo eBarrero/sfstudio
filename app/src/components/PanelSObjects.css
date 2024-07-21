@@ -1,0 +1,39 @@
+.PanelSObjects {
+  display: block;
+  
+  
+  
+    
+ }
+
+.PanelSObjectsFilter {
+  display: inline-block;
+  
+  height: 10vh;
+
+}
+
+.PanelSObjectsList {
+  display: grid;
+  grid-auto-flow: row;
+  
+  overflow: hidden;
+  gap: 1px;
+  grid-template-columns: repeat(auto-fill,  minmax(250px, 1fr));
+  grid-template-rows: repeat(auto-fill, minmax(24px, 1fr));
+  
+}
+
+.PanelSObjectItem {
+  font-family: monospace;
+  color: rgb(24, 83, 32);
+  text-align: left;
+  vertical-align: text-top;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.PanelSObjectItem:hover {
+  background-color: #3f3f41;
+  color: black;
+  border-radius: 5px;
+}
