@@ -2,10 +2,15 @@ import express, { Request, Response } from "express";
 import cookieParser from "cookie-parser";
 import {SessionError, Sessions, Session } from './session'
 
+
 //res.json(await conexion.conn.query('SELECT Id, Name FROM Account'));
 
-const clientId= "";
-const clientSecret= "";
+
+
+const clientId= process.env.CLIENT_ID || '';
+const clientSecret= process.env.CLIENT_SECRET || '';
+
+
 
 const sessions = new Sessions();
 
