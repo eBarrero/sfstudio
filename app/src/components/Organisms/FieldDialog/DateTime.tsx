@@ -66,7 +66,8 @@ const Where = (props:WhereProps) => {
     return (
     <div>
         <div className={css.wherePanel}>
-            <div>
+
+            <div className={css.panel}>
                 <OptionList options={DataTime.getType().map( (typeDataTime) => { return  {id: typeDataTime.type.toString(), label:t(typeDataTime.description)}})}  
                 title={t("DataTimeLiteral.Type")} 
                 onSelect={handelDataTime}
@@ -78,30 +79,32 @@ const Where = (props:WhereProps) => {
                 />
             </div>
 
-            <div>
-                <p>{dateTimeLiteral.description}</p>
-                {dateTimeLiteral.paramRequired &&   <QuantitySelector value={periods} min={1} max={10} label="Periods" onChange={setPeriods}/>}
-                
-            </div>
-            <div>
+            <div className={css.panel}>
                 <OptionList options={DataTime.getDateTimeCondition().map( (dateTimeLiteral) => { return  {id: dateTimeLiteral.sqlKeyWord, label:t(dateTimeLiteral.description)}})}  
                 title={t("Condition")} 
                 onSelect={handelCondition}/>
             </div>
 
+            <div className={css.panel}>
+                <p>{dateTimeLiteral.description}</p>
+                {dateTimeLiteral.paramRequired &&   <QuantitySelector value={periods} min={1} max={10} label="Periods" onChange={setPeriods}/>}
+                <label>Seleccione fecha y hora:</label>    
+                <input type="datetime-local" id="datetime" name="datetime"/>
+            
+            </div>
 
             
             
 
         </div>
-        
         <section className={css.card}>
             <span className={css.cardTitle}>Predicate</span>
             <div>
                 <span className={css.sql}>{sqlWhere}</span>
             </div>
             <button type="button" >Add</button>
-            </section>
+            </section>        
+
     </div>        
     );
 }

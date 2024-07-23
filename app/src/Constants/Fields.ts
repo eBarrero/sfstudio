@@ -1,4 +1,7 @@
-
+export enum IconCharacter  {
+  UNDO = '&#8634;',
+  BACK = '&#8630;'
+}
 
 export enum SalesforceFieldEnum {
     Id = "id",

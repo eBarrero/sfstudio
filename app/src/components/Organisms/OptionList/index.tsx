@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect,  CSSProperties } from 'react';
 import css from './local.module.css'
-
+import ActionIcon from '../../Atoms/ActionIcon';
 
 interface Options {
     id: string;
@@ -24,13 +24,14 @@ const OptionList = (props:OptionListProps) => {
     const [currentOptions, setCurrentOptions] = useState<Options[]>([]);
     const [currentTitle, setCurrentTitle] = useState<string>('');
 
+
     useEffect(()=>{
         if (level===1)  { 
             setCurrentOptions(options);
             setCurrentTitle(title);
         }
+        
     }, [level]);
-
 
     const handleSelect = (id: string) => () => {
         console.log('OptionList: ' + id + ':' + level);
@@ -38,20 +39,31 @@ const OptionList = (props:OptionListProps) => {
             setLevel(2);
             setCurrentOptions(secondLevel.load2ndLevel(id));
             setCurrentTitle(secondLevel.title);
+            
             return;
         }
         onSelect && onSelect(id);
     }
 
+    const inputStyle = (): CSSProperties=> {  
+        return  (level===1 && secondLevel)? {display: 'none'} : {display: 'visible'};
+    };
+        
+
     return (
-        <article className="boxContainer"> 
-            <span className="titleSection"> <span>&#x21b6;</span>{title}</span>
+        <article className={css.OptionList}> 
+            <div className={css.header}>
+                <ActionIcon onClick={()=>{ setLevel(1);}} iconName={(level===1)?'NONE':'back'}/>    
+                <span className={css.title} >{title}</span>
+            </div>
+            <div  className={css.options}> 
                 {currentOptions.map( (option) => (
-                    <label key={option.id} className="boxOption" onClick={handleSelect(option.id)}>
-                        <input type="radio" name="option" value={option.id} />
+                    <label key={option.id} className={css.option} onClick={handleSelect(option.id)}>
+                        <input type="radio" name="option" value={option.id} style={inputStyle()}/>
                         {option.label}
                     </label>
                 ))}            
+            </div>  
         </article>
     );
     }

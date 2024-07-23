@@ -44,10 +44,10 @@ a:hover {
 .titleSection {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 1.5rem;
-  font-weight: 700;
   margin-bottom: 1rem;
   margin-left: 1rem;
   border-bottom: 1px solid rgba(83, 80, 80, 0.5);
+  
 }
 
 .gridHeader {
@@ -71,6 +71,7 @@ a:hover {
 .boxContainer {
   display:flex;
   flex-direction: column;
+  justify-content: flex-start;
   padding: 10px;
   margin-right: 10px;
   margin-bottom: 10px;
@@ -80,9 +81,12 @@ a:hover {
   cursor: pointer;
   transition: background-color 0.25s;
   justify-content: left;
-  flex-grow: 1;
+  flex-grow: 0;
   box-sizing: border-box;
   border: 1px solid transparent;
+  flex-grow: 0; /* Evitar que los elementos crezcan para llenar el contenedor */
+  flex-shrink: 1; /* Permitir que los elementos se encojan si es necesario */
+  flex-basis: auto; /* La base del tamaño es el tamaño del contenido */  
 }
 .boxContainer:hover {
   border: 1px solid rgba(83, 80, 80, 0.5);
@@ -130,6 +134,9 @@ nav {
   cursor: pointer;
   transition: background-color 0.25s;
   justify-content: left;
+  flex-grow: 0; /* Evitar que los elementos crezcan para llenar el contenedor */
+  flex-shrink: 1; /* Permitir que los elementos se encojan si es necesario */
+  flex-basis: auto; /* La base del tamaño es el tamaño del contenido */  
 }
 .Option:hover {
   background-color: #3f3f41;
@@ -152,3 +159,8 @@ nav {
 }
 
 
+.flex-item {
+  flex-grow: 0; /* Evitar que los elementos crezcan para llenar el contenedor */
+  flex-shrink: 1; /* Permitir que los elementos se encojan si es necesario */
+  flex-basis: auto; /* La base del tamaño es el tamaño del contenido */
+}

@@ -27,13 +27,15 @@
 
 .wherePanel {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap:5px
 }
-.wherePanel div {
+.wherePanel .panel {
     margin: 0px;
     padding: 0px;
-    height: 291px;
+    height: 300px;
     box-sizing: border-box;
+    overflow: hidden
 }
 
 .card {

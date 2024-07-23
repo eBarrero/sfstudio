@@ -1,0 +1,19 @@
+.circle {
+  width: 24px;
+  height: 24px;
+  border: 1px solid green; /* Borde de 1px de color verde */
+  border-radius: 25%;
+  display: flex;
+  justify-content: center; /* Centrar el contenido horizontalmente */
+  align-items: center; /* Centrar el contenido verticalmente */
+  color:green;
+  cursor: pointer;
+  text-align: center; /* Alinear el texto en el centro */
+  }
+
+  .circle:hover {
+    background-color: green; /* Cambiar el color de fondo al pasar el ratón por encima */
+    color: white; /* Cambiar el color del texto al pasar el ratón por encima */
+  }
+
+ 
