@@ -1,43 +1,49 @@
 import {create} from 'zustand';
-import { Controller } from '../DataModel/Model';
+import  Proxy  from '../services/salesforceSchema/proxy';
+import { SimpleCondition, SQLState, QueryState, fromObject } from './types';
 
 
 
-interface DialogState {
-    component: string;
-    info: FieldId;
-}
 
-interface AppState {
-    appState: {
+
+interface ModelState {
+    state: {
         action: string;        
         orgSfName: string;
         sObjectApiName: string;
         sObjectIndex: number;
     };
-    dialogState: DialogState[];
+    sobjects: GetSObjectsIndex[]
+    filerSObject?: FilterSObject
     queryState: QueryState;
-    sqlState: sqlState;
-    showSObjects: (orgSfName: string) => void; 
+    sqlState: SQLState;
+    setOrg: (orgSfName: string) => void; 
     showSObject: (orgSfName: string, sObject: string, sObjectIndex:number) => void;
     showReference: (fieldIndex: number) => void; 
     showRelataionByApiName: (sObjectApiName: string) => void;
     showByqueryElemntsIndex: (index: number) => void;
-    pushDialog: (dialogState: DialogState) => void;
-    popDialog: () => void;
     doAction: (fieldIndex: number, action: string) => void;
+    addWhere: (SimpleCondition: SimpleCondition) => void;
   } 
 
-export const useAppState = create<AppState>((set, get) => {
+  const useModelState = create<ModelState>((set, get) => {
     return  {
-        appState:   { orgSfName: '', action: '', sObjectApiName: '', sObjectIndex: - 1},
-        dialogState: [],
+        state:   { orgSfName: '', action: '', sObjectApiName: '', sObjectIndex: - 1},
+        sobjects:[],
         queryState: { queryElemnts: [], currentElement: 0  },
         sqlState:   { sql: ''},
 
-        showSObjects: (orgSfName: string)                                       => 
-            set({appState: {orgSfName, action: 'btn', sObjectApiName: '', sObjectIndex: -1}}),
-
+        setOrg: (orgSfName: string)  => {
+            if (orgSfName === '') return;
+            const filterSObject:FilterSObject = {name:'', custom:true,  queryable: true};
+            Proxy.getSObjectsIndex(orgSfName, filterSObject).then((data) => {
+                if (data!==null)            
+                    set({state: {orgSfName, action: 'setOrgs', sObjectApiName: '', sObjectIndex: -1}, sobjects:data});
+                });
+        },  
+                                               
+            
+        // action deja de ser una marca para ver que componente mostrar y pasa a ser una accion que se va a realizar
         showSObject: (orgSfName: string, sObjectApiName: string, sObjectIndex: number) => {
             const mainQuery: fromObject = {
                 sObjectId:{orgSfName,sObjectApiName,sObjectIndex},  
@@ -49,11 +55,11 @@ export const useAppState = create<AppState>((set, get) => {
             };
             const queryState:QueryState = {queryElemnts: [mainQuery], currentElement: 0};
 
-            set({appState: {orgSfName, sObjectApiName, sObjectIndex, action: 'sobject'},queryState, sqlState: sqlState(queryState)});
+            set({state: {orgSfName, sObjectApiName, sObjectIndex, action: 'sobject'},queryState, sqlState: sqlState(queryState)});
         },
         showReference: (fieldIndex: number) => {
-            const appState = get().appState;
-            const reletedSObject = Controller.getReferenceSObjectId(appState.orgSfName, appState.sObjectIndex!, fieldIndex);
+            const appState = get().state;
+            const reletedSObject = Proxy.getReferenceSObjectId(appState.orgSfName, appState.sObjectIndex!, fieldIndex);
                   
             const queryState = structuredClone(get().queryState); 
             const currentElement = queryState.currentElement;
@@ -62,19 +68,19 @@ export const useAppState = create<AppState>((set, get) => {
 
             queryState.queryElemnts.push({sObjectId: reletedSObject, parent: queryState.currentElement, level: newlevel, limit: 1, type:'RELETED'} as reletedObject);
             queryState.currentElement = queryState.queryElemnts.length - 1;
-            set({appState: {orgSfName:appState.orgSfName, sObjectApiName:reletedSObject.sObjectApiName, sObjectIndex: reletedSObject.sObjectIndex, action: 'sobject'} , 
+            set({state: {orgSfName:appState.orgSfName, sObjectApiName:reletedSObject.sObjectApiName, sObjectIndex: reletedSObject.sObjectIndex, action: 'sobject'} , 
                  queryState, sqlState: sqlState(queryState)
             }); 
         },        
         showRelataionByApiName: (sObjectApiName: string) => {
-            const appState = get().appState;
-            const sObjectId = Controller.getSobjectIdByName(appState.orgSfName, sObjectApiName);
+            const appState = get().state;
+            const sObjectId = Proxy.getSobjectIdByName(appState.orgSfName, sObjectApiName);
 
             const queryState = structuredClone(get().queryState); 
 
             queryState.queryElemnts.push({sObjectId, parent: queryState.currentElement, limit: 1, type:'SUBQUERY'} as fromObject);
 
-            set({appState: {orgSfName:appState.orgSfName, sObjectApiName:sObjectId.sObjectApiName, sObjectIndex: sObjectId.sObjectIndex, action: 'sobject'},
+            set({state: {orgSfName:appState.orgSfName, sObjectApiName:sObjectId.sObjectApiName, sObjectIndex: sObjectId.sObjectIndex, action: 'sobject'},
                  queryState, sqlState: sqlState(queryState)
             });
         },
@@ -84,7 +90,7 @@ export const useAppState = create<AppState>((set, get) => {
             const currentElement = queryState.currentElement = index;
             const query = queryState.queryElemnts[currentElement];
 
-            set({appState: {orgSfName: query.sObjectId.orgSfName, sObjectApiName: query.sObjectId.sObjectApiName, sObjectIndex: query.sObjectId.sObjectIndex, action: 'sobject'},
+            set({state: {orgSfName: query.sObjectId.orgSfName, sObjectApiName: query.sObjectId.sObjectApiName, sObjectIndex: query.sObjectId.sObjectIndex, action: 'sobject'},
                  queryState
             });
         },
@@ -93,7 +99,7 @@ export const useAppState = create<AppState>((set, get) => {
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.currentElement;
             const query = queryState.queryElemnts[currentElement];  
-            const fieldId = Controller.getFieldIdByIndex(query.sObjectId.orgSfName, query.sObjectId.sObjectIndex, fieldIndex);
+            const fieldId = Proxy.getFieldIdByIndex(query.sObjectId.orgSfName, query.sObjectId.sObjectIndex, fieldIndex);
 
             if (action === 'SELECTED') {
                 const SelectClauseField = {fields: fieldId, alias: undefined, aggregateFunction: undefined};
@@ -107,21 +113,24 @@ export const useAppState = create<AppState>((set, get) => {
 
             set({queryState, sqlState: sqlState(queryState)});
         },
-        pushDialog: (dialogState: DialogState) => {
-            const dialog = structuredClone(get().dialogState);
-            dialog.push(dialogState);
-            set({dialogState: dialog});
-        },
-        popDialog: () => {
-            console.log('popDialog');
-            const dialog = structuredClone(get().dialogState);
-            dialog.pop();
-            set({dialogState: dialog});
+
+        addWhere: (SimpleCondition: SimpleCondition) => {
+            const queryState = structuredClone(get().queryState);
+            const currentElement = queryState.currentElement;
+            const query = queryState.queryElemnts[currentElement];  
+            if (!query.where) {
+                query.where = [];
+            }
+            query.where!.push(SimpleCondition);
+            set({queryState, sqlState: sqlState(queryState)});  
         }
     }
 });
 
-function sqlState( queryState: QueryState  ): sqlState {
+export default useModelState;
+
+
+function sqlState( queryState: QueryState  ): SQLState {
     const query = queryState.queryElemnts;
     let sql = '';
     query.forEach((queryElemnt) => {
@@ -131,6 +140,10 @@ function sqlState( queryState: QueryState  ): sqlState {
                 sql += `${field.fields.orgSfName}.${field.fields.fieldApiName} `;
             });
             sql += `FROM ${queryElemnt.sObjectId.orgSfName}.${queryElemnt.sObjectId.sObjectApiName} `;
+            sql += "WHERE ";    
+            (queryElemnt as fromObject).where?.forEach((where) => {
+                sql += `${where.field.orgSfName}.${where.field.fieldApiName} ${where.operator} ${where.value} `;
+            });
         }
     });
     return {sql};

@@ -35,3 +35,17 @@ export enum SalesforceFieldEnum {
     IndirectLookup = "IndirectLookup",
     MetadataRelationship = "MetadataRelationship"
   }
+
+  export enum Operator  {
+    Equals =  "=",
+    NotEquals = "!=",
+    GreaterThan = ">",
+    LessThan = "<",
+    GreaterThanOrEquals = ">=",
+    LessThanOrEquals = "<=",
+    Like = "LIKE",
+    In = "IN",
+    NotIn = "NOT IN",
+    Includes=  "INCLUDES",
+    Excludes= "EXCLUDES"
+}

@@ -1,3 +1,4 @@
+import { Operator } from './Fields';
 const translationName= 'DataTimeLiteral' as const;
 
 
@@ -66,19 +67,7 @@ const DateTimeLiteralKeyWord: [string, number][] = [
 
 
 
-enum Operator  {
-     Equals =  "=",
-     NotEquals = "!=",
-     GreaterThan = ">",
-     LessThan = "<",
-     GreaterThanOrEquals = ">=",
-     LessThanOrEquals = "<=",
-     Like = "LIKE",
-     In = "IN",
-     NotIn = "NOT IN",
-     Includes=  "INCLUDES",
-     Excludes= "EXCLUDES"
-}
+
 
 
 

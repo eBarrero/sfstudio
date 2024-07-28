@@ -1,8 +1,8 @@
-import { getDescribe, getDescribeObject } from '../Service/Request'
+import { getDescribe, getDescribeObject } from './controller'
 
 
 
-const fullEnvironment: Map<string, Environment> = new Map(); 
+const cache: Map<string, Environment> = new Map(); 
 
 
 
@@ -10,15 +10,15 @@ const fullEnvironment: Map<string, Environment> = new Map();
 
 
 
-export class Controller {
+export default class Proxy {
 
 
     public static getChildRelationships(orgSfName: string, objectIndex: number): GetChildRelationships[] {
         console.log(`getChildRelationships orgSfName: "${orgSfName}" name: "${objectIndex}"`);
-        if (!fullEnvironment.has(orgSfName)) {
+        if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
-        const sobjects = fullEnvironment.get(orgSfName)?.sobjects;
+        const sobjects = cache.get(orgSfName)?.sobjects;
         if (!sobjects) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
@@ -31,10 +31,10 @@ export class Controller {
 
     public static getSobjectIdByName(orgSfName: string, name: string): SObjectId  {
         console.log(`getSobjectIdByName orgSfName: "${orgSfName}" name: "${name}"`);
-        if (!fullEnvironment.has(orgSfName)) {
+        if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
-        const sobjects = fullEnvironment.get(orgSfName)?.sobjects;
+        const sobjects = cache.get(orgSfName)?.sobjects;
         if (!sobjects) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
@@ -44,10 +44,10 @@ export class Controller {
 
     public static getFieldIdByIndex(orgSfName: string, sObjectIndex: number, fieldIndex: number): FieldId {
         console.log(`getFieldIdByIndex orgSfName: "${orgSfName}" sObjectIndex: "${sObjectIndex}" fieldIndex: "${fieldIndex}"`);
-        if (!fullEnvironment.has(orgSfName)) {
+        if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
-        const sobject = fullEnvironment.get(orgSfName)?.sobjects[sObjectIndex];
+        const sobject = cache.get(orgSfName)?.sobjects[sObjectIndex];
         if (!sobject) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
@@ -58,10 +58,10 @@ export class Controller {
 
     public static getReferenceSObjectId(orgSfName: string, sObjectIndex: number, fieldIndex: number): SObjectReferenceId {
         console.log(`getReferenceSObjectId orgSfName: "${orgSfName}" sObjectIndex: "${sObjectIndex}" fieldIndex: "${fieldIndex}"`);
-        if (!fullEnvironment.has(orgSfName)) {
+        if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
-        const sobject = fullEnvironment.get(orgSfName)?.sobjects[sObjectIndex];
+        const sobject = cache.get(orgSfName)?.sobjects[sObjectIndex];
         if (!sobject) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
@@ -69,7 +69,7 @@ export class Controller {
         if (field.type !== 'reference') {
             throw new Error(`Invalid fieldIndex: "${fieldIndex}" type: "${field.type}"`);
         }
-        return {...Controller.getSobjectIdByName(orgSfName, field.referenceTo[0]), referenceName: field.relationshipName!};
+        return {...Proxy.getSobjectIdByName(orgSfName, field.referenceTo[0]), referenceName: field.relationshipName!};
         
     }
 
@@ -80,16 +80,16 @@ export class Controller {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
 
-        if (!fullEnvironment.has(orgSfName)) {
+        if (!cache.has(orgSfName)) {
             const data = await getDescribe(orgSfName);
             // numerar el valor localId de cada sobject
             if (data) {
                 data.sobjects.forEach((sobject:SObject  , index: number) => sobject.localId = index);
             }
-            fullEnvironment.set(orgSfName, data);
+            cache.set(orgSfName, data);
         } 
 
-        const sobjects = fullEnvironment.get(orgSfName)?.sobjects;
+        const sobjects = cache.get(orgSfName)?.sobjects;
         if (!sobjects) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
@@ -103,14 +103,14 @@ export class Controller {
     public static async getFields(orgSfName: string, index: number) : Promise<GetFieldsIndex[]> {
         console.log(`getSObject orgSfName: "${orgSfName}" index: "${index}"`);
         
-        if (!fullEnvironment.has(orgSfName)) {
+        if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
         try {
-            const sobject =  fullEnvironment.get(orgSfName)!.sobjects[index];
+            const sobject =  cache.get(orgSfName)!.sobjects[index];
 
             if (sobject.fields===undefined) {
-                const name = fullEnvironment.get(orgSfName)?.sobjects[index]?.name;
+                const name = cache.get(orgSfName)?.sobjects[index]?.name;
                 const data = await getDescribeObject(orgSfName, name!);
                 // numerar el valor localId de cada sobject
                 if (data) {

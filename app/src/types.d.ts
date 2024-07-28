@@ -19,6 +19,20 @@ type PicklistValue = {
   };
 
 
+type FieldId = {
+    orgSfName: string;
+    sObjectIndex: number;
+    fieldApiName: string;
+    fieldIndex: number;
+}    
+
+type SObjectId = {
+    orgSfName: string;
+    sObjectApiName: string;
+    sObjectIndex: number;
+}
+
+
 type Fields = {
     localId: number;
     aggregatable: boolean;

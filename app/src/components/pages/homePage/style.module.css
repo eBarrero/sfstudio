@@ -1,0 +1,44 @@
+
+main {
+    display: grid;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    background-color: rgb(0, 50, 0);
+    color: azure;
+    
+    grid-template-columns: 20rem 1fr;
+    grid-template-rows: 1fr;
+    
+    align-items:baseline;
+    
+    
+    
+        
+
+        .options_container{
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            border: 1px solid rgba(196, 187, 187, 0.5);
+            .frame_features {
+                border: 0px solid rgba(196, 187, 187, 0.5);
+            }
+            .frame_explorer {
+                border: 0px solid rgba(196, 187, 187, 0.5);
+            }
+        }    
+
+        .panel_container {
+            border: 0px solid rgba(196, 187, 187, 0.5);
+            .frame_panel {
+                background-color: aliceblue;
+                
+            }   
+    
+        }
+ 
+}

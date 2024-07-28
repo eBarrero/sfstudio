@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import css from './local.module.css'
 import DataTime from '../../../Constants/DataTime';
-import OptionList from '../../Organisms/OptionList';
+import OptionList from '../OptionList';
 import { useTranslation } from 'react-i18next';
-import { useAppState } from '../../../store/AppState';  
+import  useModelState  from '../../../store/modelState';  
+import useViewState from '../../../store/viewState';
 
 
 
@@ -41,18 +42,21 @@ interface WhereProps {
 
 
 const Where = (props:WhereProps) => {
-    const { fieldApiName, fieldIndex } = props.fieldId;
+    const { addWhere } = useModelState();
+    const { fieldApiName } = props.fieldId;
     const { t } = useTranslation(); 
     const [typeDataTime, setTypeDataTime] = useState(0);
     const [dateTimeLiteral , setDateTimeLiteral] = useState<DateTimeLiteral>({});
     const [condition, setCondition] = useState<string>('');
     const [periods, setPeriods] = useState(1);
     const [sqlWhere, setSqlWhere] = useState<string>('');
+    const [sqlValue, setSqlValue] = useState<string>('');
     
     useEffect(() => {
-        let r = fieldApiName + " " + condition + " " + dateTimeLiteral.sqlKeyWord;
-        if (dateTimeLiteral.paramRequired) r+=":" + periods;
-                setSqlWhere(r);
+        const value = dateTimeLiteral.sqlKeyWord + (dateTimeLiteral.paramRequired ? `:${periods}` : '');
+        setSqlValue(value);         
+        setSqlWhere(fieldApiName + " " + condition + " " + value);
+
     },[condition,periods,dateTimeLiteral]);
 
     const handelDataTime = (type: string) =>  {
@@ -60,6 +64,10 @@ const Where = (props:WhereProps) => {
     }   
     const handelCondition = (type: string) =>  {
         setCondition(type);
+    }
+
+    const handelButton = () => () => {
+        addWhere({field: props.fieldId, operator: condition, value: sqlValue});
     }
 
 // {DataTime.getType().map( (typeDataTime) =>  (<button onClick={handelTypeDataTime(typeDataTime.type)} >{typeDataTime.description}</button>))}   
@@ -102,7 +110,7 @@ const Where = (props:WhereProps) => {
             <div>
                 <span className={css.sql}>{sqlWhere}</span>
             </div>
-            <button type="button" >Add</button>
+            <button type="button" onClick={handelButton()} >Add</button>
             </section>        
 
     </div>        
@@ -135,7 +143,7 @@ interface TitleBarProps {
 }
 
 const TitleBar = (props:TitleBarProps) => {
-    const popDialog =  useAppState().popDialog;
+    const popDialog =  useViewState().popDialog;
     const {title} = props;
     return (
         <div className={css.titleBar}>

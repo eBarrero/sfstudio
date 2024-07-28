@@ -1,7 +1,7 @@
 
 
 
-type OperatorType = '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN' | 'NOT IN' | 'INCLUDES' | 'EXCLUDES';
+type OperatorType = '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN' | 'NOT IN' | 'INCLUDES' | 'EXCLUDES' | string;
 
 
 
@@ -42,12 +42,12 @@ type QueryElement ={
     sObjectId: SObjectId | SObjectReferenceId
     parent: number;
     selectClause?: SelectClause;
+    where?: SimpleCondition[];
+    whereLogic?: (LogicalOperator | number )[];
 }
 
 type fromObject = QueryElement & {
     isAgregator: boolean;
-    where?: SimpleCondition[];
-    whereLogic?: (LogicalOperator | number )[];
     orderBy?: OrderBy[];
     limit: number;
     offset?: number;
@@ -64,18 +64,7 @@ type reletedObject = QueryElement & {
 }
 
 
-type FieldId = {
-    orgSfName: string;
-    sObjectIndex: number;
-    fieldApiName: string;
-    fieldIndex: number;
-}    
 
-type SObjectId = {
-    orgSfName: string;
-    sObjectApiName: string;
-    sObjectIndex: number;
-}
 
 type SObjectReferenceId = & SObjectId & {
     referenceName: string;
@@ -85,6 +74,6 @@ interface QueryState {
     queryElemnts: (fromObject | reletedObject | agregatorQuery)[]; 
     currentElement: number;  
 }
-interface sqlState {        
+interface SQLState {        
     sql: string;
 }

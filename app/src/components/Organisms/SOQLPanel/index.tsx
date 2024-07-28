@@ -1,5 +1,5 @@
 import css from './local.module.css'
-import { useAppState } from '../../../store/AppState'
+import { useAppState } from '../../../store/modelState'
 
 
 

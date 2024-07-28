@@ -164,3 +164,8 @@ nav {
   flex-shrink: 1; /* Permitir que los elementos se encojan si es necesario */
   flex-basis: auto; /* La base del tamaño es el tamaño del contenido */
 }
+
+
+.invisble {
+  display: none;
+}
