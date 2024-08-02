@@ -1,10 +1,13 @@
 import css from './style.module.css'
 import DBConnectionManager from '../../organisms/dbConnectionManager/dbConnectionManager'; 
 import SOQLPath from '../../organisms/SOQLPath';
-import SObjectsPanel from '../../organisms/sObjectsPanel/sObjectsPanel';
-const action=""
+import SchemaPanel from '../../organisms/schemaPanel/schemaPanel';
+import SObjectPanel from '../../organisms/sObjectPanel/sObjectPanel';
+import useViewState from '../../../store/viewState';
+
 
 const HomePage = () => {
+    const { currentView} = useViewState();
 
     return (
             <main className={css.main}>
@@ -18,8 +21,8 @@ const HomePage = () => {
                 </div>
                 <div className={css.panel_container}>
                     <section className={css.frame_editor}>
-                    <SObjectsPanel/>
-                    {action==='sobject' && <PanelSObject/> }                        
+                    <SchemaPanel/>
+                    {currentView==='sobject' && <SObjectPanel/> }                        
                     </section>
                 </div>    
             </main>

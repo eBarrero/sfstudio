@@ -11,7 +11,7 @@ interface ViewState {
 
 const useViewState = create<ViewState>((set, get) => {
     return  {
-        currentView: 'main',
+        currentView: 'INIT',
         dialogStack: [],
         setCurrentView: (newView: string) => {
             set({currentView: newView});

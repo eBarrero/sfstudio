@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Controller} from '../services/salesforceSchema/proxy';
 import { useModelState } from '../store/modelState';
 import { GridTable, GridTableCell, GridTableRow } from './atoms/GridTable';
-import SOQLPanel from './organisms/SOQLPanel';
+import SOQLPanel from './organisms/SOQLPanel/SOQLPanel';
 import { SalesforceFieldEnum } from '../Constants/Fields';
 
 
@@ -102,16 +102,3 @@ export default function PanelSObject () {
     )
 }
 
-const parseTypeField = (field: GetFieldsIndex):GridTableCell => {
-    if (field.type===SalesforceFieldEnum.Reference)
-        return {
-            iconType : '1to1',
-            tooltip : 'go to reference',
-            label: field.referenceTo,
-            subLabel: '',
-            action: 'GOTO_REFERENCE'
-        }
-    else return {
-            label: field.type +  ((field.length!==0) ? `(${field.length})` : '')         
-        }
-}

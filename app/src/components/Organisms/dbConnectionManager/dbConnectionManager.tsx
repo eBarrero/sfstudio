@@ -2,20 +2,22 @@ import { useEffect } from 'react';
 import useSessionState from './../../../store/sessionState';
 import useViewState from '../../../store/viewState';
 import useMoldeState   from './../../../store/modelState';
+import useDataState from '../../../store/dataState';
 
 
 
 
 const DBConnectionManager = () => {
+    const { loadSchema } = useDataState();
     const { publicSession, loginSFDC } = useSessionState();
     const { setCurrentView } = useViewState();
     const { setOrg } = useMoldeState();
+
     useEffect(() => { 
-        console.log('publicSession');
-        console.log(publicSession);
         if (publicSession.connections.length === 0) return;
         setOrg(publicSession.connections[0].name);
-        setCurrentView('SObjectsPanel');
+        loadSchema(publicSession.connections[0].name);
+        setCurrentView('MAIN');
     }, [publicSession]);
 
     console.log(publicSession);

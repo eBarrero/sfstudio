@@ -1,6 +1,5 @@
 import {create} from 'zustand';
-import  Proxy  from '../services/salesforceSchema/proxy';
-import { SimpleCondition, SQLState, QueryState, fromObject } from './types';
+
 
 
 
@@ -8,17 +7,14 @@ import { SimpleCondition, SQLState, QueryState, fromObject } from './types';
 
 interface ModelState {
     state: {
-        action: string;        
-        orgSfName: string;
-        sObjectApiName: string;
-        sObjectIndex: number;
+        orgSfName: SchemaName;
+        sObjectIndex: SObjectLocalId;
     };
-    sobjects: GetSObjectsIndex[]
-    filerSObject?: FilterSObject
+    filerSObject?: SObjectsFilter
     queryState: QueryState;
     sqlState: SQLState;
-    setOrg: (orgSfName: string) => void; 
-    showSObject: (orgSfName: string, sObject: string, sObjectIndex:number) => void;
+    setOrg: (orgSfName: SchemaName) => void; 
+    setSObject: (sObjectIndex:SObjectLocalId) => void;
     showReference: (fieldIndex: number) => void; 
     showRelataionByApiName: (sObjectApiName: string) => void;
     showByqueryElemntsIndex: (index: number) => void;
@@ -29,24 +25,20 @@ interface ModelState {
   const useModelState = create<ModelState>((set, get) => {
     return  {
         state:   { orgSfName: '', action: '', sObjectApiName: '', sObjectIndex: - 1},
-        sobjects:[],
         queryState: { queryElemnts: [], currentElement: 0  },
         sqlState:   { sql: ''},
 
-        setOrg: (orgSfName: string)  => {
+        setOrg: (orgSfName: SchemaName)  => {
             if (orgSfName === '') return;
-            const filterSObject:FilterSObject = {name:'', custom:true,  queryable: true};
-            Proxy.getSObjectsIndex(orgSfName, filterSObject).then((data) => {
-                if (data!==null)            
-                    set({state: {orgSfName, action: 'setOrgs', sObjectApiName: '', sObjectIndex: -1}, sobjects:data});
-                });
+            set({state: {orgSfName, sObjectIndex: -1}});
         },  
                                                
             
         // action deja de ser una marca para ver que componente mostrar y pasa a ser una accion que se va a realizar
-        showSObject: (orgSfName: string, sObjectApiName: string, sObjectIndex: number) => {
+        setSObject: (sObjectIndex: number) => {
+            const orgSfName = get().state.orgSfName;
             const mainQuery: fromObject = {
-                sObjectId:{orgSfName,sObjectApiName,sObjectIndex},  
+                sObjectId:{orgSfName, sObjectIndex},  
                 parent:-1, 
                 limit:1, 
                 isAgregator:false, 
@@ -54,12 +46,11 @@ interface ModelState {
                 selectClause: {fields: []} 
             };
             const queryState:QueryState = {queryElemnts: [mainQuery], currentElement: 0};
-
-            set({state: {orgSfName, sObjectApiName, sObjectIndex, action: 'sobject'},queryState, sqlState: sqlState(queryState)});
+            set({state: {orgSfName, sObjectIndex },queryState, sqlState: sqlState(queryState)});
         },
-        showReference: (fieldIndex: number) => {
+        showReference: (fieldIndex: FieldLocalId) => {
             const appState = get().state;
-            const reletedSObject = Proxy.getReferenceSObjectId(appState.orgSfName, appState.sObjectIndex!, fieldIndex);
+            //const reletedSObject = Proxy.getReferenceSObjectId(appState.orgSfName, appState.sObjectIndex!, fieldIndex);
                   
             const queryState = structuredClone(get().queryState); 
             const currentElement = queryState.currentElement;
@@ -72,9 +63,9 @@ interface ModelState {
                  queryState, sqlState: sqlState(queryState)
             }); 
         },        
-        showRelataionByApiName: (sObjectApiName: string) => {
+        showRelataionByApiName: (sObjectApiName: SObjectApiName) => {
             const appState = get().state;
-            const sObjectId = Proxy.getSobjectIdByName(appState.orgSfName, sObjectApiName);
+            //const sObjectId = Proxy.getSobjectIdByName(appState.orgSfName, sObjectApiName);
 
             const queryState = structuredClone(get().queryState); 
 
@@ -99,7 +90,7 @@ interface ModelState {
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.currentElement;
             const query = queryState.queryElemnts[currentElement];  
-            const fieldId = Proxy.getFieldIdByIndex(query.sObjectId.orgSfName, query.sObjectId.sObjectIndex, fieldIndex);
+            //const fieldId = Proxy.getFieldIdByIndex(query.sObjectId.orgSfName, query.sObjectId.sObjectIndex, fieldIndex);
 
             if (action === 'SELECTED') {
                 const SelectClauseField = {fields: fieldId, alias: undefined, aggregateFunction: undefined};

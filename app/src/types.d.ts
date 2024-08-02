@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
-
+type SchemaName = string;
+type SObjectApiName = string;
+type FieldApiName = string;
+type SObjectLocalId = number; // ID from Schema.sobject[ID]
+type FieldLocalId = number;   // ID from Schema.sobject[x].fields[ID]
 
 type SalesforceFieldValues =
   | "id"
@@ -18,23 +21,8 @@ type PicklistValue = {
     value: string;
   };
 
-
-type FieldId = {
-    orgSfName: string;
-    sObjectIndex: number;
-    fieldApiName: string;
-    fieldIndex: number;
-}    
-
-type SObjectId = {
-    orgSfName: string;
-    sObjectApiName: string;
-    sObjectIndex: number;
-}
-
-
 type Fields = {
-    localId: number;
+    fieldLocalId: FieldLocalId;   
     aggregatable: boolean;
     autoNumber: boolean;
     byteLength: number;
@@ -93,21 +81,21 @@ type Fields = {
   };
   
 type ChildRelationships = {
-    cascadeDelete: boolean
-    childSObject: string
-    deprecatedAndHidden: boolean
-    field: string
-    junctionIdListNames: string[]
-    junctionReferenceTo: string[]
-    relationshipName: string
-    restrictedDelete: boolean
+    sObjectLocalId: SObjectLocalId;
+    cascadeDelete: boolean;
+    childSObject: string;
+    deprecatedAndHidden: boolean;
+    field: string;
+    junctionIdListNames: string[];
+    junctionReferenceTo: string[];
+    relationshipName: string;
+    restrictedDelete: boolean;
 }
 
-
 type SObject = {
+    sObjectLocalId: SObjectLocalId;  
     childRelationships: ChildRelationships[] | null;
     fields: Fields[] | null;
-    localId: number;
     activateable: boolean;
     createable: boolean;
     custom: boolean;
@@ -133,28 +121,42 @@ type SObject = {
     updateable: boolean;
 }
 
-type FilterSObject = {
-    name: string;
-    queryable: boolean;
-    custom: boolean;
-}
-
-
-type Environment = {
+type Schema = {
     name: string;
     sobjects: SObject[];
 }
 
+interface SObjectsFilter {
+    searchText: string;
+    queryable: boolean | null;
+    custom: boolean | null;
+}
+
+// Adapaters
+
+
+type FieldId = {
+    orgSfName: string;
+    sObjectIndex: number;
+    fieldApiName: string;
+    fieldIndex: number;
+}    
+
+type SObjectId = {
+    orgSfName: string;
+    sObjectIndex: number;
+}
+
 interface GetSObjectsIndex  {
-    index: number,
+    sObjectLocalId: number,
     name: string,
     label: string,
     keyPrefix: string
 }
 
 interface GetFieldsIndex {
-    index: number,
-    name: string,
+    fieldLocalId: FieldLocalId, 
+    name: SObjectApiName,
     label: string,   
     type: SalesforceFieldValues,
     length: number,
@@ -165,10 +167,11 @@ interface GetFieldsIndex {
     referenceTo: string,
 }
 
-
 interface GetChildRelationships {
+    sObjectLocalId: SObjectLocalId;
     childSObject: string,
     relationshipName: string,
-    field: string,
+    fieldNameAPI: string,
 }
+
 

@@ -7,17 +7,14 @@ main {
     right: 0;
     bottom: 0;
     overflow: hidden;
-    background-color: rgb(0, 50, 0);
-    color: azure;
+    background-color: rgb(0, 0, 0);
+    color: rgb(160, 194, 194);
     
     grid-template-columns: 20rem 1fr;
     grid-template-rows: 1fr;
     
     align-items:baseline;
     
-    
-    
-        
 
         .options_container{
             display: flex;
@@ -34,6 +31,9 @@ main {
 
         .panel_container {
             border: 0px solid rgba(196, 187, 187, 0.5);
+            overflow-y:scroll;
+            max-height: 100%;
+            max-width: 100%;
             .frame_panel {
                 background-color: aliceblue;
                 
