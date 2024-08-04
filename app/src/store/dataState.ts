@@ -31,6 +31,7 @@ const useDataState = create<DataState>((set, get) => {
             });
         },
         loadFields: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
+            if (sObjectIndex===undefined || sObjectIndex===null) throw new Error('sObjectIndex is undefined or null');
             Proxy.getFields(orgSfName, sObjectIndex).then((data) => {
                 if (data!==null) {
                     set({

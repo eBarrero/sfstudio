@@ -1,4 +1,4 @@
-import css  from './local.module.css'
+import css  from './style.module.css'
 import SVGIcon from '../Icons';
 
 
@@ -24,9 +24,9 @@ const SmartLabel: React.FC<SmartLabelProps> = ({label, iconType, action, active,
 
     return (   
         <div className={css.container}> 
-            <div onClick={onClickHandler()}>
+            <button onClick={onClickHandler()}>
                 <SVGIcon iconType={iconType} tooltip={tooltip} />
-            </div>
+            </button>
             <span>{label} {subLabel}</span>     
         </div>
     )

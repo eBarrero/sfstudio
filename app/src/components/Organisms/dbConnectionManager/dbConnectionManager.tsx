@@ -20,7 +20,7 @@ const DBConnectionManager = () => {
         setCurrentView('MAIN');
     }, [publicSession]);
 
-    console.log(publicSession);
+    
     return (
 
         <div>

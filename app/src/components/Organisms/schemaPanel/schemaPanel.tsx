@@ -12,7 +12,6 @@ export default function SObjectsPanel() {
     const {sobjects, loadFields } = useDataState();
  
     function setObject(sObjectIndex: number) {
-        loadFields(state.orgSfName, sObjectIndex);
         setCurrentView('sobject');
         setSObject(sObjectIndex);
     }

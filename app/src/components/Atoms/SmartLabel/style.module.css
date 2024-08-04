@@ -1,0 +1,27 @@
+.container {
+    display:flex ;
+    background-color: var(--color-data_background);
+    color: var(--color-data_text);
+    padding-right: 10px;
+    button {
+      background-color: transparent;
+      border: none;
+      width: 20pt;
+      height: 20pt;
+      margin: 0;
+      padding: 0;
+      cursor: pointer;
+      border-radius: 40%;
+      transition: all 0.3s ease;
+    }  
+
+    button:hover {
+      background-color: rgb(25, 25, 25);
+
+    }
+  }
+
+  .active {
+    background-color: var(--background-data_Select);
+    color: var(--color-data_select);
+  }

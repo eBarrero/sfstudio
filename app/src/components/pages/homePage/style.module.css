@@ -32,6 +32,7 @@ main {
         .panel_container {
             border: 0px solid rgba(196, 187, 187, 0.5);
             overflow-y:scroll;
+            height: 100vh;
             max-height: 100%;
             max-width: 100%;
             .frame_panel {

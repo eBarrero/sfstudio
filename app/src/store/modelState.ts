@@ -49,7 +49,7 @@ interface ModelState {
                 selectClause: {fields: []} 
             };
             const queryState:QueryState = {queryElemnts: [mainQuery], indexCurrentElement: 0};
-            set({state: {orgSfName, action:'ROOT', sObjectApiName,  sObjectLocalId },queryState, sqlState: sqlState(queryState)});
+            set({state: {orgSfName, action:'sobject', sObjectApiName,  sObjectLocalId },queryState, sqlState: sqlState(queryState)});
         },
         addReference: (fieldIndex: FieldLocalId) => {
             console.log('addReference');
@@ -75,7 +75,7 @@ interface ModelState {
             set({state: {orgSfName, 
                          sObjectApiName:field.referenceTo[0], 
                          sObjectLocalId: sObjectLocalId, 
-                         action: 'sobject'}, 
+                         action: 'releted_sobject'}, 
                  queryState, 
                  sqlState: sqlState(queryState)
             }); 
@@ -95,11 +95,17 @@ interface ModelState {
 
         showByqueryElemntsIndex(index: number) {
             const queryState = structuredClone(get().queryState);
-            const currentElement = queryState.currentElement = index;
+            const currentElement = queryState.indexCurrentElement = index;
             const query = queryState.queryElemnts[currentElement];
+            let action ='sobject';
+            if (query.type === 'RELETED') action = 'releted_sobject';   
 
-            set({state: {orgSfName: query.sObjectId.orgSfName, sObjectApiName: query.sObjectId.sObjectApiName, sObjectIndex: query.sObjectId.sObjectIndex, action: 'sobject'},
-                 queryState
+            set({state: {
+                orgSfName: query.sObjectId.orgSfName, 
+                sObjectApiName: query.sObjectId.sObjectApiName, 
+                sObjectLocalId: query.sObjectId.sObjectLocalId, 
+                action},
+                queryState
             });
         },
         doAction: (fieldIndex: number, action: string) => {

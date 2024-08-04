@@ -1,4 +1,5 @@
 X add technical fields Allfield(customer/stanard)
+Ajustar SOQLPath
 guardar seleccion teniendo en cuenta los technical fields
 ajustar relaciones y referencias
 poner la consola

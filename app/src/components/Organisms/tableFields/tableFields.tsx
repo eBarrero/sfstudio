@@ -15,7 +15,7 @@ import { use } from 'i18next';
 
 export default function TableFields() {
     const {state, addReference} = useModelState();
-    const {sObjectFields, loadFieldsFromReference}  = useDataState();
+    const {sObjectFields, loadFields, loadFieldsFromReference}  = useDataState();
 
 
     const onActionRowHandle = (rowId: string, action: string) => {
@@ -26,7 +26,15 @@ export default function TableFields() {
             return
         }        
     }
-    useEffect(()=>{loadFieldsFromReference(state.orgSfName, state.sObjectLocalId);}, [state.orgSfName, state.sObjectLocalId]);
+    useEffect(()=>{
+        if (state.action!=='object') {
+            console.log('object');    
+            loadFields(state.orgSfName, state.sObjectLocalId);
+            return;
+        }
+        console.log('loadFieldsFromReference');
+        loadFieldsFromReference(state.orgSfName, state.sObjectLocalId);
+    }, [state.orgSfName, state.sObjectLocalId]);
 
     
 
