@@ -37,42 +37,44 @@ type SelectClause = {
     fieldsAll?: SelectAllFields;
 }   
 
-type QueryElement ={
-    type: 'ROOT' | 'SUBQUERY' | 'RELETED' ;
-    sObjectId: SObjectId | SObjectReferenceId
-    parent: number;
-    selectClause?: SelectClause;
-    where?: SimpleCondition[];
-    whereLogic?: (LogicalOperator | number )[];
-}
 
-type fromObject = QueryElement & {
-    isAgregator: boolean;
-    orderBy?: OrderBy[];
-    limit: number;
-    offset?: number;
-}
-
-type agregatorQuery = fromObject & {
+type AggregatorQuery = fromObject & {
     groupBy: FieldId[];
     having: SimpleCondition[];
     havingLogic: (LogicalOperator | number )[];
 }
 
-type reletedObject = QueryElement & {
-    level: 0|1|2|3|4|number;
+type QueryElementAbstract ={
+    type: 'ROOT' | 'SUBQUERY' | 'RELETED' ;
+    sObjectId: SObjectId;
+    parent: number;
+    selectClause?: SelectClause;
+    where?: SimpleCondition[];
+    whereLogic?: (LogicalOperator | number )[];
+    level: 0|1|2|3|4|number;                       // It indicates the level of the query element in the query max. 5. ROOT and SUBQUERY are always level 0
 }
 
+type PrimaryQuery = QueryElement & {
+    type: 'ROOT';
+    agregatorQuery?: AgregatorQuery;
+    orderBy?: OrderBy[];
+    limit: number;
+    offset?: number;
+}
 
+type NestedQuery = PrimaryQuery & {
+    type: 'SUBQUERY';
+    relationshipName: RelationshipName
+}
 
-
-type SObjectReferenceId = & SObjectId & {
-    referenceName: string;
+type ReletedObject = QueryElement & {
+    type: 'RELETED' ;
+    relatedTo: RelationshipName ;
 }
 
 interface QueryState {
-    queryElemnts: (fromObject | reletedObject | agregatorQuery)[]; 
-    currentElement: number;  
+    queryElemnts: (PrimaryQuery | reletedObject | NestedQuery)[]; 
+    indexCurrentElement: number;                                    // It indicates the index of the current element in the queryElemnts array
 }
 interface SQLState {        
     sql: string;

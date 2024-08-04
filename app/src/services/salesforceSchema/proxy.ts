@@ -1,9 +1,9 @@
 import { getDescribe, getDescribeObject } from './controller'
-
+import { ModelReader } from './modelReader'
 
 
 const cache: Map<SchemaName, Schema> = new Map(); 
-
+export const modelReader = new ModelReader(cache);
 
 
 
@@ -29,7 +29,11 @@ export default class Proxy {
         if (!cache.has(orgSfName)) {
             const data = await getDescribe(orgSfName);
             if (data) {
+                // Numbers the objects
                 data.sobjects.forEach((sobject:SObject  , index: number) => sobject.sObjectLocalId = index);
+                // indexMap is used to get the index of the object by name
+                data.indexMap = new Map();
+                data.sobjects.forEach((sobject:SObject) => data.indexMap.set(sobject.name, sobject.sObjectLocalId));
             }
             cache.set(orgSfName, data);
         } 
@@ -65,22 +69,35 @@ export default class Proxy {
                 const data: SObject = await getDescribeObject(orgSfName, name!);
                 
                 if (data!==null) {
-                   // Numbers the fields for the current object
+                    // Numbers the fields for the current object
                     data.fields?.forEach((item: Fields, index: number) => item.fieldLocalId = index);
-
+                    // mapFields is used to get the index of the field by name
+                    data.mapFields = new Map();
+                    data.fields?.forEach((field) => data.mapFields.set(field.name, field.fieldLocalId));
+                    // Link the child relationships to the object index of the child object
                     data.childRelationships?.forEach((item:ChildRelationships) => {
-                        const i = cache.get(orgSfName)?.sobjects.findIndex((sobject) => sobject.name === item.childSObject);
-                        if (i === -1) throw new Error(`Object not found: "${item.childSObject}"`);
-                        item.sObjectLocalId = i!;
+                        item.sObjectLocalId = modelReader.getSObjectLocalIdbyName(orgSfName, item.childSObject);
                     });
                 }
                 sobject.fields =  structuredClone(data.fields);
                 sobject.childRelationships = structuredClone(data.childRelationships);
-                console.log(`childRelationships: ${sobject.childRelationships.length}`);
             } 
 
             const result: GetFieldsIndex[] = sobject.fields!
-                .map((field): GetFieldsIndex => ({fieldLocalId: field.fieldLocalId, name: field.name, label: field.label, length: field.length, precision: field.precision, scale: field.scale, unique: field.unique, custom: field.custom, type: field.type, referenceTo: field.referenceTo[0]}));
+                .map((field): GetFieldsIndex => ({
+                    fieldLocalId: field.fieldLocalId, 
+                    isTechnicalField: false,
+                    sObjectApiName: field.name, 
+                    label: field.label, 
+                    length: field.length, 
+                    precision: field.precision, 
+                    scale: field.scale, 
+                    unique: field.unique, 
+                    custom: field.custom, 
+                    type: field.type, 
+                    referenceTo: field.referenceTo[0],
+                    relationshipName: field.relationshipName
+                }));
             return new Promise((resolve) => resolve(result));
         } catch (error) {
             console.error(`******Unexpected error: ${(error as Error).message}`);

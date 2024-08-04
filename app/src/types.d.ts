@@ -2,11 +2,13 @@
 
 type SchemaName = string;
 type SObjectApiName = string;
+type RelationshipName = string;
 type FieldApiName = string;
 type SObjectLocalId = number; // ID from Schema.sobject[ID]
 type FieldLocalId = number;   // ID from Schema.sobject[x].fields[ID]
 
 type SalesforceFieldValues =
+  | "TECHNICAL_FIELD" 
   | "id"
   | "datetime"
   | "date"
@@ -21,8 +23,7 @@ type PicklistValue = {
     value: string;
   };
 
-type Fields = {
-    fieldLocalId: FieldLocalId;   
+type Salesforce_Fields = {
     aggregatable: boolean;
     autoNumber: boolean;
     byteLength: number;
@@ -65,8 +66,8 @@ type Fields = {
     precision: number;
     queryByDistance: boolean;
     referenceTargetField: string | null;
-    referenceTo: string[];
-    relationshipName: string | null;
+    referenceTo: SObjectApiName[];
+    relationshipName: RelationshipName | null;
     relationshipOrder: string | null;
     restrictedDelete: boolean;
     restrictedPicklist: boolean;
@@ -78,12 +79,17 @@ type Fields = {
     unique: boolean;
     updateable: boolean;
     writeRequiresMasterRead: boolean;
-  };
+};
+
+type Fields = Salesforce_Fields & { 
+    fieldLocalId: FieldLocalId
+};
+
   
 type ChildRelationships = {
     sObjectLocalId: SObjectLocalId;
     cascadeDelete: boolean;
-    childSObject: string;
+    childSObject: SObjectApiName;
     deprecatedAndHidden: boolean;
     field: string;
     junctionIdListNames: string[];
@@ -92,8 +98,7 @@ type ChildRelationships = {
     restrictedDelete: boolean;
 }
 
-type SObject = {
-    sObjectLocalId: SObjectLocalId;  
+type Salesforce_SObject = {
     childRelationships: ChildRelationships[] | null;
     fields: Fields[] | null;
     activateable: boolean;
@@ -121,9 +126,15 @@ type SObject = {
     updateable: boolean;
 }
 
+type SObject = Salesforce_SObject & {
+    sObjectLocalId: SObjectLocalId;  
+    mapFields: Map<FieldApiName, FieldLocalId>;
+}
+
 type Schema = {
     name: string;
     sobjects: SObject[];
+    indexMap: Map<SObjectApiName, SObjectLocalId>;
 }
 
 interface SObjectsFilter {
@@ -144,7 +155,8 @@ type FieldId = {
 
 type SObjectId = {
     orgSfName: string;
-    sObjectIndex: number;
+    sObjectApiName: SObjectApiName;    
+    sObjectLocalId: SObjectLocalId;
 }
 
 interface GetSObjectsIndex  {
@@ -156,7 +168,8 @@ interface GetSObjectsIndex  {
 
 interface GetFieldsIndex {
     fieldLocalId: FieldLocalId, 
-    name: SObjectApiName,
+    isTechnicalField: boolean, 
+    sObjectApiName: SObjectApiName,
     label: string,   
     type: SalesforceFieldValues,
     length: number,
@@ -164,7 +177,8 @@ interface GetFieldsIndex {
     scale: number,
     unique: boolean,
     custom: boolean,
-    referenceTo: string,
+    referenceTo: SObjectApiName,
+    relationshipName: RelationshipName | null
 }
 
 interface GetChildRelationships {

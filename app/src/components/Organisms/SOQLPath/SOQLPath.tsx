@@ -1,4 +1,4 @@
-import css from './local.module.css'
+import css from './style.module.css'
 import useModelState from '../../../store/modelState'
 import SmartLabel from '../../atoms/SmartLabel';
 

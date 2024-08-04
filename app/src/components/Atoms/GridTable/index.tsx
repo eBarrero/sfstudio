@@ -1,6 +1,7 @@
 
 import css  from './this.module.css'
 import SVGIcon from '../Icons';
+import constants from '../../constants';
 
 export interface GridTableCell {
     label: string
@@ -75,7 +76,7 @@ const Cell: React.FC<GridTableCellProps> = ({label, optionalTags,  onAcionHandle
         if (action != undefined)  onAcionHandler(action);
     }   
     const onClickOnLabelHandler = () => () =>  {
-         onAcionHandler('Click');
+         onAcionHandler(constants.ONCLICK);
     }
 
     return (   
@@ -104,7 +105,7 @@ export const GridTableRow: React.FC<GridTableRowProps> = (props) => {
     const {selectable, row, columns, onActionRow} = props;
 
     const changeSelectHandler = (checked:boolean):void => {
-        onActionRow(row.rowId, (checked)? 'SELECTED' : 'UNSELECTED');  
+        onActionRow(row.rowId, (checked)? constants.SELECTED : constants.UNSELECTED);  
     }
 
     const onActiontHandler = (action: string):void => {

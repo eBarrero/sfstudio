@@ -12,6 +12,7 @@ interface DataState {
     //getSchema: (orgSfName: string, filterSObject?: SchemaFilter) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
     loadSchema: (orgSfName: SchemaName) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
     loadFields: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void;              // It retrieves the fields of a Salesforce object based on the provided index. 
+    loadFieldsFromReference: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void; // same as loadFields but without child relationships after Reference has been selected
     loadChildRelationships: (orgSfName: SchemaName, objectIndex: SObjectLocalId) => void ;   // It retrieves the child relationships of a Salesforce object based on the provided index. 
 }
 
@@ -31,19 +32,34 @@ const useDataState = create<DataState>((set, get) => {
         },
         loadFields: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
             Proxy.getFields(orgSfName, sObjectIndex).then((data) => {
-                if (data!==null) set({sObjectFields: structuredClone(data), childRelationships: Proxy.getChildRelationships(orgSfName, sObjectIndex) });
+                if (data!==null) {
+                    set({
+                         sObjectFields:  getTechnicalFealds().concat(structuredClone(data)), 
+                         childRelationships: Proxy.getChildRelationships(orgSfName, sObjectIndex) 
+                    });
+                }
             });       
         },
+        loadFieldsFromReference: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
+            Proxy.getFields(orgSfName, sObjectIndex).then((data) => {
+                if (data!==null) set({sObjectFields:  structuredClone(data)});
+            });       
+        },
+
         loadChildRelationships: (orgSfName: SchemaName, objectIndex: SObjectLocalId) => {
             const data = Proxy.getChildRelationships(orgSfName, objectIndex);
             if (data!==null) set({childRelationships: structuredClone(data)});            
         }
     }
-
-
-
-
 });
 
+
+function getTechnicalFealds(): GetFieldsIndex[] {
+    return [
+        {fieldLocalId: 1001, isTechnicalField: true, name: 'FIELDS(ALL)',      label: '', type: 'TECHNICAL_FIELD', length: 0, precision: 0, scale: 0, unique: false, custom: false, referenceTo: ''},
+        {fieldLocalId: 1002, isTechnicalField: true, name: 'FIELDS(STANDARD)', label: '', type: 'TECHNICAL_FIELD', length: 0, precision: 0, scale: 0, unique: false, custom: false, referenceTo: ''},
+        {fieldLocalId: 1003, isTechnicalField: true, name: 'FIELDS(CUSTOM)',   label: '', type: 'TECHNICAL_FIELD', length: 0, precision: 0, scale: 0, unique: false, custom: false, referenceTo: ''},
+    ];
+}   
 
 export default useDataState;

@@ -1,5 +1,5 @@
 import {create} from 'zustand';
-
+import { modelReader } from '../services/salesforceSchema/proxy';
 
 
 
@@ -7,15 +7,17 @@ import {create} from 'zustand';
 
 interface ModelState {
     state: {
+        action: string;
         orgSfName: SchemaName;
-        sObjectIndex: SObjectLocalId;
+        sObjectApiName: SObjectApiName;
+        sObjectLocalId: SObjectLocalId;
     };
     filerSObject?: SObjectsFilter
     queryState: QueryState;
     sqlState: SQLState;
     setOrg: (orgSfName: SchemaName) => void; 
-    setSObject: (sObjectIndex:SObjectLocalId) => void;
-    showReference: (fieldIndex: number) => void; 
+    setSObject: (sObjectLocalId:SObjectLocalId) => void;
+    addReference: (fieldIndex: FieldLocalId) => void; 
     showRelataionByApiName: (sObjectApiName: string) => void;
     showByqueryElemntsIndex: (index: number) => void;
     doAction: (fieldIndex: number, action: string) => void;
@@ -24,43 +26,58 @@ interface ModelState {
 
   const useModelState = create<ModelState>((set, get) => {
     return  {
-        state:   { orgSfName: '', action: '', sObjectApiName: '', sObjectIndex: - 1},
-        queryState: { queryElemnts: [], currentElement: 0  },
+        state:   { orgSfName: '', action: '', sObjectApiName: '', sObjectLocalId: - 1},
+        queryState: { queryElemnts: [], indexCurrentElement: 0  },
         sqlState:   { sql: ''},
 
         setOrg: (orgSfName: SchemaName)  => {
             if (orgSfName === '') return;
-            set({state: {orgSfName, sObjectIndex: -1}});
+            set({state: {orgSfName, action:'INI', sObjectApiName:'',  sObjectLocalId: -1}});
         },  
                                                
             
         // action deja de ser una marca para ver que componente mostrar y pasa a ser una accion que se va a realizar
-        setSObject: (sObjectIndex: number) => {
+        setSObject: (sObjectLocalId: SObjectLocalId) => {
             const orgSfName = get().state.orgSfName;
-            const mainQuery: fromObject = {
-                sObjectId:{orgSfName, sObjectIndex},  
+            const sObjectApiName = modelReader.getSObjectApiName(orgSfName, sObjectLocalId);
+            const mainQuery: PrimaryQuery = {
+                sObjectId:{orgSfName, sObjectLocalId, sObjectApiName},  
                 parent:-1, 
                 limit:1, 
                 isAgregator:false, 
                 type:'ROOT',
                 selectClause: {fields: []} 
             };
-            const queryState:QueryState = {queryElemnts: [mainQuery], currentElement: 0};
-            set({state: {orgSfName, sObjectIndex },queryState, sqlState: sqlState(queryState)});
+            const queryState:QueryState = {queryElemnts: [mainQuery], indexCurrentElement: 0};
+            set({state: {orgSfName, action:'ROOT', sObjectApiName,  sObjectLocalId },queryState, sqlState: sqlState(queryState)});
         },
-        showReference: (fieldIndex: FieldLocalId) => {
-            const appState = get().state;
-            //const reletedSObject = Proxy.getReferenceSObjectId(appState.orgSfName, appState.sObjectIndex!, fieldIndex);
+        addReference: (fieldIndex: FieldLocalId) => {
+            console.log('addReference');
+            const orgSfName = get().state.orgSfName;
+            
                   
             const queryState = structuredClone(get().queryState); 
-            const currentElement = queryState.currentElement;
-            const parentQuery = queryState.queryElemnts[currentElement];
-            const newlevel = (parentQuery as reletedObject).level + 1;
+            const indexCurrentElement = queryState.indexCurrentElement;
+            const parentQuery = queryState.queryElemnts[indexCurrentElement];  // the current elemwnt is the parent of the new element
+            const newlevel = (parentQuery as ReletedObject).level + 1;         // the new level is the parent level + 1 (max. 5) 
 
-            queryState.queryElemnts.push({sObjectId: reletedSObject, parent: queryState.currentElement, level: newlevel, limit: 1, type:'RELETED'} as reletedObject);
-            queryState.currentElement = queryState.queryElemnts.length - 1;
-            set({state: {orgSfName:appState.orgSfName, sObjectApiName:reletedSObject.sObjectApiName, sObjectIndex: reletedSObject.sObjectIndex, action: 'sobject'} , 
-                 queryState, sqlState: sqlState(queryState)
+            const field = modelReader.getField(orgSfName, parentQuery.sObjectId.sObjectLocalId, fieldIndex);
+            const sObjectLocalId = modelReader.getSObjectLocalIdbyName(orgSfName, field.referenceTo[0]);
+            const relatedObject : ReletedObject = {
+                sObjectId: {orgSfName, sObjectLocalId, sObjectApiName: field.referenceTo[0]}, 
+                parent: indexCurrentElement, 
+                type:'RELETED', 
+                relatedTo: field.relationshipName,
+                level: newlevel 
+            }
+            queryState.indexCurrentElement = queryState.queryElemnts.push(relatedObject) - 1;
+
+            set({state: {orgSfName, 
+                         sObjectApiName:field.referenceTo[0], 
+                         sObjectLocalId: sObjectLocalId, 
+                         action: 'sobject'}, 
+                 queryState, 
+                 sqlState: sqlState(queryState)
             }); 
         },        
         showRelataionByApiName: (sObjectApiName: SObjectApiName) => {

@@ -1,16 +1,34 @@
+import { useEffect } from 'react';
 import css from './style.module.css';
+import constants from '../../constants';
 import { GridTable, GridTableCell, GridTableRow } from "../../atoms/GridTable";
 import { SalesforceFieldEnum } from "../../../Constants/Fields";
-import  useDataState  from "../../../store/dataState";
+import useDataState  from "../../../store/dataState";
+import useModelState  from "../../../store/modelState";
+import { use } from 'i18next';
 
 
 
-const onActionRowHandle = (rowId: string, action: string) => {
-    console.log('onRowActionHandle:' + action + ' [' + rowId + ']');
-}
+
+    
+
 
 export default function TableFields() {
-    const sObjectFields  = useDataState().sObjectFields;
+    const {state, addReference} = useModelState();
+    const {sObjectFields, loadFieldsFromReference}  = useDataState();
+
+
+    const onActionRowHandle = (rowId: string, action: string) => {
+        console.log('onRowActionHandle:' + action + ' [' + rowId + ']');
+        const FieldLocalId = parseInt(rowId);
+        if (action===constants.GOTO_REFERENCE) { 
+            addReference(FieldLocalId);
+            return
+        }        
+    }
+    useEffect(()=>{loadFieldsFromReference(state.orgSfName, state.sObjectLocalId);}, [state.orgSfName, state.sObjectLocalId]);
+
+    
 
 return (
     <div className={css.grid}>
@@ -21,7 +39,7 @@ return (
         data={sObjectFields.map((field):GridTableRow => ({
             rowId:field.fieldLocalId.toString(), 
             data:[
-                parseTypeField(field), {label:`${field.name} - ${field.label}`} 
+                parseTypeField(field), {label:`${field.sObjectApiName} - ${field.label}`} 
             ]
         }))}
         />    
@@ -37,7 +55,7 @@ const parseTypeField = (field: GetFieldsIndex):GridTableCell => {
             tooltip : 'go to reference',
             label: field.referenceTo,
             subLabel: '',
-            action: 'GOTO_REFERENCE'
+            action: constants.GOTO_REFERENCE
         }
     else return {
             label: field.type +  ((field.length!==0) ? `(${field.length})` : '')         

@@ -4,13 +4,11 @@ import TableFields from "../tableFields/tableFields";
 import TableChildRelationShips from '../tableChildRelationShips/tableChildRelationShips';
 
 
-const onActionRowHandle = (rowId: string, action: string) => {
-    console.log('onRowActionHandle:' + action + ' [' + rowId + ']');
-}
 
 
 
 export default function SObjectPanel () {
+   
     return (
         <div>
             <SOQLPanel/>

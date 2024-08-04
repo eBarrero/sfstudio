@@ -7,27 +7,24 @@ import useDataState from '../../../store/dataState';
 
 export default function SObjectsPanel() {
     
-    const {state} = useModelState();
+    const {state, setSObject} = useModelState();
     const {currentView, setCurrentView} = useViewState();
-    const {sobjects, loadChildRelationships, loadFields } = useDataState();
+    const {sobjects, loadFields } = useDataState();
  
-    function setObject(sObjectName: string, sObjectIndex: number) {
+    function setObject(sObjectIndex: number) {
         loadFields(state.orgSfName, sObjectIndex);
-      
         setCurrentView('sobject');
-        showSObject(sObjectName, sObjectIndex);
+        setSObject(sObjectIndex);
     }
 
 
     return (
         <article className={`${(currentView!=='MAIN')?'invisible':''} ${css.PanelSObjects}`}>
-            {state.orgSfName}
-            {sobjects.length}
             {state.orgSfName!=='' && 
                 <section className={css.PanelSObjectsList}>
                     {sobjects.map((sobject) => (
                         <div className={css.PanelSObjectItem} key={state.orgSfName + sobject.sObjectLocalId} 
-                            onClick={()=>setObject(sobject.name, sobject.sObjectLocalId)}>
+                            onClick={()=>setObject(sobject.sObjectLocalId)}>
                             {sobject.name}
                         </div>))}
                 </section>
