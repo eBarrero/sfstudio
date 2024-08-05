@@ -1,6 +1,6 @@
 import {create} from 'zustand';
 import { modelReader } from '../services/salesforceSchema/proxy';
-
+import constants from '../components/constants';
 
 
 
@@ -14,6 +14,7 @@ interface ModelState {
     };
     filerSObject?: SObjectsFilter
     queryState: QueryState;
+    currentSOQLFieldSelection?: Map<FieldLocalId, SOQLFieldSelectionState>;
     sqlState: SQLState;
     setOrg: (orgSfName: SchemaName) => void; 
     setSObject: (sObjectLocalId:SObjectLocalId) => void;
@@ -44,12 +45,15 @@ interface ModelState {
                 sObjectId:{orgSfName, sObjectLocalId, sObjectApiName},  
                 parent:-1, 
                 limit:1, 
-                isAgregator:false, 
                 type:'ROOT',
+                level: 0,
                 selectClause: {fields: []} 
             };
             const queryState:QueryState = {queryElemnts: [mainQuery], indexCurrentElement: 0};
-            set({state: {orgSfName, action:'sobject', sObjectApiName,  sObjectLocalId },queryState, sqlState: sqlState(queryState)});
+            set({state: {orgSfName, action:'sobject', sObjectApiName,  sObjectLocalId },queryState, 
+                sqlState: sqlState(queryState)
+                
+            });
         },
         addReference: (fieldIndex: FieldLocalId) => {
             console.log('addReference');
@@ -68,7 +72,8 @@ interface ModelState {
                 parent: indexCurrentElement, 
                 type:'RELETED', 
                 relatedTo: field.relationshipName,
-                level: newlevel 
+                level: newlevel,
+                selectClause: {fields: []}  
             }
             queryState.indexCurrentElement = queryState.queryElemnts.push(relatedObject) - 1;
 
@@ -78,6 +83,7 @@ interface ModelState {
                          action: 'releted_sobject'}, 
                  queryState, 
                  sqlState: sqlState(queryState)
+
             }); 
         },        
         showRelataionByApiName: (sObjectApiName: SObjectApiName) => {
@@ -105,23 +111,24 @@ interface ModelState {
                 sObjectApiName: query.sObjectId.sObjectApiName, 
                 sObjectLocalId: query.sObjectId.sObjectLocalId, 
                 action},
-                queryState
+                queryState,
+                currentSOQLFieldSelection: createSOQLFieldSelection(query),
             });
         },
-        doAction: (fieldIndex: number, action: string) => {
-            console.log('acction ' + action);
+        doAction: (fieldIndex: FieldLocalId, action: string) => {
+            const { orgSfName } = get().state;
             const queryState = structuredClone(get().queryState);
-            const currentElement = queryState.currentElement;
+            const currentElement = queryState.indexCurrentElement;
             const query = queryState.queryElemnts[currentElement];  
-            //const fieldId = Proxy.getFieldIdByIndex(query.sObjectId.orgSfName, query.sObjectId.sObjectIndex, fieldIndex);
 
-            if (action === 'SELECTED') {
+            if (action === constants.SELECTED) {
+                const fieldId: FieldId = {fieldApiName: modelReader.getFieldApiName(orgSfName, query.sObjectId.sObjectLocalId, fieldIndex), fieldIndex};
                 const SelectClauseField = {fields: fieldId, alias: undefined, aggregateFunction: undefined};
                 query.selectClause!.fields!.push(SelectClauseField);
             }
 
-            if (action === 'UNSELECTED') {
-                query.selectClause!.fields = query.selectClause!.fields?.filter((field) => field.fields !== fieldId);
+            if (action === constants.UNSELECTED) {
+                query.selectClause!.fields = query.selectClause!.fields?.filter((field) => field.fields.fieldIndex !== fieldIndex);
             }
             
 
@@ -144,12 +151,80 @@ interface ModelState {
 export default useModelState;
 
 
+function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFieldSelectionState> {
+    console.log('createSOQLFieldSelection');
+    const map = new Map<FieldLocalId, SOQLFieldSelectionState>();
+
+    query.selectClause?.fields?.forEach((field) => {
+        map.set(field.fields.fieldIndex, {isSelected:true, isWhere: false, isOrderBy: false});
+        console.log(' createSOQLFieldSelection -  field:' + field.fields.fieldIndex);
+    });
+
+    query.where?.forEach((where) => {
+        if (map.has(where.field.fieldIndex)) {
+            const item = map.get(where.field.fieldIndex);
+            item!.isWhere = true;
+            map.set(where.field.fieldIndex, item!);
+        } else {
+            map.set(where.field.fieldIndex, {isSelected:true, isWhere: true, isOrderBy: false});
+        }
+    });
+    query.orderBy?.forEach((orderBy) => {
+        if (map.has(orderBy.field.fieldIndex)) {
+            const item = map.get(orderBy.field.fieldIndex);
+            item!.isOrderBy = true;
+            map.set(orderBy.field.fieldIndex, item!);
+        } else {
+            map.set(orderBy.field.fieldIndex, {isSelected:true, isWhere: false, isOrderBy: true});
+        }
+    });
+    
+    return map;
+}   
+
+
 function sqlState( queryState: QueryState  ): SQLState {
     const query = queryState.queryElemnts;
-    let sql = '';
+    let sqlSelect = 'SELECT ';
+    let sqlFrom = 'FROM ';
+    let sqlWhere = '';
+    let sqlOrderBy = '';
+    let sqlGroupBy = '';
+    let sqlHaving = '';
+
+
+
+
     query.forEach((queryElemnt) => {
         if (queryElemnt.type === 'ROOT') {
-            sql += `SELECT ${queryElemnt.selectClause?.fieldsAll} `;
+            const rootQuery = queryElemnt as PrimaryQuery;
+            if (rootQuery.selectClause?.fieldsAll!==undefined) sqlSelect += `${rootQuery.selectClause?.fieldsAll} `;
+            rootQuery.selectClause?.fields?.forEach((field) => {
+                sqlSelect += `${field.fields.fieldApiName} `;
+            });
+            sqlFrom += `${rootQuery.sObjectId.sObjectApiName} `;
+
+
+        } else if (queryElemnt.type === 'SUBQUERY') {
+            const subQuery = queryElemnt as NestedQuery;
+            sqlSelect += '(SELECT ';
+            subQuery.selectClause?.fields?.forEach((field) => {
+                sqlSelect += `${subQuery.relationshipName}.${field.fields.fieldApiName} `;
+            });
+        } else if (queryElemnt.type === 'RELETED') {
+            const reletedObject = queryElemnt as ReletedObject;
+            reletedObject.selectClause?.fields?.forEach((field) => {
+                sqlSelect += `${reletedObject.relatedTo}.${field.fields.fieldApiName} `;
+            });            
+        }
+
+    });
+    const sql = `${sqlSelect} ${sqlFrom} ${sqlWhere} ${sqlOrderBy} ${sqlGroupBy} ${sqlHaving} `;
+    console.log('SQL:' + sql);
+    return {sql};
+}   
+
+/*            sql += `SELECT ${queryElemnt.selectClause?.fieldsAll} `;
             queryElemnt.selectClause?.fields?.forEach((field) => {
                 sql += `${field.fields.orgSfName}.${field.fields.fieldApiName} `;
             });
@@ -158,8 +233,4 @@ function sqlState( queryState: QueryState  ): SQLState {
             (queryElemnt as fromObject).where?.forEach((where) => {
                 sql += `${where.field.orgSfName}.${where.field.fieldApiName} ${where.operator} ${where.value} `;
             });
-        }
-    });
-    return {sql};
-}   
-
+*/

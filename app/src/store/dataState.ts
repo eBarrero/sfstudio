@@ -31,6 +31,7 @@ const useDataState = create<DataState>((set, get) => {
             });
         },
         loadFields: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
+            console.log('loadFields', orgSfName, sObjectIndex);
             if (sObjectIndex===undefined || sObjectIndex===null) throw new Error('sObjectIndex is undefined or null');
             Proxy.getFields(orgSfName, sObjectIndex).then((data) => {
                 if (data!==null) {
@@ -42,6 +43,7 @@ const useDataState = create<DataState>((set, get) => {
             });       
         },
         loadFieldsFromReference: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
+            console.log('loadFieldsFromReference', orgSfName, sObjectIndex);
             Proxy.getFields(orgSfName, sObjectIndex).then((data) => {
                 if (data!==null) set({sObjectFields:  structuredClone(data)});
             });       
@@ -57,9 +59,9 @@ const useDataState = create<DataState>((set, get) => {
 
 function getTechnicalFealds(): GetFieldsIndex[] {
     return [
-        {fieldLocalId: 1001, isTechnicalField: true, name: 'FIELDS(ALL)',      label: '', type: 'TECHNICAL_FIELD', length: 0, precision: 0, scale: 0, unique: false, custom: false, referenceTo: ''},
-        {fieldLocalId: 1002, isTechnicalField: true, name: 'FIELDS(STANDARD)', label: '', type: 'TECHNICAL_FIELD', length: 0, precision: 0, scale: 0, unique: false, custom: false, referenceTo: ''},
-        {fieldLocalId: 1003, isTechnicalField: true, name: 'FIELDS(CUSTOM)',   label: '', type: 'TECHNICAL_FIELD', length: 0, precision: 0, scale: 0, unique: false, custom: false, referenceTo: ''},
+        {fieldLocalId: 1001, isTechnicalField: true, sObjectApiName: 'FIELDS(ALL)',      label: '', type: 'TECHNICAL_FIELD', length: 0, precision: 0, scale: 0, unique: false, custom: false, referenceTo: '', relationshipName:null},
+        {fieldLocalId: 1002, isTechnicalField: true, sObjectApiName: 'FIELDS(STANDARD)', label: '', type: 'TECHNICAL_FIELD', length: 0, precision: 0, scale: 0, unique: false, custom: false, referenceTo: '', relationshipName:null},
+        {fieldLocalId: 1003, isTechnicalField: true, sObjectApiName: 'FIELDS(CUSTOM)',   label: '', type: 'TECHNICAL_FIELD', length: 0, precision: 0, scale: 0, unique: false, custom: false, referenceTo: '', relationshipName:null},
     ];
 }   
 

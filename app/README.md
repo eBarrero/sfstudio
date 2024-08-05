@@ -1,6 +1,8 @@
 X add technical fields Allfield(customer/stanard)
-Ajustar SOQLPath
-guardar seleccion teniendo en cuenta los technical fields
+X Ajustar SOQLPath
+[X] guardar seleccion teniendo en cuenta los technical fields
+[BUGFIX] gestionar seleccioanr más de una vez un objeto relaciando
+[TODO] poner comas en la select de la sql
 ajustar relaciones y referencias
 poner la consola
 terminar fechas

@@ -147,8 +147,6 @@ interface SObjectsFilter {
 
 
 type FieldId = {
-    orgSfName: string;
-    sObjectIndex: number;
     fieldApiName: string;
     fieldIndex: number;
 }    

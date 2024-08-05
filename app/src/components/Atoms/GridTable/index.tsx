@@ -13,6 +13,7 @@ export interface GridTableCell {
 
 export interface GridTableRow {
     rowId: string
+    isSelected?: boolean
     data: GridTableCell[];
 }
 
@@ -50,7 +51,7 @@ export const GridTableCheckbox: React.FC<GridTableCheckboxProps> = (props) => {
 
     return (   
         <div className={css.gridTableCheckbox}> 
-            <input type="checkbox" defaultChecked={checked} onChange={chengeHandler} />
+            <input type="checkbox"  checked={checked} onChange={chengeHandler} />
         </div>
     )
 }
@@ -95,6 +96,7 @@ const Cell: React.FC<GridTableCellProps> = ({label, optionalTags,  onAcionHandle
 
 interface GridTableRowProps{
     selectable?: boolean;
+    isSelected?: boolean;
     row: GridTableRow;
     columns: GridTableColumnsProps[];
     onActionRow: (rowId: string, action: string) => void;
@@ -102,7 +104,7 @@ interface GridTableRowProps{
 
 
 export const GridTableRow: React.FC<GridTableRowProps> = (props) => {
-    const {selectable, row, columns, onActionRow} = props;
+    const {selectable, isSelected, row, columns, onActionRow} = props;
 
     const changeSelectHandler = (checked:boolean):void => {
         onActionRow(row.rowId, (checked)? constants.SELECTED : constants.UNSELECTED);  
@@ -114,7 +116,8 @@ export const GridTableRow: React.FC<GridTableRowProps> = (props) => {
 
     return (   
         <div className={css.gridTableRow}> 
-            {(selectable??true) && <GridTableCheckbox key={`${row.rowId}_c`}  checked={false} onSelect={changeSelectHandler}  />}
+
+            {(selectable??true) && <GridTableCheckbox key={`${row.rowId}_c`}  checked={isSelected!} onSelect={changeSelectHandler}  />}
             {row.data.map((item, index) => {
                 return <Cell key={`${row.rowId}_${index}`} 
                  onAcionHandler={onActiontHandler}
@@ -153,7 +156,7 @@ export const GridTable: React.FC<GridTableProps> = ({headerOff = false, columns,
                 </>
             )}
             {data.map((item) => {
-                return <GridTableRow key={item.rowId}  row={item} columns={columns} onActionRow={onActionRowHandler} />
+                return <GridTableRow key={item.rowId} isSelected={item.isSelected} row={item} columns={columns} onActionRow={onActionRowHandler} />
             })}
 
         </div>

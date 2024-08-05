@@ -1,7 +1,11 @@
 export enum IconCharacter  {
   UNDO = '&#8634;',
-  BACK = '&#8630;'
+  BACK = '&#8630;',      // ↶
+  ORDER_ASC = '&#8593;', // ⬆️
+  ORDER_DESC = '&#8595;',// ⬇️
+  WHERE = '&#128269;',   // 🔍  U+1F50D
 }
+
 
 export enum SalesforceFieldEnum {
     Id = "id",

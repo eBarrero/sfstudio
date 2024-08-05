@@ -14,20 +14,22 @@ import { use } from 'i18next';
 
 
 export default function TableFields() {
-    const {state, addReference} = useModelState();
+    const {state, currentSOQLFieldSelection, doAction, addReference} = useModelState();
     const {sObjectFields, loadFields, loadFieldsFromReference}  = useDataState();
 
 
     const onActionRowHandle = (rowId: string, action: string) => {
         console.log('onRowActionHandle:' + action + ' [' + rowId + ']');
-        const FieldLocalId = parseInt(rowId);
+        const fieldLocalId = parseInt(rowId);
         if (action===constants.GOTO_REFERENCE) { 
-            addReference(FieldLocalId);
+            addReference(fieldLocalId);
             return
         }        
+        doAction(fieldLocalId, action); 
     }
     useEffect(()=>{
-        if (state.action!=='object') {
+        console.log('TableFields useEffect' + state.action);
+        if (state.action==='sobject') {
             console.log('object');    
             loadFields(state.orgSfName, state.sObjectLocalId);
             return;
@@ -36,7 +38,7 @@ export default function TableFields() {
         loadFieldsFromReference(state.orgSfName, state.sObjectLocalId);
     }, [state.orgSfName, state.sObjectLocalId]);
 
-    
+    currentSOQLFieldSelection && currentSOQLFieldSelection.forEach((value, key) => { console.log(key + ' ' + value.isSelected) } ) 
 
 return (
     <div className={css.grid}>
@@ -46,8 +48,10 @@ return (
         columns={[{label:'Type'},{label:'Field'}]}
         data={sObjectFields.map((field):GridTableRow => ({
             rowId:field.fieldLocalId.toString(), 
+            isSelected: currentSOQLFieldSelection && currentSOQLFieldSelection.get(field.fieldLocalId)?.isSelected,
             data:[
-                parseTypeField(field), {label:`${field.sObjectApiName} - ${field.label}`} 
+                parseTypeField(field), 
+                {label:`${field.sObjectApiName} - ${field.label}`} 
             ]
         }))}
         />    

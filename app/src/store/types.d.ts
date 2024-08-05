@@ -51,31 +51,44 @@ type QueryElementAbstract ={
     selectClause?: SelectClause;
     where?: SimpleCondition[];
     whereLogic?: (LogicalOperator | number )[];
+    orderBy?: OrderBy[];
     level: 0|1|2|3|4|number;                       // It indicates the level of the query element in the query max. 5. ROOT and SUBQUERY are always level 0
 }
 
-type PrimaryQuery = QueryElement & {
+type PrimaryQuery = QueryElementAbstract & {
     type: 'ROOT';
-    agregatorQuery?: AgregatorQuery;
-    orderBy?: OrderBy[];
+    aggregatorQuery?: AggregatorQuery;
     limit: number;
     offset?: number;
 }
 
-type NestedQuery = PrimaryQuery & {
+type NestedQuery = QueryElementAbstract & {
     type: 'SUBQUERY';
-    relationshipName: RelationshipName
+    aggregatorQuery?: AggregatorQuery;
+    limit: number;
+    offset?: number;    
+    relationshipName: RelationshipName;
 }
 
-type ReletedObject = QueryElement & {
+type ReletedObject = QueryElementAbstract & {
     type: 'RELETED' ;
     relatedTo: RelationshipName ;
 }
 
+type QueryElement = PrimaryQuery | NestedQuery | ReletedObject;
+
 interface QueryState {
-    queryElemnts: (PrimaryQuery | reletedObject | NestedQuery)[]; 
+    queryElemnts: QueryElement[]; 
     indexCurrentElement: number;                                    // It indicates the index of the current element in the queryElemnts array
 }
 interface SQLState {        
     sql: string;
 }
+
+
+interface SOQLFieldSelectionState {
+    isSelected: boolean;
+    isWhere: boolean;
+    isOrderBy: boolean;
+}
+
