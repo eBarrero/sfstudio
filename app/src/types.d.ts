@@ -137,10 +137,27 @@ type Schema = {
     indexMap: Map<SObjectApiName, SObjectLocalId>;
 }
 
-interface SObjectsFilter {
+type SObjectsFilter = {
     searchText: string;
-    queryable: boolean | null;
-    custom: boolean | null;
+    activateable:       boolean | null;
+    createable:         boolean | null;
+    custom:             boolean | null;
+    customSetting:      boolean | null;
+    deletable:          boolean | null;
+    deprecatedAndHidden:boolean | null;
+    feedEnabled:        boolean | null;
+    hasSubtypes:        boolean | null;
+    isSubtype:          boolean | null;
+    layoutable:         boolean | null;
+    mergeable:          boolean | null;
+    mruEnabled:         boolean | null;
+    queryable:          boolean | null;
+    replicateable:      boolean | null;
+    retrieveable:       boolean | null;
+    searchable:         boolean | null;
+    triggerable:        boolean | null;
+    undeletable:        boolean | null;
+    updateable:         boolean | null;    
 }
 
 // Adapaters

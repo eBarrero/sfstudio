@@ -1,0 +1,32 @@
+
+
+.console {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background-color: #1e1e1e;
+  color: #fff;
+  
+
+  .consoleHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    .consoleTitle {
+      font-size: 1.5rem;
+    }
+  }
+  .console_input {
+    margin: 0;
+  }
+  .consoleHistory {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

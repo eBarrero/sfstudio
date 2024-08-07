@@ -112,9 +112,30 @@
     "DataTimeLiteral.LESS_THAN": "Before period",
     "DataTimeLiteral.LESS_THAN_OR_EQUAL": "Before or inside of period",
     "DataTimeLiteral.GREATER_THAN": "After period",
-    "DataTimeLiteral.GREATER_THAN_OR_EQUAL": "After or inside of period"
+    "DataTimeLiteral.GREATER_THAN_OR_EQUAL": "After or inside of period",
+    "sObject.attribute.activateable":"Indicates if the sObject can be activated. Usually relevant for Workflow rules and similar constructs.",
+    "sObject.attribute.createable": "Specifies whether new records of this sObject can be created via the API.",
+    "sObject.attribute.custom":"Indicates if the sObject is custom or standard. Custom objects are created by users, while standard objects are provided by Salesforce.",  
+    "sObject.attribute.customSetting":"Denotes if the sObject is a custom setting, which is a special type of custom object designed for application configuration.",
+    "sObject.attribute.deletable":"Indicates if records of this sObject can be deleted via the API.",
+    "sObject.attribute.deprecatedAndHidden":"Specifies whether the sObject is deprecated and hidden. Deprecated objects are no longer recommended for use and may be hidden from user interfaces.",
+    "sObject.attribute.feedEnabled":"Indicates if the sObject supports feeds, which are used for Chatter posts and similar social media features within Salesforce.",
+    "sObject.attribute.hasSubtypes":"Indicates if the sObject has subtypes. This is typically relevant for polymorphic relationships.",
+    "sObject.attribute.isSubtype":"Specifies if the sObject is a subtype, often used in contexts where multiple types of objects can be referenced by a single field.",
+    "sObject.attribute.layoutable":"Indicates if the sObject supports layouts. Layouts determine the presentation of an sObject's records in the user interface.",
+    "sObject.attribute.mergeable":"Specifies if records of this sObject can be merged. This is typically relevant for objects like accounts and leads.",
+    "sObject.attribute.mruEnabled":"Indicates if the sObject supports Most Recently Used (MRU) lists, which show recently accessed records.",
+    "sObject.attribute.queryable":"Specifies if records of this sObject can be queried via the API.",
+    "sObject.attribute.replicateable":"Indicates if the sObject supports replication, meaning its records can be replicated to another system.",
+    "sObject.attribute.retrieveable":"Specifies if records of this sObject can be retrieved via the API.",
+    "sObject.attribute.searchable":"Indicates if the sObject supports search functionality.",
+    "sObject.attribute.triggerable":"Specifies if triggers can be created for this sObject. Triggers allow custom logic to be executed when records are created, updated, or deleted.",
+    "sObject.attribute.undeletable":"Indicates if records of this sObject can be undeleted. This is relevant for the Recycle Bin functionality.",
+    "sObject.attribute.updateable":"Specifies if existing records of this sObject can be updated via the API."
 
-
+    
+    
+ 
 }
 
  

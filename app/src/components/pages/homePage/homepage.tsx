@@ -4,6 +4,7 @@ import SOQLPath from '../../organisms/SOQLPath/SOQLPath';
 import SchemaPanel from '../../organisms/schemaPanel/schemaPanel';
 import SObjectPanel from '../../organisms/sObjectPanel/sObjectPanel';
 import useViewState from '../../../store/viewState';
+import Console from '../../organisms/console/console';
 
 
 const HomePage = () => {
@@ -11,20 +12,21 @@ const HomePage = () => {
 
     return (
             <main className={css.main}>
-                <div className={css.options_container}>
+                <aside className={css.options_container}>
                     <section className={css.frame_features}>
                         <DBConnectionManager/>
                     </section>                    
                     <section className={css.frame_explorer}>
                         <SOQLPath/>
+                        <Console/>
                     </section>
-                </div>
-                <div className={css.panel_container}>
+                </aside>
+                <section className={css.panel_container}>
                     <section className={css.frame_editor}>
                     <SchemaPanel/>
                     {currentView==='sobject' && <SObjectPanel/> }                        
                     </section>
-                </div>    
+                </section>    
             </main>
             
           )

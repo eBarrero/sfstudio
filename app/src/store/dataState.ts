@@ -2,6 +2,33 @@ import {create} from 'zustand';
 import  Proxy  from '../services/salesforceSchema/proxy';
 
 
+
+function objectsFilterInit(): SObjectsFilter {
+    return {
+        searchText:'',
+        activateable:       null,
+        createable:         null,
+        custom:             null,
+        customSetting:      null,
+        deletable:          null,
+        deprecatedAndHidden:null,
+        feedEnabled:        null,
+        hasSubtypes:        null,
+        isSubtype:          null,
+        layoutable:         null,
+        mergeable:          null,
+        mruEnabled:         null,
+        queryable:          true,
+        replicateable:      null,
+        retrieveable:       null,
+        searchable:         null,
+        triggerable:        null,
+        undeletable:        null,
+        updateable:         null            
+     };
+}
+
+
 interface DataState {  
     action: string;                              // It indicates the action to be performed or it being performed
     sobjects: GetSObjectsIndex[];                // It contains the list of sObjects. Loaded from getSchema()
@@ -11,6 +38,8 @@ interface DataState {
 
     //getSchema: (orgSfName: string, filterSObject?: SchemaFilter) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
     loadSchema: (orgSfName: SchemaName) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
+    setObjectFilterText: (orgSfName: SchemaName, searchText: string) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
+    setObjectFilter:  (orgSfName: SchemaName, attrib: string, value: boolean|null) => void;  // set the filter value    
     loadFields: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void;              // It retrieves the fields of a Salesforce object based on the provided index. 
     loadFieldsFromReference: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void; // same as loadFields but without child relationships after Reference has been selected
     loadChildRelationships: (orgSfName: SchemaName, objectIndex: SObjectLocalId) => void ;   // It retrieves the child relationships of a Salesforce object based on the provided index. 
@@ -22,13 +51,23 @@ const useDataState = create<DataState>((set, get) => {
         sobjects:[],
         sObjectFields:[],
         childRelationships:[],
-        sObjectsFilter: {searchText:'', custom:true,  queryable: true},
+        sObjectsFilter: objectsFilterInit(),
 
         loadSchema: (orgSfName: SchemaName) => {
             const f = get().sObjectsFilter;
             Proxy.getSObjectsAdapter(orgSfName, f).then((data) => {
                 if (data!==null) set({sobjects: structuredClone(data)});
             });
+        },
+        setObjectFilterText: (orgSfName: SchemaName, searchText: string) => {
+            const filter = get().sObjectsFilter;
+            filter.searchText = searchText;
+            set({sObjectsFilter: filter});
+            get().loadSchema(orgSfName);
+        },
+        setObjectFilter: (orgSfName: SchemaName, attrib: string, value: boolean|null) => {
+            set({sObjectsFilter: {...get().sObjectsFilter, [attrib] :value    }} );
+            get().loadSchema(orgSfName);
         },
         loadFields: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
             console.log('loadFields', orgSfName, sObjectIndex);

@@ -44,9 +44,31 @@ export default class Proxy {
         }
 
         const result: GetSObjectsIndex[] | null = sobjects
-            .filter((sobject) => sobject.queryable === true && sobject.keyPrefix!==null && sobject.name.toUpperCase().includes(filter.searchText))
+            .filter((sobject) => {return this.checkMatchObjectFilter(sobject, filter)})
             .map((sobject): GetSObjectsIndex => ({sObjectLocalId: sobject.sObjectLocalId, name: sobject.name, label: sobject.label, keyPrefix: sobject.keyPrefix!}));
         return new Promise((resolve) => resolve(result));
+    }
+
+    /**
+     * @description Check if the object matches the filter
+     * @param object - The object to be checked
+     * @param filter - The filter object used to filter the Salesforce objects.
+     * @returns true if the object matches the filter, false otherwise. 
+     */
+    private static checkMatchObjectFilter(sobject: SObject, filter: SObjectsFilter): boolean  {
+        if (sobject.keyPrefix===null) return false;
+        for (const key of Object.keys(filter)) {
+            const valueFilter =  filter[key as keyof SObjectsFilter];
+            const valueSObject = sobject[key as keyof SObject];
+            if (key === 'searchText') 
+                if (filter.searchText !=undefined && filter.searchText !== '' && !sobject.name.toUpperCase().includes(filter.searchText.toUpperCase())) return false; else continue;
+            if (valueFilter !== undefined && valueFilter !== null &&  valueSObject !== valueFilter) {
+                console.log(`: ${sobject.name} ${key} ${valueFilter} ${valueSObject}`);
+                return false;
+            }
+        }
+        console.log(`yes: ${sobject.name}  `);
+        return true;
     }
 
     // Responsabilities: 
