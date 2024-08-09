@@ -7,7 +7,7 @@ import ObjectFilter             from '../objectFilter/objectFilter';
 export default function SObjectsPanel() {
     
     const {state, setSObject} = useModelState();
-    const {currentView, setCurrentView} = useViewState();
+    const {currentView, componentShowed, setCurrentView} = useViewState();
     const {sobjects } = useDataState();
  
     function setObject(sObjectIndex: number) {
@@ -21,7 +21,7 @@ export default function SObjectsPanel() {
             {state.orgSfName!=='' && 
                 <>
                     <section>
-                        <ObjectFilter/>
+                        {componentShowed==="OBJECT_FILTER" && (<ObjectFilter/>)}
                     </section>                
                     <section className={css.PanelSObjectsList}>
                         {sobjects.map((sobject) => (

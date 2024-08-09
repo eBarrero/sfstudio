@@ -1,6 +1,6 @@
 import css from './style.module.css';
 import { GridTable, GridTableRow } from "../../atoms/GridTable";
-import { objectFilterOptions } from "../../../Constants/filters";
+import { objectFilterOptions } from "../../../constants/filters";
 import useDataState            from "../../../store/dataState";
 import useModelState           from '../../../store/modelState';
 import { useTranslation } from 'react-i18next';

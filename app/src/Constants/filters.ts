@@ -1,9 +1,8 @@
-
+import { Salesforce_SObject } from '../types';
 
 
 
 // src/constants/filters.ts
-
 export type FilterOption = {
   name: keyof Salesforce_SObject;
   description: string;

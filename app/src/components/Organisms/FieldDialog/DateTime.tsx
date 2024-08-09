@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import css from './local.module.css'
-import DataTime from '../../../Constants/DataTime';
+import DataTime from '../../../constants/DataTime';
 import OptionList from '../OptionList';
 import { useTranslation } from 'react-i18next';
 import  useModelState  from '../../../store/modelState';  

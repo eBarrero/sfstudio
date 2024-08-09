@@ -29,18 +29,42 @@ function objectsFilterInit(): SObjectsFilter {
 }
 
 
+function fieldFilterInit(): FieldsFilter {
+    return {
+        searchText:'',
+        type:               '',
+        aggregatable:       null,
+        custom:             null,
+        defaultedOnCreate:  null,
+        dependentPicklist:  null,
+        deprecatedAndHidden:null,
+        encrypted:          null,
+        externalId:         null,
+        filterable:         null,
+        groupable:          null,
+        nillable:           null,
+        queryByDistance:    null,
+        sortable:           null,
+        unique:             null,
+    };
+}
+
+
 interface DataState {  
-    action: string;                              // It indicates the action to be performed or it being performed
-    sobjects: GetSObjectsIndex[];                // It contains the list of sObjects. Loaded from getSchema()
-    sObjectFields: GetFieldsIndex[];              // It contains the list of fields of current sObject. Loaded from getFields() 
-    childRelationships: GetChildRelationships[]; // It contains the list of child relationships of current sObject. Loaded from getChildRelationships() 
+    action: string;                                // It indicates the action to be performed or it being performed
+    sobjects: GetSObjectsIndex[];                  // It contains the list of sObjects. Loaded from getSchema()
+    sObjectFields: GetFieldsIndex[];               // It contains the list of fields of current sObject. Loaded from getFields() 
+    childRelationships: GetChildRelationships[];   // It contains the list of child relationships of current sObject. Loaded from getChildRelationships() 
     sObjectsFilter: SObjectsFilter;                // It contains the filter to be applied to the sObjects
+    fieldsFilter: FieldsFilter;                   // It contains the filter to be applied to the fields
 
     //getSchema: (orgSfName: string, filterSObject?: SchemaFilter) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
     loadSchema: (orgSfName: SchemaName) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
     setObjectFilterText: (orgSfName: SchemaName, searchText: string) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
     setObjectFilter:  (orgSfName: SchemaName, attrib: string, value: boolean|null) => void;  // set the filter value    
+   
     loadFields: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void;              // It retrieves the fields of a Salesforce object based on the provided index. 
+    setFieldFilterText: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchText: string) => void; // set the filter value
     loadFieldsFromReference: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void; // same as loadFields but without child relationships after Reference has been selected
     loadChildRelationships: (orgSfName: SchemaName, objectIndex: SObjectLocalId) => void ;   // It retrieves the child relationships of a Salesforce object based on the provided index. 
 }
@@ -52,7 +76,7 @@ const useDataState = create<DataState>((set, get) => {
         sObjectFields:[],
         childRelationships:[],
         sObjectsFilter: objectsFilterInit(),
-
+        fieldsFilter: fieldFilterInit(),
         loadSchema: (orgSfName: SchemaName) => {
             const f = get().sObjectsFilter;
             Proxy.getSObjectsAdapter(orgSfName, f).then((data) => {
@@ -72,7 +96,8 @@ const useDataState = create<DataState>((set, get) => {
         loadFields: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
             console.log('loadFields', orgSfName, sObjectIndex);
             if (sObjectIndex===undefined || sObjectIndex===null) throw new Error('sObjectIndex is undefined or null');
-            Proxy.getFields(orgSfName, sObjectIndex).then((data) => {
+            const filter = get().fieldsFilter;
+            Proxy.getFieldsAdapter(orgSfName, sObjectIndex, filter).then((data) => {
                 if (data!==null) {
                     set({
                          sObjectFields:  getTechnicalFealds().concat(structuredClone(data)), 
@@ -81,9 +106,16 @@ const useDataState = create<DataState>((set, get) => {
                 }
             });       
         },
+        setFieldFilterText: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchText: string) => {
+            const filter = get().fieldsFilter;
+            filter.searchText = searchText;
+            set({fieldsFilter: filter});
+            get().loadFields(orgSfName, sObjectIndex);
+        },        
         loadFieldsFromReference: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
             console.log('loadFieldsFromReference', orgSfName, sObjectIndex);
-            Proxy.getFields(orgSfName, sObjectIndex).then((data) => {
+            const filter = get().fieldsFilter;
+            Proxy.getFieldsAdapter(orgSfName, sObjectIndex, filter).then((data) => {
                 if (data!==null) set({sObjectFields:  structuredClone(data)});
             });       
         },

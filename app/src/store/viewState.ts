@@ -3,8 +3,14 @@ import {create} from 'zustand';
 
 interface ViewState {
     currentView: string;
+    componentShowed?: string;
     dialogStack: string[];
+    commandState:string; 
+    command: string;
+    setCommand: (newCommand: string | null) => void;
     setCurrentView: (newView: string) => void;
+    setComponentShowed: (componentName: string) => void;
+    reSetComponentShowed: () => void;
     pushDialog: (newWindow: string) => void;
     popDialog: () => void;
 }
@@ -13,8 +19,28 @@ const useViewState = create<ViewState>((set, get) => {
     return  {
         currentView: 'INIT',
         dialogStack: [],
+        commandState: 'INIT',
+        command: '',
+        setCommand: (newCommand: string | null) => {
+            if (newCommand === null || newCommand === '') {
+                set({commandState: 'INIT'});
+                return;
+            }
+            if (newCommand[0] === '.') {
+                set({commandState: 'COMMAND'});
+            } else {
+                set({commandState: 'FILTER'});
+            }
+            set({command: newCommand});
+        },
         setCurrentView: (newView: string) => {
             set({currentView: newView});
+        },
+        setComponentShowed: (componentName: string) => {
+            set({componentShowed: componentName});
+        },
+        reSetComponentShowed: () => {
+            set({componentShowed: undefined});
         },
         pushDialog: (newWindow: string) => {
             set({dialogStack: [...get().dialogStack, newWindow]});
@@ -23,7 +49,7 @@ const useViewState = create<ViewState>((set, get) => {
             const dialogArray = get().dialogStack;
             dialogArray.pop();
             set({dialogStack: dialogArray});
-        }
+        },
     }
 
 });   

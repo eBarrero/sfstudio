@@ -1,8 +1,11 @@
-import  { useState } from 'react';  
+import  { useState, useEffect } from 'react';  
 import useModelState from '../../../store/modelState';
 import useDataState from '../../../store/dataState';
+import useViewState from '../../../store/viewState';
+
 import css from './style.module.css';
 import { useTranslation } from 'react-i18next';
+import { use } from 'i18next';
 
 
 /**
@@ -11,12 +14,23 @@ import { useTranslation } from 'react-i18next';
 */
 
 const Console = () => {
-    const { action, orgSfName } = useModelState().state;
-    const { setObjectFilterText } = useDataState()
-    const [command, setCommand] = useState<string>('');
+    const { setCurrentView, command, setCommand, commandState,  setComponentShowed, reSetComponentShowed } = useViewState();
+    const { state, setSObject } = useModelState();
+    const { action, orgSfName } = state;
+    const { setFieldFilterText, setObjectFilterText, sobjects, loadFields } = useDataState()
     const [history, setHistory] = useState<string[]>([]);
     const [currentHistoryIndex, setCurrentHistoryIndex] = useState<number>(-1);
-
+  
+    useEffect(() => {
+        if (orgSfName === '' || command === undefined || command === '') return;
+        if (command[0] !== '.') {
+            if (action === 'INIT') {
+            setObjectFilterText(orgSfName, command);
+            } else if (action === 'sobject') {
+                setFieldFilterText(orgSfName, sobjects[0].sObjectLocalId, command);
+            }    
+        }
+    },[orgSfName,command, action]);
 
     const handleCommandChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setCommand(e.target.value);
@@ -25,9 +39,22 @@ const Console = () => {
     const handleCommandKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             setHistory([...history, command]);
+            if (commandState === 'COMMAND') {
+                if (command === '.Filter') {
+                    setComponentShowed('OBJECT_FILTER');
+                } else {
+                    reSetComponentShowed();
+                }            
+            } else if (commandState === 'FILTER') {
+                loadFields(orgSfName, sobjects[0].sObjectLocalId);
+                setSObject(sobjects[0].sObjectLocalId);
+                setCurrentView('sobject');
+
+            }
             setCommand('');
             setCurrentHistoryIndex(-1);
-            setObjectFilterText(orgSfName, e.currentTarget.value);
+            
+            
         } else if (e.key === 'ArrowUp') {
             if (currentHistoryIndex < history.length - 1) {
                 setCurrentHistoryIndex(currentHistoryIndex + 1);

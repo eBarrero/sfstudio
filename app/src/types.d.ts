@@ -7,6 +7,8 @@ type FieldApiName = string;
 type SObjectLocalId = number; // ID from Schema.sobject[ID]
 type FieldLocalId = number;   // ID from Schema.sobject[x].fields[ID]
 
+type FilterValue = boolean | null;
+
 type SalesforceFieldValues =
   | "TECHNICAL_FIELD" 
   | "id"
@@ -15,15 +17,15 @@ type SalesforceFieldValues =
   | "reference"
 ;
 
-type PicklistValue = {
+interface PicklistValue  {
     active: boolean;
     defaultValue: boolean;
     label: string;
     validFor: string | null;
     value: string;
-  };
+  }
 
-type Salesforce_Fields = {
+interface Salesforce_Fields  {
     aggregatable: boolean;
     autoNumber: boolean;
     byteLength: number;
@@ -79,14 +81,14 @@ type Salesforce_Fields = {
     unique: boolean;
     updateable: boolean;
     writeRequiresMasterRead: boolean;
-};
+}
 
-type Fields = Salesforce_Fields & { 
+interface Fields extends Salesforce_Fields { 
     fieldLocalId: FieldLocalId
-};
+}
 
   
-type ChildRelationships = {
+interface ChildRelationships  {
     sObjectLocalId: SObjectLocalId;
     cascadeDelete: boolean;
     childSObject: SObjectApiName;
@@ -98,7 +100,7 @@ type ChildRelationships = {
     restrictedDelete: boolean;
 }
 
-type Salesforce_SObject = {
+interface Salesforce_SObject  {
     childRelationships: ChildRelationships[] | null;
     fields: Fields[] | null;
     activateable: boolean;
@@ -126,49 +128,67 @@ type Salesforce_SObject = {
     updateable: boolean;
 }
 
-type SObject = Salesforce_SObject & {
+interface SObject extends Salesforce_SObject  {
     sObjectLocalId: SObjectLocalId;  
-    mapFields: Map<FieldApiName, FieldLocalId>;
+    mapFields: Map<FieldApiName, FieldLocalId>; // This a index of fields by name
 }
 
-type Schema = {
+interface Schema  {
     name: string;
     sobjects: SObject[];
     indexMap: Map<SObjectApiName, SObjectLocalId>;
 }
 
-type SObjectsFilter = {
+interface SObjectsFilter  {
     searchText: string;
-    activateable:       boolean | null;
-    createable:         boolean | null;
-    custom:             boolean | null;
-    customSetting:      boolean | null;
-    deletable:          boolean | null;
-    deprecatedAndHidden:boolean | null;
-    feedEnabled:        boolean | null;
-    hasSubtypes:        boolean | null;
-    isSubtype:          boolean | null;
-    layoutable:         boolean | null;
-    mergeable:          boolean | null;
-    mruEnabled:         boolean | null;
-    queryable:          boolean | null;
-    replicateable:      boolean | null;
-    retrieveable:       boolean | null;
-    searchable:         boolean | null;
-    triggerable:        boolean | null;
-    undeletable:        boolean | null;
-    updateable:         boolean | null;    
+    activateable:       FilterValue;
+    createable:         FilterValue;
+    custom:             FilterValue;
+    customSetting:      FilterValue;
+    deletable:          FilterValue;
+    deprecatedAndHidden:FilterValue;
+    feedEnabled:        FilterValue;
+    hasSubtypes:        FilterValue;
+    isSubtype:          FilterValue;
+    layoutable:         FilterValue;
+    mergeable:          FilterValue;
+    mruEnabled:         FilterValue;
+    queryable:          FilterValue;
+    replicateable:      FilterValue;
+    retrieveable:       FilterValue;
+    searchable:         FilterValue;
+    triggerable:        FilterValue;
+    undeletable:        FilterValue;
+    updateable:         FilterValue;    
 }
+
+interface FieldsFilter {
+    searchText: string;
+    type: string;
+    aggregatable:           FilterValue;
+    custom:                 FilterValue;
+    defaultedOnCreate:      FilterValue;
+    dependentPicklist:      FilterValue;
+    deprecatedAndHidden:    FilterValue;
+    encrypted:              FilterValue;
+    externalId:             FilterValue;
+    filterable:             FilterValue;
+    groupable:              FilterValue;
+    nillable:               FilterValue;
+    queryByDistance:        FilterValue;
+    sortable:               FilterValue;
+    unique:                 FilterValue;
+}  
 
 // Adapaters
 
 
-type FieldId = {
+interface FieldId  {
     fieldApiName: string;
     fieldIndex: number;
 }    
 
-type SObjectId = {
+interface SObjectId {
     orgSfName: string;
     sObjectApiName: SObjectApiName;    
     sObjectLocalId: SObjectLocalId;

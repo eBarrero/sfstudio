@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import css from './style.module.css';
 import constants from '../../constants';
 import { GridTable, GridTableCell, GridTableRow } from "../../atoms/GridTable";
-import { SalesforceFieldEnum } from "../../../Constants/Fields";
+import { SalesforceFieldEnum } from "../../../constants/Fields";
 import useDataState  from "../../../store/dataState";
 import useModelState  from "../../../store/modelState";
 import { use } from 'i18next';

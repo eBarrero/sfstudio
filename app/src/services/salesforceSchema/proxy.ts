@@ -60,14 +60,18 @@ export default class Proxy {
         for (const key of Object.keys(filter)) {
             const valueFilter =  filter[key as keyof SObjectsFilter];
             const valueSObject = sobject[key as keyof SObject];
-            if (key === 'searchText') 
-                if (filter.searchText !=undefined && filter.searchText !== '' && !sobject.name.toUpperCase().includes(filter.searchText.toUpperCase())) return false; else continue;
-            if (valueFilter !== undefined && valueFilter !== null &&  valueSObject !== valueFilter) {
-                console.log(`: ${sobject.name} ${key} ${valueFilter} ${valueSObject}`);
-                return false;
+            if (key === 'searchText') {
+                if (filter.searchText ==undefined && filter.searchText === '') {
+                    continue;
+                } else {
+                    const words=  filter.searchText.toUpperCase().split(' ');
+                    const matchs = words.filter((word) =>  sobject.name.toUpperCase().includes(word)).length ;
+                    if (matchs===undefined || matchs<words.length ) return false; else continue;
+                }
             }
+            if (valueFilter !== undefined && valueFilter !== null &&  valueSObject !== valueFilter) return false;
+            
         }
-        console.log(`yes: ${sobject.name}  `);
         return true;
     }
 
@@ -77,7 +81,7 @@ export default class Proxy {
     // 3. Field object is numbered
     // 4. Child relationships are linked to the object index of the child object
     
-    public static async getFields(orgSfName: SchemaName, objectIndex: SObjectLocalId) : Promise<GetFieldsIndex[]> {
+    public static async getFieldsAdapter(orgSfName: SchemaName, objectIndex: SObjectLocalId, filter: FieldsFilter) : Promise<GetFieldsIndex[]> {
         console.log(`getSObject orgSfName: "${orgSfName}" index: "${objectIndex}"`);
         
         if (!cache.has(orgSfName)) {
@@ -106,6 +110,7 @@ export default class Proxy {
             } 
 
             const result: GetFieldsIndex[] = sobject.fields!
+                .filter((field) => this.checkMatchFieldFilter(field, filter)) 
                 .map((field): GetFieldsIndex => ({
                     fieldLocalId: field.fieldLocalId, 
                     isTechnicalField: false,
@@ -127,7 +132,30 @@ export default class Proxy {
         }
     }
 
-
+     /**
+     * @description Check if the fidlds matches the filter
+     * @param Field - The object to be checked
+     * @param FieldsFilter - The filter used to filter the Salesforce fileds.
+     * @returns true if the object matches the filter, false otherwise. 
+     */
+    private static checkMatchFieldFilter(field: Fields, filter: FieldsFilter): boolean  {
+        for (const key of Object.keys(filter)) {
+            const valueFilter =  filter[key as keyof FieldsFilter];
+            const valueField = field[key as keyof Fields];
+            if (key === 'type') continue;
+            if (key === 'searchText') {
+                if (filter.searchText === undefined || filter.searchText === '') {
+                    continue;
+                } else {
+                    const words=  filter.searchText.toUpperCase().split(' ');
+                    const matchs = words.filter((word) =>  field.name.toUpperCase().includes(word)).length;
+                    if (matchs===undefined || matchs<words.length ) return false; else continue;
+                }
+            }           
+            if (valueFilter !== undefined && valueFilter !== null &&  valueField !== valueFilter) return false;
+        }
+        return true;
+    }
     
     public static getChildRelationships(orgSfName: string, objectIndex: SObjectLocalId): GetChildRelationships[] {
         console.log(`getChildRelationships orgSfName: "${orgSfName}" name: "${objectIndex}"`);
