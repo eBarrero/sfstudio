@@ -1,12 +1,12 @@
 import css from './style.module.css';
 import { GridTable,  GridTableRow } from "../../atoms/GridTable";
-import  useDataState  from "../../../store/dataState";
-import useModelState from '../../../store/modelState';
+import  dataState  from "../../../store/dataState";
+import modelState from '../../../store/modelState';
 
 
 export default function TableChildRelationShips() {
-    const { childRelationships, loadFields: getFields }  = useDataState()
-    const {showRelataionByApiName} = useModelState();
+    const { childRelationships, loadFields: getFields }  = dataState()
+    const {showRelataionByApiName} = modelState();
 
     const onActionRowHandle = (rowId: string, action: string) => {
         console.log('onRowActionHandle:' + action + ' [' + rowId + ']');

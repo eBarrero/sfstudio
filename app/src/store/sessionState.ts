@@ -7,13 +7,15 @@ import { createSession, loginSFDC } from '../services/session/model';
 
 
 interface SessionState {
+    sessionStatus: string;
     publicSession: PublicSesionDefinition;
     createSession: () => void;
     loginSFDC: () => void;
 }
 
-const useSessionState = create<SessionState>((set, get) => {
+const sessionState = create<SessionState>((set, get) => {
     return  {
+        sessionStatus: 'INIT',
         publicSession: { currentConnection: 0, connections: [] },
         createSession: () => {
             createSession().then((s) => {
@@ -23,10 +25,11 @@ const useSessionState = create<SessionState>((set, get) => {
         loginSFDC: () => {
             loginSFDC();
         }
-
     }   
     
 });
 
 
-export default useSessionState;
+export default sessionState;
+
+

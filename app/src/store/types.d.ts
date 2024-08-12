@@ -1,6 +1,15 @@
 
 
 
+interface CommandDefinition  {
+    command: string;
+    description: string;
+    action: number;
+    parameters?: string[];
+    examples?: string[];
+  }
+
+
 type OperatorType = '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN' | 'NOT IN' | 'INCLUDES' | 'EXCLUDES' | string;
 
 

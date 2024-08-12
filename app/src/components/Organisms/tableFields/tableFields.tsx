@@ -3,8 +3,8 @@ import css from './style.module.css';
 import constants from '../../constants';
 import { GridTable, GridTableCell, GridTableRow } from "../../atoms/GridTable";
 import { SalesforceFieldEnum } from "../../../constants/Fields";
-import useDataState  from "../../../store/dataState";
-import useModelState  from "../../../store/modelState";
+import dataState  from "../../../store/dataState";
+import modelState  from "../../../store/modelState";
 import { use } from 'i18next';
 
 
@@ -14,8 +14,8 @@ import { use } from 'i18next';
 
 
 export default function TableFields() {
-    const {state, currentSOQLFieldSelection, doAction, addReference} = useModelState();
-    const {sObjectFields, loadFields, loadFieldsFromReference}  = useDataState();
+    const {state, currentSOQLFieldSelection, doAction, addReference} = modelState();
+    const {sObjectFields, loadFields, loadFieldsFromReference}  = dataState();
 
 
     const onActionRowHandle = (rowId: string, action: string) => {

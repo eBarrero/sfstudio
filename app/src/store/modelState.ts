@@ -25,7 +25,7 @@ interface ModelState {
     addWhere: (SimpleCondition: SimpleCondition) => void;
   } 
 
-  const useModelState = create<ModelState>((set, get) => {
+  const modelState = create<ModelState>((set, get) => {
     return  {
         state:   { orgSfName: '', action: '', sObjectApiName: '', sObjectLocalId: - 1},
         queryState: { queryElemnts: [], indexCurrentElement: 0  },
@@ -148,7 +148,7 @@ interface ModelState {
     }
 });
 
-export default useModelState;
+export default modelState;
 
 
 function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFieldSelectionState> {

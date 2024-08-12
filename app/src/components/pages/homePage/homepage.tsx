@@ -3,12 +3,12 @@ import DBConnectionManager from '../../organisms/dbConnectionManager/dbConnectio
 import SOQLPath from '../../organisms/SOQLPath/SOQLPath';
 import SchemaPanel from '../../organisms/schemaPanel/schemaPanel';
 import SObjectPanel from '../../organisms/sObjectPanel/sObjectPanel';
-import useViewState from '../../../store/viewState';
+import viewState from '../../../store/viewState';
 import Console from '../../organisms/console/console';
 
 
 const HomePage = () => {
-    const { currentView} = useViewState();
+    const { currentView} = viewState();
 
     return (
             <main className={css.main}>

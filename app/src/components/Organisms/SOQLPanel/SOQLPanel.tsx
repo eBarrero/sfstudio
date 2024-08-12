@@ -1,12 +1,12 @@
 import css from './style.module.css'
-import useModelState  from '../../../store/modelState'
+import modelState  from '../../../store/modelState'
 
 
 
 
 
 export default function SOQLPanel() {
-    const {sql} = useModelState((state) => state.sqlState);
+    const {sql} = modelState((state) => state.sqlState);
     return (
         <div className={css.container}>
             {sql}

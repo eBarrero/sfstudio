@@ -5,9 +5,7 @@ interface ViewState {
     currentView: string;
     componentShowed?: string;
     dialogStack: string[];
-    commandState:string; 
-    command: string;
-    setCommand: (newCommand: string | null) => void;
+
     setCurrentView: (newView: string) => void;
     setComponentShowed: (componentName: string) => void;
     reSetComponentShowed: () => void;
@@ -15,7 +13,7 @@ interface ViewState {
     popDialog: () => void;
 }
 
-const useViewState = create<ViewState>((set, get) => {
+const viewState = create<ViewState>((set, get) => {
     return  {
         currentView: 'INIT',
         dialogStack: [],
@@ -54,4 +52,4 @@ const useViewState = create<ViewState>((set, get) => {
 
 });   
 
-export default useViewState;
+export default viewState;

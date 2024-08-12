@@ -3,8 +3,8 @@ import css from './local.module.css'
 import DataTime from '../../../constants/DataTime';
 import OptionList from '../OptionList';
 import { useTranslation } from 'react-i18next';
-import  useModelState  from '../../../store/modelState';  
-import useViewState from '../../../store/viewState';
+import  modelState  from '../../../store/modelState';  
+import viewState from '../../../store/viewState';
 
 
 
@@ -42,7 +42,7 @@ interface WhereProps {
 
 
 const Where = (props:WhereProps) => {
-    const { addWhere } = useModelState();
+    const { addWhere } = modelState();
     const { fieldApiName } = props.fieldId;
     const { t } = useTranslation(); 
     const [typeDataTime, setTypeDataTime] = useState(0);
@@ -143,7 +143,7 @@ interface TitleBarProps {
 }
 
 const TitleBar = (props:TitleBarProps) => {
-    const popDialog =  useViewState().popDialog;
+    const popDialog =  viewState().popDialog;
     const {title} = props;
     return (
         <div className={css.titleBar}>

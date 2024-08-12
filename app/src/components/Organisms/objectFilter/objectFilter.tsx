@@ -1,8 +1,8 @@
 import css from './style.module.css';
 import { GridTable, GridTableRow } from "../../atoms/GridTable";
 import { objectFilterOptions } from "../../../constants/filters";
-import useDataState            from "../../../store/dataState";
-import useModelState           from '../../../store/modelState';
+import dataState            from "../../../store/dataState";
+import modelState           from '../../../store/modelState';
 import { useTranslation } from 'react-i18next';
 
 
@@ -12,8 +12,8 @@ import { useTranslation } from 'react-i18next';
 
 
 const ObjectFilter = () => {
-    const { sObjectsFilter, setObjectFilter } = useDataState();
-    const { state } = useModelState();
+    const { sObjectsFilter, setObjectFilter } = dataState();
+    const { state } = modelState();
     const { t } = useTranslation();
 
     function onActionRowHandle(rowId: string, action: string) {

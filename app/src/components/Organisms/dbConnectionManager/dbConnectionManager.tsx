@@ -1,30 +1,21 @@
-import { useEffect } from 'react';
-import useSessionState from './../../../store/sessionState';
-import useViewState from '../../../store/viewState';
-import useMoldeState   from './../../../store/modelState';
-import useDataState from '../../../store/dataState';
+import {cmd_Login} from "../../../constants/application";
+import sessionState from "../../../store/sessionState";
+import applicationState from "../../../store/applicationState";
 
 
 
 
 const DBConnectionManager = () => {
-    const { loadSchema } = useDataState();
-    const { publicSession, loginSFDC } = useSessionState();
-    const { setCurrentView } = useViewState();
-    const { setOrg } = useMoldeState();
+    const { doCommand } = applicationState();    
+    const { publicSession} = sessionState();
 
-    useEffect(() => { 
-        if (publicSession.connections.length === 0) return;
-        setOrg(publicSession.connections[0].name);
-        loadSchema(publicSession.connections[0].name);
-        setCurrentView('MAIN');
-    }, [publicSession]);
+    const onClikHandler = (cmd:CommandDefinition) => () => { 
+        doCommand(cmd);
+    }
 
-    
     return (
-
         <div>
-            <button onClick={loginSFDC}>Connect</button>
+            <button onClick={onClikHandler(cmd_Login)}>Connect</button>
             {publicSession.connections && publicSession.connections.map((c, i) => {
                 return (
                     <div key={i}>

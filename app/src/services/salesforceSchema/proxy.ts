@@ -70,7 +70,6 @@ export default class Proxy {
                 }
             }
             if (valueFilter !== undefined && valueFilter !== null &&  valueSObject !== valueFilter) return false;
-            
         }
         return true;
     }

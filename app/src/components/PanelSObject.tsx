@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Controller} from '../services/salesforceSchema/proxy';
-import { useModelState } from '../store/modelState';
+import { modelState } from '../store/modelState';
 import { GridTable, GridTableCell, GridTableRow } from './atoms/GridTable';
 import SOQLPanel from './organisms/SOQLPanel/SOQLPanel';
 import { SalesforceFieldEnum } from '../constants/Fields';
 
 
 export default function PanelSObject () {
-    const {appState,  showReference, showRelataionByApiName, doAction, pushDialog    } = useModelState(); 
+    const {appState,  showReference, showRelataionByApiName, doAction, pushDialog    } = modelState(); 
     const {orgSfName, sObjectIndex} = appState;
     const [fields, setFields] = useState<GetFieldsIndex[]>([]);
     const [relationShip, setRelationShip] = useState<GetChildRelationships[]>([]);

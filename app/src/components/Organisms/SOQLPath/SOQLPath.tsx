@@ -1,10 +1,10 @@
 import css from './style.module.css'
-import useModelState from '../../../store/modelState'
+import modelState from '../../../store/modelState'
 import SmartLabel from '../../atoms/SmartLabel/smartLabel';
 
 
 const SOQLPath = () => {
-    const {queryState, showByqueryElemntsIndex} = useModelState();
+    const {queryState, showByqueryElemntsIndex} = modelState();
 
     function onActionHandler(action: string) {
         showByqueryElemntsIndex(parseInt(action));

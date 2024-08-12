@@ -1,15 +1,15 @@
 import { useEffect } from 'react';
 
 //import './App.css'
-import useSessionState  from './store/sessionState.ts';
-import useViewState     from './store/viewState.ts'
+import sessionState  from './store/sessionState.ts';
+import viewState     from './store/viewState.ts'
 import HomePage from './components/pages/homePage/homepage.tsx';
 import DateTime from './components/organisms/FieldDialog/DateTime';
 
 
 function App() {
-const { createSession } = useSessionState();
-const { dialogStack } = useViewState();
+const { createSession } = sessionState();
+const { dialogStack } = viewState();
 useEffect(() => {createSession()},[]);
   return (
     <>

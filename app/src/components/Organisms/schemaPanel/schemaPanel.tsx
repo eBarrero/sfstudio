@@ -1,14 +1,14 @@
 import css  from  './style.module.css';
-import useModelState            from '../../../store/modelState';
-import useViewState             from '../../../store/viewState';
-import useDataState             from '../../../store/dataState';
+import modelState            from '../../../store/modelState';
+import viewState             from '../../../store/viewState';
+import dataState             from '../../../store/dataState';
 import ObjectFilter             from '../objectFilter/objectFilter';
 
 export default function SObjectsPanel() {
     
-    const {state, setSObject} = useModelState();
-    const {currentView, componentShowed, setCurrentView} = useViewState();
-    const {sobjects } = useDataState();
+    const {state, setSObject} = modelState();
+    const {currentView, componentShowed, setCurrentView} = viewState();
+    const {sobjects } = dataState();
  
     function setObject(sObjectIndex: number) {
         setCurrentView('sobject');

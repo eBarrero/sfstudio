@@ -69,7 +69,7 @@ interface DataState {
     loadChildRelationships: (orgSfName: SchemaName, objectIndex: SObjectLocalId) => void ;   // It retrieves the child relationships of a Salesforce object based on the provided index. 
 }
 
-const useDataState = create<DataState>((set, get) => {
+const dataState = create<DataState>((set, get) => {
     return  {
         action: 'GET_SCHEMA',
         sobjects:[],
@@ -136,4 +136,4 @@ function getTechnicalFealds(): GetFieldsIndex[] {
     ];
 }   
 
-export default useDataState;
+export default dataState;
