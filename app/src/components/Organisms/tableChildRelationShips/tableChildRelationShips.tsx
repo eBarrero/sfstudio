@@ -5,7 +5,7 @@ import modelState from '../../../store/modelState';
 
 
 export default function TableChildRelationShips() {
-    const { childRelationships, loadFields: getFields }  = dataState()
+    const { childRelationships, loadFields: getFields }  = dataState();
     const {showRelataionByApiName} = modelState();
 
     const onActionRowHandle = (rowId: string, action: string) => {

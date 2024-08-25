@@ -1,4 +1,10 @@
 {
+    "Error.Command_is_null": "Command is null",
+    "Error.WrongParam": "[on]/off/rm was expected instead of {{p0}}",
+    "CMD.generalError": "General error: {{p0}}",
+    "CMD.init.prod": "login to production",
+    "CMD.init.sandbox": "login to sandbox",
+    "CMD.not_Found": "Command not found",
     "Condition": "Condition",
 
     "DataTimeLiteral.Type": "Period types",
@@ -132,6 +138,32 @@
     "sObject.attribute.triggerable":"Specifies if triggers can be created for this sObject. Triggers allow custom logic to be executed when records are created, updated, or deleted.",
     "sObject.attribute.undeletable":"Indicates if records of this sObject can be undeleted. This is relevant for the Recycle Bin functionality.",
     "sObject.attribute.updateable":"Specifies if existing records of this sObject can be updated via the API.",
+    "sObject.filter.activateable":"Set [on]/off/rm to filter sObjects that can be activated.",
+    "sObject.filter.createable":"Set [on]/off/rm to filter sObjects that can be created.",
+    "sObject.filter.custom":"Set [on]/off/rm to filter custom sObjects.",
+    "sObject.filter.customSetting":"Set [on]/off/rm to filter custom settings.",
+    "sObject.filter.deletable":"Set [on]/off/rm to filter sObjects that can be deleted.",
+    "sObject.filter.deprecatedAndHidden":"Set [on]/off/rm to filter deprecated and hidden sObjects.",
+    "sObject.filter.feedEnabled":"Set [on]/off/rm to filter sObjects that support feeds.",
+    "sObject.filter.hasSubtypes":"Set [on]/off/rm to filter sObjects that have subtypes.",
+    "sObject.filter.isSubtype":"Set [on]/off/rm to filter sObjects that are subtypes.",
+    "sObject.filter.layoutable":"Set [on]/off/rm to filter sObjects that support layouts.",
+    "sObject.filter.mergeable":"Set [on]/off/rm to filter sObjects that can be merged.",
+    "sObject.filter.mruEnabled":"Set [on]/off/rm to filter sObjects that support MRU lists.",
+    "sObject.filter.queryable":"Set [on]/off/rm to filter sObjects that can be queried.",
+    "sObject.filter.replicateable":"Set [on]/off/rm to filter sObjects that support replication.",
+    "sObject.filter.retrieveable":"Set [on]/off/rm to filter sObjects that can be retrieved.",
+    "sObject.filter.searchable":"Set [on]/off/rm to filter sObjects that support search.",
+    "sObject.filter.triggerable":"Set [on]/off/rm to filter sObjects that can have triggers.",
+    "sObject.filter.undeletable":"Set [on]/off/rm to filter sObjects that can be undeleted.",
+    "sObject.filter.updateable":"Set [on]/off/rm to filter sObjects that can be updated.",
+
+
+
+
+    "field.filter.ALL_FIELDS":"Select ALL fields of the object",
+    "field.filter.STANDARD_FIELDS":"Select ALL Standard fields of the object",
+    "field.filter.CUSTOM_FIELDS":"Select ALL Custom fields of the object",
     "field.attribute.aggregatable":"Indicates if the field can be used in aggregate queries, such as SUM() and MAX().",
     "field.attribute.autoNumber":"Specifies if the field is an auto-number field, which automatically generates a unique identifier for each record.",
     "field.attribute.byteLength":"Specifies the maximum length of the field in bytes.",

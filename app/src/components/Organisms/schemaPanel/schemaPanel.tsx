@@ -15,9 +15,9 @@ export default function SObjectsPanel() {
         setSObject(sObjectIndex);
     }
 
-
+    
     return (
-        <article className={`${(currentView!=='MAIN')?'invisible':''} ${css.PanelSObjects}`}>
+        <article className={css.PanelSObjects}>
             {state.orgSfName!=='' && 
                 <>
                     <section>

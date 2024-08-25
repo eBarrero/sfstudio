@@ -9,6 +9,9 @@
   width: 100%;
   background-color: #1e1e1e;
   color: #fff;
+  font-family: system-ui, sans-serif;  
+  font-size: 0.8rem;
+
   
 
   .consoleHeader {
@@ -24,9 +27,20 @@
   .console_input {
     margin: 0;
   }
+  .warningOrError {
+    color: var(--color-error-text)
+  }
+  .commendOrHelp {
+    color: var(--color-commend-text)
+  }
   .consoleHistory {
-    display: flex;
-    flex-direction: column;
+    
+    border: none;
+    resize: vertical;
+    box-sizing:content-box;
+    overflow:auto;
+    
     gap: 0.5rem;
+
   }
 }

@@ -7,6 +7,13 @@ export enum IconCharacter  {
 }
 
 
+export const enum SelectAllFieldsEnum {
+  ALL = 'FIELDS(ALL)',
+  CUSTOM = 'FIELDS(CUSTOM)',
+  STANDARD = 'FIELDS(STANDARD)',
+} 
+
+
 export enum SalesforceFieldEnum {
   Id = "id",
   Address = "address",

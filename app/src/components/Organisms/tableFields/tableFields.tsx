@@ -1,11 +1,10 @@
-import { useEffect } from 'react';
 import css from './style.module.css';
 import constants from '../../constants';
 import { GridTable, GridTableCell, GridTableRow } from "../../atoms/GridTable";
 import { SalesforceFieldEnum } from "../../../constants/Fields";
 import dataState  from "../../../store/dataState";
 import modelState  from "../../../store/modelState";
-import { use } from 'i18next';
+
 
 
 
@@ -14,8 +13,8 @@ import { use } from 'i18next';
 
 
 export default function TableFields() {
-    const {state, currentSOQLFieldSelection, doAction, addReference} = modelState();
-    const {sObjectFields, loadFields, loadFieldsFromReference}  = dataState();
+    const {currentSOQLFieldSelection, doFieldAction: doAction, addReference} = modelState();
+    const {sObjectFields}  = dataState();
 
 
     const onActionRowHandle = (rowId: string, action: string) => {
@@ -27,36 +26,28 @@ export default function TableFields() {
         }        
         doAction(fieldLocalId, action); 
     }
-    useEffect(()=>{
-        console.log('TableFields useEffect' + state.action);
-        if (state.action==='sobject') {
-            console.log('object');    
-            loadFields(state.orgSfName, state.sObjectLocalId);
-            return;
-        }
-        console.log('loadFieldsFromReference');
-        loadFieldsFromReference(state.orgSfName, state.sObjectLocalId);
-    }, [state.orgSfName, state.sObjectLocalId]);
-
-    currentSOQLFieldSelection && currentSOQLFieldSelection.forEach((value, key) => { console.log(key + ' ' + value.isSelected) } ) 
-
-return (
-    <div className={css.grid}>
-        <GridTable
-        headerOff={true}
-        onActionRow={onActionRowHandle}
-        columns={[{label:'Type'},{label:'Field'}]}
-        data={sObjectFields.map((field):GridTableRow => ({
-            rowId:field.fieldLocalId.toString(), 
-            isSelected: currentSOQLFieldSelection && currentSOQLFieldSelection.get(field.fieldLocalId)?.isSelected,
-            data:[
-                parseTypeField(field), 
-                {label:`${field.sObjectApiName} - ${field.label}`} 
-            ]
-        }))}
-        />    
-    </div>
-);
+    
+    console.log("sObjectFields", sObjectFields.length);
+    return (
+        <div className={css.grid}>
+            <GridTable
+            headerOff={true}
+            onActionRow={onActionRowHandle}
+            columns={[{label:'Type'},{label:'Field'}]}
+            data={sObjectFields.map((field):GridTableRow => {
+                const itm = (currentSOQLFieldSelection.has(field.fieldLocalId))? currentSOQLFieldSelection.get(field.fieldLocalId) : undefined    
+                return {
+                rowId:field.fieldLocalId.toString(), 
+                checkDisabled: (itm===undefined)?false:itm.isSelectNotAlled,
+                isSelected: (itm===undefined)?false:itm.isSelected,
+                data:[
+                    parseTypeField(field), 
+                    {label:`${field.sObjectApiName} - ${field.label}`} 
+                ]}
+            })}
+            />    
+        </div>
+    );
 }
 
 

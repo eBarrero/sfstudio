@@ -1,6 +1,8 @@
 import {create} from 'zustand';
 import  Proxy  from '../services/salesforceSchema/proxy';
-
+import { allCommandsList, CONTEXT_LEVEL } from '../constants/application';
+import { objectFilterOptions } from '../constants/filters';
+import i18next from 'i18next';
 
 
 function objectsFilterInit(): SObjectsFilter {
@@ -57,6 +59,7 @@ interface DataState {
     childRelationships: GetChildRelationships[];   // It contains the list of child relationships of current sObject. Loaded from getChildRelationships() 
     sObjectsFilter: SObjectsFilter;                // It contains the filter to be applied to the sObjects
     fieldsFilter: FieldsFilter;                   // It contains the filter to be applied to the fields
+    dataLastErrorMessage: string;                  // It contains the last error message
 
     //getSchema: (orgSfName: string, filterSObject?: SchemaFilter) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
     loadSchema: (orgSfName: SchemaName) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
@@ -64,9 +67,11 @@ interface DataState {
     setObjectFilter:  (orgSfName: SchemaName, attrib: string, value: boolean|null) => void;  // set the filter value    
    
     loadFields: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void;              // It retrieves the fields of a Salesforce object based on the provided index. 
+    loadFieldsByName: (orgSfName: SchemaName, sObjectName: string, callBack: (sObjectLocalId: SObjectLocalId) => void) => void; // It retrieves the fields of a Salesforce object based on the provided name.
     setFieldFilterText: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchText: string) => void; // set the filter value
     loadFieldsFromReference: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void; // same as loadFields but without child relationships after Reference has been selected
     loadChildRelationships: (orgSfName: SchemaName, objectIndex: SObjectLocalId) => void ;   // It retrieves the child relationships of a Salesforce object based on the provided index. 
+    initializeData: () => void; // It initializes the dataState
 }
 
 const dataState = create<DataState>((set, get) => {
@@ -77,6 +82,7 @@ const dataState = create<DataState>((set, get) => {
         childRelationships:[],
         sObjectsFilter: objectsFilterInit(),
         fieldsFilter: fieldFilterInit(),
+        dataLastErrorMessage: '',
         loadSchema: (orgSfName: SchemaName) => {
             const f = get().sObjectsFilter;
             Proxy.getSObjectsAdapter(orgSfName, f).then((data) => {
@@ -90,6 +96,7 @@ const dataState = create<DataState>((set, get) => {
             get().loadSchema(orgSfName);
         },
         setObjectFilter: (orgSfName: SchemaName, attrib: string, value: boolean|null) => {
+            console.log('setObjectFilter', attrib, value);
             set({sObjectsFilter: {...get().sObjectsFilter, [attrib] :value    }} );
             get().loadSchema(orgSfName);
         },
@@ -100,13 +107,31 @@ const dataState = create<DataState>((set, get) => {
             Proxy.getFieldsAdapter(orgSfName, sObjectIndex, filter).then((data) => {
                 if (data!==null) {
                     set({
-                         sObjectFields:  getTechnicalFealds().concat(structuredClone(data)), 
+                         sObjectFields:  structuredClone(data), 
                          childRelationships: Proxy.getChildRelationships(orgSfName, sObjectIndex) 
                     });
                 }
             });       
         },
+        loadFieldsByName: (orgSfName: SchemaName, sObjectName: string, callBack: (sObjectLocalId: SObjectLocalId) => void)  => {
+            const id = Proxy.getSobjectIdByName(orgSfName, sObjectName);
+            if (id===null) { 
+                set({dataLastErrorMessage: `CMD.Object_not_found|${sObjectName}`});
+                return;
+            }
+
+            Proxy.getFieldsAdapter(orgSfName,  id, null).then((data) => {
+                if (data!==null) { 
+                    set({sObjectFields:  structuredClone(data)});
+                    callBack(id);
+                } else {
+                    console.log('CMD.Object_not_found', sObjectName);
+                    set({dataLastErrorMessage: `CMD.Object_not_found|${sObjectName}`}); 
+                }
+            }).catch((e) => { set({dataLastErrorMessage: `CMD.generalError|${(e as Error).message}`}) }); 
+        },
         setFieldFilterText: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchText: string) => {
+            console.log('setFieldFilterText', searchText);
             const filter = get().fieldsFilter;
             filter.searchText = searchText;
             set({fieldsFilter: filter});
@@ -121,19 +146,35 @@ const dataState = create<DataState>((set, get) => {
         },
 
         loadChildRelationships: (orgSfName: SchemaName, objectIndex: SObjectLocalId) => {
+            console.log('loadChildRelationships', orgSfName, objectIndex);
             const data = Proxy.getChildRelationships(orgSfName, objectIndex);
             if (data!==null) set({childRelationships: structuredClone(data)});            
+        },
+        initializeData: () => {
+            // Create the commands for the object filter
+            for (const key of objectFilterOptions) {
+                const cmdText = '.'+key.name;
+                allCommandsList.set(cmdText, {command: cmdText, description: 'sObject.filter.' + key.name, context:CONTEXT_LEVEL.ORG, 
+                    action: (orgSfName:string, commandText: string) => {
+                    get().setObjectFilter(orgSfName, key.name,  extractValue(commandText));
+                    }
+                });
+            }
         }
     }
 });
 
-
-function getTechnicalFealds(): GetFieldsIndex[] {
-    return [
-        {fieldLocalId: 1001, isTechnicalField: true, sObjectApiName: 'FIELDS(ALL)',      label: '', type: 'TECHNICAL_FIELD', length: 0, precision: 0, scale: 0, unique: false, custom: false, referenceTo: '', relationshipName:null},
-        {fieldLocalId: 1002, isTechnicalField: true, sObjectApiName: 'FIELDS(STANDARD)', label: '', type: 'TECHNICAL_FIELD', length: 0, precision: 0, scale: 0, unique: false, custom: false, referenceTo: '', relationshipName:null},
-        {fieldLocalId: 1003, isTechnicalField: true, sObjectApiName: 'FIELDS(CUSTOM)',   label: '', type: 'TECHNICAL_FIELD', length: 0, precision: 0, scale: 0, unique: false, custom: false, referenceTo: '', relationshipName:null},
-    ];
-}   
+function extractValue(commandText: string): boolean|null {
+    console.log('extractValue', commandText);
+    if (commandText===null) throw Error("Error.Command_is_null");
+    const [, valueString] = commandText.split(' ');
+    if (valueString===undefined || valueString==='on') return true; 
+    if (valueString==='off')  return false;
+    if (valueString==='rm')   return null;
+    throw Error(`Error.WrongParam|${valueString}`);
+    }
 
 export default dataState;
+
+
+

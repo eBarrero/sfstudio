@@ -1,4 +1,4 @@
-import {cmd_Login} from "../../../constants/application";
+
 import sessionState from "../../../store/sessionState";
 import applicationState from "../../../store/applicationState";
 
@@ -6,16 +6,16 @@ import applicationState from "../../../store/applicationState";
 
 
 const DBConnectionManager = () => {
-    const { doCommand } = applicationState();    
+    const { exeCommandFromUI } = applicationState();    
     const { publicSession} = sessionState();
 
-    const onClikHandler = (cmd:CommandDefinition) => () => { 
-        doCommand(cmd);
+    const onClikHandler = (cmd:string) => () => { 
+        exeCommandFromUI(cmd);
     }
 
     return (
         <div>
-            <button onClick={onClikHandler(cmd_Login)}>Connect</button>
+            <button onClick={onClikHandler('prod')}>Connect</button>
             {publicSession.connections && publicSession.connections.map((c, i) => {
                 return (
                     <div key={i}>

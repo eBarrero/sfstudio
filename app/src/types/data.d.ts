@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+
+
 type SchemaName = string;
 type SObjectApiName = string;
 type RelationshipName = string;
@@ -184,8 +186,8 @@ interface FieldsFilter {
 
 
 interface FieldId  {
-    fieldApiName: string;
-    fieldIndex: number;
+    fieldApiName: FieldApiName;
+    fieldIndex: FieldLocalId;
 }    
 
 interface SObjectId {
@@ -222,5 +224,6 @@ interface GetChildRelationships {
     relationshipName: string,
     fieldNameAPI: string,
 }
+
 
 

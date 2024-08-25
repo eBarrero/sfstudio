@@ -1,6 +1,7 @@
 import css from './style.module.css';
 import { GridTable, GridTableRow } from "../../atoms/GridTable";
 import { objectFilterOptions } from "../../../constants/filters";
+import applicationState from '../../../store/applicationState';
 import dataState            from "../../../store/dataState";
 import modelState           from '../../../store/modelState';
 import { useTranslation } from 'react-i18next';
@@ -12,13 +13,15 @@ import { useTranslation } from 'react-i18next';
 
 
 const ObjectFilter = () => {
-    const { sObjectsFilter, setObjectFilter } = dataState();
+    const { setCommand } = applicationState();
+    const { sObjectsFilter } = dataState();
     const { state } = modelState();
     const { t } = useTranslation();
 
     function onActionRowHandle(rowId: string, action: string) {
-        console.log('onRowActionHandle:' + action + ' [' + rowId + ']');
-        setObjectFilter(state.orgSfName,  rowId, (action==='TRUE')?true:(action==='FALSE')?false:null);
+        setCommand(`.${rowId} ${ (action==='TRUE')?'':(action==='FALSE')?'off':'rm' }`) ;
+        setCommand('Enter');
+        
     }
     
 

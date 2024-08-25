@@ -1,4 +1,4 @@
-import { Salesforce_SObject } from '../types';
+
 
 
 
@@ -9,8 +9,8 @@ export type FilterOption = {
 };
 
 export const objectFilterOptions: FilterOption[] = [
-  { name: 'activateable', description: 'Activatable' },
-  { name: 'createable', description: 'Creatable' },
+  { name: 'activateable', description: 'Activateable' },
+  { name: 'createable', description: 'Createable' },
   { name: 'custom', description: 'Custom' },
   { name: 'customSetting', description: 'Custom Setting' },
   { name: 'deletable', description: 'Deletable' },
@@ -29,3 +29,4 @@ export const objectFilterOptions: FilterOption[] = [
   { name: 'undeletable', description: 'Undeletable' },
   { name: 'updateable', description: 'Updateable' },
 ];
+

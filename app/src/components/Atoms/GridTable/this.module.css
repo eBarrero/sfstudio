@@ -29,7 +29,12 @@
     font-size: 1rem;
     text-align: center;
     vertical-align: text-top;
-    cursor: pointer;
+    > input {
+      cursor: pointer;
+    }
+    > input:disabled {
+      cursor:default;
+    }
 }
 
 .gridTableRow {
@@ -68,6 +73,7 @@
       color: turquoise;
       background-color: rgb(13, 13, 14) ;
     }
+
   }
 
   

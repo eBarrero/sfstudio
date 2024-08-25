@@ -61,7 +61,7 @@ export default class Proxy {
             const valueFilter =  filter[key as keyof SObjectsFilter];
             const valueSObject = sobject[key as keyof SObject];
             if (key === 'searchText') {
-                if (filter.searchText ==undefined && filter.searchText === '') {
+                if (!(filter.searchText)) {
                     continue;
                 } else {
                     const words=  filter.searchText.toUpperCase().split(' ');
@@ -80,7 +80,7 @@ export default class Proxy {
     // 3. Field object is numbered
     // 4. Child relationships are linked to the object index of the child object
     
-    public static async getFieldsAdapter(orgSfName: SchemaName, objectIndex: SObjectLocalId, filter: FieldsFilter) : Promise<GetFieldsIndex[]> {
+    public static async getFieldsAdapter(orgSfName: SchemaName, objectIndex: SObjectLocalId, filter: FieldsFilter | null) : Promise<GetFieldsIndex[]> {
         console.log(`getSObject orgSfName: "${orgSfName}" index: "${objectIndex}"`);
         
         if (!cache.has(orgSfName)) {
@@ -127,7 +127,7 @@ export default class Proxy {
             return new Promise((resolve) => resolve(result));
         } catch (error) {
             console.error(`******Unexpected error: ${(error as Error).message}`);
-            throw error;
+            throw new Error((error as Error).message);
         }
     }
 
@@ -137,13 +137,14 @@ export default class Proxy {
      * @param FieldsFilter - The filter used to filter the Salesforce fileds.
      * @returns true if the object matches the filter, false otherwise. 
      */
-    private static checkMatchFieldFilter(field: Fields, filter: FieldsFilter): boolean  {
+    private static checkMatchFieldFilter(field: Fields, filter: FieldsFilter | null): boolean  {
+        if (filter===null) return true;
         for (const key of Object.keys(filter)) {
             const valueFilter =  filter[key as keyof FieldsFilter];
             const valueField = field[key as keyof Fields];
             if (key === 'type') continue;
             if (key === 'searchText') {
-                if (filter.searchText === undefined || filter.searchText === '') {
+                if (!filter.searchText) {
                     continue;
                 } else {
                     const words=  filter.searchText.toUpperCase().split(' ');
@@ -193,7 +194,7 @@ export default class Proxy {
     }
 
 
-    public static getSobjectIdByName(orgSfName: string, name: string): SObjectId  {
+    public static getSobjectIdByName(orgSfName: string, name: string): SObjectLocalId | null {
         console.log(`getSobjectIdByName orgSfName: "${orgSfName}" name: "${name}"`);
         if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
@@ -203,7 +204,7 @@ export default class Proxy {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
         const result = sobjects.find((sobject) => sobject.name === name);
-        return {orgSfName, sObjectApiName: name, sObjectIndex: result!.localId!};
+        return (result===null || result===undefined)? null: result.sObjectLocalId!;
     }
 
 

@@ -1,13 +1,16 @@
 
 
 
+
 interface CommandDefinition  {
     command: string;
     description: string;
-    action: number;
-    parameters?: string[];
+    action: () => void;
     examples?: string[];
-  }
+    context: string;
+}
+
+
 
 
 type OperatorType = '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN' | 'NOT IN' | 'INCLUDES' | 'EXCLUDES' | string;
@@ -33,10 +36,12 @@ interface OrderBy {
   }
 
 type AggregateFunction = 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX' | 'COUNT_DISTINCT';
-type SelectAllFields = 'FIELDS(ALL)' | 'FIELDS(CUSTOM)' | 'FIELDS(STABDARD)';
+
+
+type SelectAllFields = SelectAllFieldsEnum.ALL | SelectAllFieldsEnum.CUSTOM | SelectAllFieldsEnum.STANDARD;
 
 type SelectClauseField = {
-    fields: FieldId;
+    fieldId: FieldId;
     alias?: string;
     aggregateFunction?: AggregateFunction
 }
@@ -47,31 +52,31 @@ type SelectClause = {
 }   
 
 
-type AggregatorQuery = fromObject & {
+interface AggregatorQuery  {
     groupBy: FieldId[];
     having: SimpleCondition[];
     havingLogic: (LogicalOperator | number )[];
 }
 
-type QueryElementAbstract ={
+interface QueryElementAbstract {
     type: 'ROOT' | 'SUBQUERY' | 'RELETED' ;
     sObjectId: SObjectId;
     parent: number;
-    selectClause?: SelectClause;
+    selectClause: SelectClause;
     where?: SimpleCondition[];
     whereLogic?: (LogicalOperator | number )[];
     orderBy?: OrderBy[];
     level: 0|1|2|3|4|number;                       // It indicates the level of the query element in the query max. 5. ROOT and SUBQUERY are always level 0
 }
 
-type PrimaryQuery = QueryElementAbstract & {
+interface PrimaryQuery extends QueryElementAbstract  {
     type: 'ROOT';
     aggregatorQuery?: AggregatorQuery;
     limit: number;
     offset?: number;
 }
 
-type NestedQuery = QueryElementAbstract & {
+interface NestedQuery extends QueryElementAbstract  {
     type: 'SUBQUERY';
     aggregatorQuery?: AggregatorQuery;
     limit: number;
@@ -79,25 +84,25 @@ type NestedQuery = QueryElementAbstract & {
     relationshipName: RelationshipName;
 }
 
-type ReletedObject = QueryElementAbstract & {
+interface ReletedObject extends QueryElementAbstract  {
     type: 'RELETED' ;
     relatedTo: RelationshipName ;
 }
 
 type QueryElement = PrimaryQuery | NestedQuery | ReletedObject;
-
 interface QueryState {
-    queryElemnts: QueryElement[]; 
-    indexCurrentElement: number;                                    // It indicates the index of the current element in the queryElemnts array
+    queryElemnts: QueryElement[];   // It contains the list of query elements
+    indexCurrentElement: number;    // It indicates the index of the current element in the queryElemnts array
+}
+interface SOQLFieldSelectionState {
+    isSelected: boolean;
+    isWhere: boolean;
+    isOrderBy: boolean;
+    isSelectNotAlled: boolean;
 }
 interface SQLState {        
     sql: string;
 }
 
 
-interface SOQLFieldSelectionState {
-    isSelected: boolean;
-    isWhere: boolean;
-    isOrderBy: boolean;
-}
 

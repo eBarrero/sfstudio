@@ -6,9 +6,9 @@ import SObjectPanel from '../../organisms/sObjectPanel/sObjectPanel';
 import viewState from '../../../store/viewState';
 import Console from '../../organisms/console/console';
 
-
+console.log('*****HomePage');
 const HomePage = () => {
-    const { currentView} = viewState();
+    const { currentView } = viewState();
 
     return (
             <main className={css.main}>
@@ -23,7 +23,7 @@ const HomePage = () => {
                 </aside>
                 <section className={css.panel_container}>
                     <section className={css.frame_editor}>
-                    <SchemaPanel/>
+                    {currentView==='org' && <SchemaPanel/> }
                     {currentView==='sobject' && <SObjectPanel/> }                        
                     </section>
                 </section>    

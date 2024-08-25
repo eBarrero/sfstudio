@@ -2,20 +2,20 @@ import css from './style.module.css';
 import SOQLPanel from "../SOQLPanel/SOQLPanel";
 import TableFields from "../tableFields/tableFields";
 import TableChildRelationShips from '../tableChildRelationShips/tableChildRelationShips';
-import modelState from '../../../store/modelState';
+import viewState from '../../../store/viewState';
 
 
 
 
 export default function SObjectPanel () {
-const action = modelState().state.action;
-
+const {currentView} = viewState();
+console.log('*****SObjectPanel', currentView);    
     return (
         <div>
             <SOQLPanel/>
             <div className={css.container}>
                 <TableFields/>
-                {(action === 'sobject') &&  <TableChildRelationShips/>}
+                {(currentView === 'sobject') &&  <TableChildRelationShips/>}
             </div>
         </div>
     );

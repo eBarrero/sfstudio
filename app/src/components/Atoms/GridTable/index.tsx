@@ -11,12 +11,7 @@ export interface GridTableCell {
     action?: string    
 } 
 
-export interface GridTableRow {
-    rowId: string
-    isSelected?: boolean
-    selectedValue?: string | number
-    data: GridTableCell[];
-}
+
 
 
 
@@ -40,11 +35,12 @@ export const GridTableHeader: React.FC<GridTableColumnsProps> = (props) => {
 
 interface GridTableCheckboxProps {
     checked: boolean;
+    disabled?: boolean;
     onSelect: (checked:boolean) => void;
 }
 
 export const GridTableCheckbox: React.FC<GridTableCheckboxProps> = (props) => {
-    const {checked, onSelect} = props;
+    const {checked, disabled, onSelect} = props;
 
     const chengeHandler = (e: { target: { checked: boolean; }; }):void => {
         onSelect(e.target.checked);
@@ -52,7 +48,7 @@ export const GridTableCheckbox: React.FC<GridTableCheckboxProps> = (props) => {
 
     return (   
         <div className={css.gridTableCheckbox}> 
-            <input type="checkbox"  checked={checked} onChange={chengeHandler} />
+            <input type="checkbox"  checked={checked} onChange={chengeHandler} disabled={disabled && disabled} />
         </div>
     )
 }
@@ -97,9 +93,17 @@ interface SelectValues {
     label: string;
 }
 
+export interface GridTableRow {
+    rowId: string
+    checkDisabled?: boolean
+    isSelected?: boolean
+    selectedValue?: string | number
+    data: GridTableCell[];
+}
 
 interface GridTableRowProps{
     selectable?: boolean;
+    checkDisabled?: boolean;
     isSelected?: boolean;
     selectedValue?: string | number;
     selectValues?: SelectValues[] | undefined;
@@ -110,7 +114,7 @@ interface GridTableRowProps{
 
 
 export const GridTableRow: React.FC<GridTableRowProps> = (props) => {
-    const {selectable, selectValues, selectedValue, isSelected, row, columns, onActionRow} = props;
+    const {selectable, selectValues, selectedValue, checkDisabled, isSelected, row, columns, onActionRow} = props;
 
     const changeSelectHandler = (checked:boolean):void => {
         onActionRow(row.rowId, (checked)? constants.SELECTED : constants.UNSELECTED);  
@@ -132,7 +136,7 @@ export const GridTableRow: React.FC<GridTableRowProps> = (props) => {
                  </select>
             }
             
-            {(selectable??true) && <GridTableCheckbox key={`${row.rowId}_c`}  checked={isSelected!} onSelect={changeSelectHandler}  />}    
+            {(selectable??true) && <GridTableCheckbox key={`${row.rowId}_c`}  checked={isSelected!}  disabled={checkDisabled} onSelect={changeSelectHandler}  />}    
             {row.data.map((item, index) => {
                 return <Cell key={`${row.rowId}_${index}`} 
                  onAcionHandler={onActiontHandler}
@@ -171,7 +175,7 @@ export const GridTable: React.FC<GridTableProps> = ({selectable, selectValues , 
                 </>
             )}
             {data.map((item) => {
-                return <GridTableRow key={item.rowId}  selectedValue={item.selectedValue}   selectValues={selectValues} selectable={selectable} isSelected={item.isSelected} row={item} columns={columns} onActionRow={onActionRowHandler} />
+                return <GridTableRow key={item.rowId}  selectedValue={item.selectedValue}  checkDisabled={item.checkDisabled} selectValues={selectValues} selectable={selectable} isSelected={item.isSelected} row={item} columns={columns} onActionRow={onActionRowHandler} />
             })}
 
         </div>

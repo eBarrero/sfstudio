@@ -1,4 +1,6 @@
 import {create} from 'zustand';
+import { allCommandsList, CONTEXT_LEVEL } from '../constants/application';
+
 
 
 interface ViewState {
@@ -11,6 +13,7 @@ interface ViewState {
     reSetComponentShowed: () => void;
     pushDialog: (newWindow: string) => void;
     popDialog: () => void;
+    initializeView: () => void;
 }
 
 const viewState = create<ViewState>((set, get) => {
@@ -18,7 +21,7 @@ const viewState = create<ViewState>((set, get) => {
         currentView: 'INIT',
         dialogStack: [],
         commandState: 'INIT',
-        command: '',
+        command: '',/*
         setCommand: (newCommand: string | null) => {
             if (newCommand === null || newCommand === '') {
                 set({commandState: 'INIT'});
@@ -30,12 +33,15 @@ const viewState = create<ViewState>((set, get) => {
                 set({commandState: 'FILTER'});
             }
             set({command: newCommand});
-        },
+        },*/
         setCurrentView: (newView: string) => {
             set({currentView: newView});
         },
         setComponentShowed: (componentName: string) => {
-            set({componentShowed: componentName});
+            console.log('setComponentShowed', componentName, get().componentShowed);
+
+            const newValue =  (get().componentShowed !== componentName)?componentName:undefined
+            set({componentShowed: newValue}) ;
         },
         reSetComponentShowed: () => {
             set({componentShowed: undefined});
@@ -48,8 +54,12 @@ const viewState = create<ViewState>((set, get) => {
             dialogArray.pop();
             set({dialogStack: dialogArray});
         },
+        initializeView: () => {
+            allCommandsList.set( '.filter', { command: '.filter', description: 'Filter the list of objects', context:CONTEXT_LEVEL.ORG,  action: () => { get().setComponentShowed('OBJECT_FILTER')}} );
+        }
     }
 
 });   
 
 export default viewState;
+

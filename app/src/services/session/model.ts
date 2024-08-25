@@ -22,6 +22,9 @@ import { loadSession } from './controller';
   }
 
   export function loginSFDC(): void {
-    window.location.href='/api/auth/login'
-    
+    window.location.href='/api/auth/login';
+  }
+
+  export function loginSandBox(): void {
+    window.location.href='/api/auth/test';
   }
