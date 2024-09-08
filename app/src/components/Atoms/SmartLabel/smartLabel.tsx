@@ -1,5 +1,5 @@
 import css  from './style.module.css'
-import SVGIcon from '../Icons/svgIcon';
+import SVGIcon from '../Icons/xsvgIcon';
 
 
 

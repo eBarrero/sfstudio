@@ -1,5 +1,5 @@
 import {create} from 'zustand';
-import { addCommand, VIEW_CMD } from '../constants/application';
+import { addCommand, VIEW_CMD } from '../core/commandManager';
 
 
 

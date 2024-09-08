@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {t} from '../utils/utils'
 import applicationState  from "./applicationState";
-import { CONTEXT_LEVEL}  from "../constants/application";
+import { CONTEXT_LEVEL}  from "../core/commandManager";
 import dataState from "./dataState";
 import modelState from "./modelState";
 import sessionState from "./sessionState";

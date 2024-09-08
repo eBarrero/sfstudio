@@ -1,6 +1,6 @@
 import css from './style.module.css'
 import DBConnectionManager from '../../organisms/dbConnectionManager/dbConnectionManager'; 
-import SOQLPath from '../../organisms/SOQLPath/soqlPath';
+import SOQLPath from '../../organisms/SOQLPath/xsoqlPath';
 import SchemaPanel from '../../organisms/schemaPanel/schemaPanel';
 import SObjectPanel from '../../organisms/sObjectPanel/sObjectPanel';
 import viewState from '../../../store/viewState';

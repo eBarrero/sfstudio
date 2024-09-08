@@ -1,8 +1,8 @@
 import {create} from 'zustand';
 import  Proxy  from '../services/salesforceSchema/proxy';
-import { addCommand,deleteCommand,CONTEXT_LEVEL } from '../constants/application';
-import { objectFilterOptions, fieldFilterOptions } from '../constants/filters';
-import { SalesforceFieldTypes } from '../constants/fields';
+import { addCommand,deleteCommand,CONTEXT_LEVEL } from '../core/commandManager';
+import { objectFilterOptions, fieldFilterOptions } from '../core/constants/filters';
+import { SalesforceFieldTypes } from '../core/constants/fields';
 
 
 

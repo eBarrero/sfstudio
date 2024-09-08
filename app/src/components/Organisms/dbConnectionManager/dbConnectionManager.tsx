@@ -1,7 +1,7 @@
 
 import sessionState from "../../../store/sessionState";
 import applicationState from "../../../store/applicationState";
-import {SESSION_CMD} from "../../../constants/application";
+import {SESSION_CMD} from "../../../core/commandManager";
 
 
 

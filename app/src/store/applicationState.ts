@@ -1,6 +1,6 @@
 
 import {create} from 'zustand';
-import { addCommand, searchCommand, readCommand, CONTEXT_LEVEL,APP_CMD } from '../constants/application';
+import { addCommand, searchCommand, readCommand, CONTEXT_LEVEL,APP_CMD } from '../core/commandManager';
 
 
 interface LocalAplicationState {

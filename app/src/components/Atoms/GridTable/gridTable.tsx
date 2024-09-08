@@ -1,6 +1,6 @@
 
 import css  from './this.module.css'
-import SVGIcon from '../Icons/svgIcon';
+import SVGIcon from '../Icons/xsvgIcon';
 import constants from '../../constants';
 
 export interface GridTableCell {

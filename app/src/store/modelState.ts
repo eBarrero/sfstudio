@@ -1,8 +1,8 @@
 import {create} from 'zustand';
 import { modelReader } from '../services/salesforceSchema/proxy';
 import constants from '../components/constants';
-import { addCommand, NODEL_CMD } from '../constants/application';
-import { SelectAllFieldsEnum } from "../constants/fields";
+import { addCommand, NODEL_CMD } from '../core/commandManager';
+import { SelectAllFieldsEnum } from "../core/constants/fields";
 
 
 

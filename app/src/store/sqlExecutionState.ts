@@ -1,5 +1,5 @@
 import {create} from 'zustand';
-import { addCommand,CONTEXT_LEVEL, SOQL_CMD } from '../constants/application';
+import { addCommand,CONTEXT_LEVEL, SOQL_CMD } from '../core/commandManager';
 import  Proxy  from '../services/salesforceSchema/proxy';
 import { salesforceJsontoInlineJson, inlineJsonToArray} from '../utils/inlineJson'
 
