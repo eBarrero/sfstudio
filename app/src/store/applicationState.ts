@@ -1,47 +1,43 @@
 
 import {create} from 'zustand';
-import { allCommandsList, CONTEXT_LEVEL } from '../constants/application';
+import { addCommand, searchCommand, readCommand, CONTEXT_LEVEL,APP_CMD } from '../constants/application';
+
 
 interface LocalAplicationState {
-    context_level: string;
+    context_level: CONTEXT_LEVEL; // Update the type here
     currentCommand:string; 
-    lastCommand: string;
-    command?: CommandDefinition;
-    commandConfirmed?: CommandDefinition;
+    filterConfirmed: string;         
+    command?: CommandImplementation;
+    commandConfirmed?: CommandImplementation
     errorState?: string;
     helpOnLine?: string;
-    suggestions: string;
+    suggestions: string[];
 }
 
 interface ApplicationState extends LocalAplicationState {
     setFilter: (newFilter: string) => void;
-    setContextLevel: (newContext: string) => void;
+    setContextLevel: (newContext: CONTEXT_LEVEL) => void;
     setCommand: (newCommand: string | null) => void;    
     exeCommand: (newCommand: string) => void;
     exeCommandFromUI: (newCommand: string) => void;
-    
-    
+    initializeApp: () => void;
 }
-
-
-
-
 
 const applicationState = create<ApplicationState>((set, get) => {
     return  {
         context_level: CONTEXT_LEVEL.INIT,
         currentCommand: '',
-        lastCommand:'',
-        suggestions:'',
-        setContextLevel: (newContext: string) => {
+        filterConfirmed:'',
+        suggestions:[],
+        setContextLevel: (newContext: CONTEXT_LEVEL) => {
             if (newContext !== get().context_level) {
                 const newState: LocalAplicationState = {
                     context_level: newContext, 
                     currentCommand: '', 
                     helpOnLine:'',  
-                    lastCommand: '', 
+                    filterConfirmed: '', 
                     errorState: undefined, 
-                    suggestions:'', 
+                    suggestions:[], 
                     command: undefined};
                 set(newState);
             }
@@ -53,7 +49,7 @@ const applicationState = create<ApplicationState>((set, get) => {
         },
         setCommand: (newCommand: string | null) => {
             if (newCommand === null || newCommand === '') {
-                set({currentCommand: ''});
+                set({currentCommand: '', commandConfirmed: undefined,helpOnLine:'',  suggestions:[]});
                 return;
             }
             
@@ -61,53 +57,53 @@ const applicationState = create<ApplicationState>((set, get) => {
                 get().setFilter(newCommand);
                 return;
             }
+            console.log('setCommand:'+ newCommand + ':');  
 
-
-            const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  lastCommand: '', errorState: undefined, suggestions:'', command: undefined};            
+            const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  filterConfirmed: '', errorState: undefined, suggestions:[], command: undefined};            
             const firstWord = newCommand.split(' ')[0];
-            if (allCommandsList.has(firstWord)) {
-                const command = allCommandsList.get(firstWord)!;
+            const secondWord = newCommand.split(' ')[1] ?? '';
+            const {commandNameList, commandImplementation} = searchCommand(firstWord, newState.context_level);
+            if (commandNameList.length === 0) {
+                newState.errorState = 'CMD.not_Found';
+            } else if (commandNameList.length === 1) {
+                const command = commandImplementation!;
                 newState.helpOnLine = command.description;
                 newState.command  = command;
-            } else {
-                for (const key of allCommandsList.keys()) {
-                    if (key.startsWith(firstWord) && allCommandsList.get(key)!.context === get().context_level) {
-                        newState.suggestions = key;
-                        break;
-                    }
-                }
-                if (newState.suggestions === '') {
-                    newState.errorState = 'CMD.not_Found';
-                }
+                newState.currentCommand = command.command + ' ' + secondWord;
+            } else  {
+                newState.suggestions = commandNameList  ;
             }
             set(newState);
         },
         exeCommand: (newCommand: string) => {
             if (!newCommand.startsWith('.'))  {
-                get().setFilter(newCommand);
+                set({ filterConfirmed: newCommand, currentCommand: ''});
                 return;
-            }          
-            const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  lastCommand: '', errorState: undefined, suggestions:'', command: undefined};            
+            }  
+
+            const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  filterConfirmed: '', errorState: undefined, suggestions:[], command: undefined};            
             if (get().command !== undefined) {
                 newState.commandConfirmed = get().command;
-                newState.currentCommand = '';
-                newState.lastCommand = get().currentCommand;                    
             } else {
                 newState.errorState = 'CMD.not_Found';
             }
             set(newState);              
         },
         exeCommandFromUI: (newCommand: string) => {
-            const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  lastCommand: '', errorState: undefined, suggestions:'', command: undefined};                        
-            if (allCommandsList.has(newCommand)) {
-                newState.commandConfirmed = allCommandsList.get(newCommand)!;
-                newState.currentCommand = '';
-                newState.lastCommand = newCommand;
+            const c = newCommand.trim();
+            const firstWord = c.split(' ')[0];
+            const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: c, helpOnLine:'',  filterConfirmed: '', errorState: undefined, suggestions:[], command: undefined};   
+            const command = readCommand(firstWord);                     
+            if (command !== undefined) {
+                newState.commandConfirmed = command;
             } else {
                 newState.errorState = 'CMD.not_Found';
             }             
             set(newState);
         },        
+        initializeApp: () => {
+            addCommand( { ...APP_CMD.BACK,  action: () => { get().setContextLevel(CONTEXT_LEVEL.ORG) }} );
+        }        
     }   
 });
 

@@ -14,38 +14,40 @@ export const enum SelectAllFieldsEnum {
 } 
 
 
-export enum SalesforceFieldEnum {
-  Id = "id",
-  Address = "address",
-  AutoNumber = "AutoNumber",
-  Formula = "Formula",
-  RollUpSummary = "RollUpSummary",
-  Lookup = "Lookup",
-  MasterDetail = "MasterDetail",
-  Checkbox = "Checkbox",
-  Currency = "Currency",
-  Date = "date",
-  DateTime = "datetime",
-  Double = "Double",
-  Email = "Email",
-  Geolocation = "Geolocation",
-  Number = "Number",
-  Percent = "Percent",
-  Phone = "Phone",
-  Picklist = "Picklist",
-  MultiselectPicklist = "MultiselectPicklist",
-  Text = "Text",
-  TextArea = "TextArea",
-  LongTextArea = "LongTextArea",
-  Reference = "reference",
-  RichTextArea = "RichTextArea",
-  URL = "url",
-  Time = "Time",
-  EncryptedText = "EncryptedText",
-  ExternalLookup = "ExternalLookup",
-  IndirectLookup = "IndirectLookup",
-  MetadataRelationship = "MetadataRelationship"
-}
+export const SalesforceFieldTypes = {
+  Id : "id",
+  Address : "address",
+  AutoNumber : "autoNumber",
+  RollUpSummary : "rollUpSummary",
+  Lookup : "lookup",
+  MasterDetail : "masterDetail",
+  Checkbox : "checkbox",
+  Currency : "currency",
+  Date : "date",
+  DateTime : "datetime",
+  Double : "double",
+  Email : "email",
+  Geolocation : "Geolocation",
+  Number : "number",
+  Percent : "percent",
+  Phone : "phone",
+  Picklist : "picklist",
+  MultiselectPicklist : "multiselectPicklist",
+  Text : "text",
+  TextArea : "textArea",
+  LongTextArea : "longTextArea",
+  Reference : "reference",
+  RichTextArea : "richTextArea",
+  URL : "url",
+  Time : "time",
+  EncryptedText : "encryptedText",
+  ExternalLookup : "externalLookup",
+  IndirectLookup : "indirectLookup",
+  MetadataRelationship : "metadataRelationship"
+} as const;
+
+
+
 
   export enum Operator  {
     Equals =  "=",

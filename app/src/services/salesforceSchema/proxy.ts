@@ -1,4 +1,4 @@
-import { getDescribe, getDescribeObject } from './controller'
+import { getDescribe, getDescribeObject, sendQuery } from './controller'
 import { ModelReader } from './modelReader'
 
 
@@ -94,6 +94,9 @@ export default class Proxy {
                 const data: SObject = await getDescribeObject(orgSfName, name!);
                 
                 if (data!==null) {
+                    // Set object local index and org
+                    data.sObjectLocalId = objectIndex;
+                    data.orgSfName = orgSfName;
                     // Numbers the fields for the current object
                     data.fields?.forEach((item: Fields, index: number) => item.fieldLocalId = index);
                     // mapFields is used to get the index of the field by name
@@ -103,17 +106,29 @@ export default class Proxy {
                     data.childRelationships?.forEach((item:ChildRelationships) => {
                         item.sObjectLocalId = modelReader.getSObjectLocalIdbyName(orgSfName, item.childSObject);
                     });
+                    // Update Lookup fields with the referenceTo field
+                    data.fields?.forEach((field) => {
+                        if (field.type === 'reference') {
+                            field.referenceToLocalId = [];
+                            field.referenceToLocalId[0] = modelReader.getSObjectLocalIdbyName(orgSfName, field.referenceTo[0]);
+                        }
+                    });
+                    sobject.childRelationships = structuredClone(data.childRelationships);
+                    sobject.fields =  structuredClone(data.fields);
                 }
-                sobject.fields =  structuredClone(data.fields);
-                sobject.childRelationships = structuredClone(data.childRelationships);
+                
+                
             } 
-
+            console.log("leido:" + sobject.fields?.length);
+            console.log(filter);
             const result: GetFieldsIndex[] = sobject.fields!
                 .filter((field) => this.checkMatchFieldFilter(field, filter)) 
                 .map((field): GetFieldsIndex => ({
+                    orgSfName: orgSfName,
+                    sObjectLocalId: objectIndex,
                     fieldLocalId: field.fieldLocalId, 
                     isTechnicalField: false,
-                    sObjectApiName: field.name, 
+                    fieldApiName: field.name, 
                     label: field.label, 
                     length: field.length, 
                     precision: field.precision, 
@@ -122,8 +137,10 @@ export default class Proxy {
                     custom: field.custom, 
                     type: field.type, 
                     referenceTo: field.referenceTo[0],
-                    relationshipName: field.relationshipName
+                    relationshipName: field.relationshipName,
+                    referenceToLocalId: field.referenceToLocalId
                 }));
+            console.log("leido:" + result.length);    
             return new Promise((resolve) => resolve(result));
         } catch (error) {
             console.error(`******Unexpected error: ${(error as Error).message}`);
@@ -142,15 +159,13 @@ export default class Proxy {
         for (const key of Object.keys(filter)) {
             const valueFilter =  filter[key as keyof FieldsFilter];
             const valueField = field[key as keyof Fields];
-            if (key === 'type') continue;
             if (key === 'searchText') {
-                if (!filter.searchText) {
-                    continue;
-                } else {
+                if (filter.searchText!==null) {
                     const words=  filter.searchText.toUpperCase().split(' ');
                     const matchs = words.filter((word) =>  field.name.toUpperCase().includes(word)).length;
                     if (matchs===undefined || matchs<words.length ) return false; else continue;
                 }
+                
             }           
             if (valueFilter !== undefined && valueFilter !== null &&  valueField !== valueFilter) return false;
         }
@@ -173,6 +188,7 @@ export default class Proxy {
         return sObject!.childRelationships!
             .filter((child) => child.relationshipName !== null)
             .map((child): GetChildRelationships => ({
+                orgSfName: orgSfName,
                 sObjectLocalId: child.sObjectLocalId,
                 childSObject: child.childSObject, 
                 relationshipName: child.relationshipName, 
@@ -190,7 +206,7 @@ export default class Proxy {
         if (!sobject) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
-        return  {orgSfName, sObjectIndex, fieldApiName: sobject.fields![fieldIndex].name, fieldIndex}; 
+        return  {fieldApiName: sobject.fields![fieldIndex].name, fieldIndex}; 
     }
 
 
@@ -203,7 +219,7 @@ export default class Proxy {
         if (!sobjects) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
-        const result = sobjects.find((sobject) => sobject.name === name);
+        const result = sobjects.find((sobject) => sobject.name.toUpperCase() === name.toUpperCase());
         return (result===null || result===undefined)? null: result.sObjectLocalId!;
     }
 
@@ -224,6 +240,11 @@ export default class Proxy {
         }
         return {...Proxy.getSobjectIdByName(orgSfName, field.referenceTo[0]), referenceName: field.relationshipName!};
         
+    }
+
+    public static async sendSoqlAdapter(orgSfName: string, query: string): Promise<string> {
+        console.log(`soqlAdapter orgSfName: "${orgSfName}" query: "${query}"`);
+        return await sendQuery(orgSfName, query);   
     }
 }
 

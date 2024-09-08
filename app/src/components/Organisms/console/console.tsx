@@ -13,14 +13,26 @@ const Console = () => {
 
     const handleCommandChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const inputValue = e.target.value;
-        setCommand(inputValue==='' ? null : inputValue);        
+        console.log('handleCommandChange', inputValue);
+        //setCommand(inputValue==='' ? null : inputValue);        
     }    
 
     const handleCommandKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        const inputValue = e.currentTarget.value;
+        let inputValue = e.currentTarget.value;
+        console.log('handleCommandKeyDown', e.key, inputValue);
         if (e.key === 'Enter' && inputValue !== '') {
             console.log('handleCommandKeyDown', e.key, inputValue);
             exeCommand(inputValue);
+            return
+        }
+        if (e.key === 'Backspace' && inputValue !== '' ) {
+            setCommand((inputValue[0]==='.') ? null : inputValue.slice(0, inputValue.length-1));        
+            return;
+        }
+
+        if (e.key.length==1) {
+            inputValue = inputValue + e.key;
+            setCommand(inputValue==='' ? null : inputValue);        
         }
     }
     
@@ -36,8 +48,9 @@ const Console = () => {
                 onKeyDown={handleCommandKeyDown}      
                        
             />
+            
             <datalist id="valores">
-                <option value={suggestions}>aaa</option>
+                {suggestions.map((suggestion, index) => { if (index < 10) return <option key={index} value={suggestion} />})}
             </datalist>
             
             <div className={css.warningOrError}>{lastError}</div>

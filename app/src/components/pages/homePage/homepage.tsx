@@ -5,6 +5,7 @@ import SchemaPanel from '../../organisms/schemaPanel/schemaPanel';
 import SObjectPanel from '../../organisms/sObjectPanel/sObjectPanel';
 import viewState from '../../../store/viewState';
 import Console from '../../organisms/console/console';
+import ResultSheet from '../../organisms/resultSheet/resultSheet';
 
 console.log('*****HomePage');
 const HomePage = () => {
@@ -24,7 +25,8 @@ const HomePage = () => {
                 <section className={css.panel_container}>
                     <section className={css.frame_editor}>
                     {currentView==='org' && <SchemaPanel/> }
-                    {currentView==='sobject' && <SObjectPanel/> }                        
+                    {currentView==='sobject' && <SObjectPanel/> }     
+                    {currentView==='SQL_RESULT' && <ResultSheet/> }                   
                     </section>
                 </section>    
             </main>

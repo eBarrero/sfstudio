@@ -15,39 +15,13 @@ const clientSecret= process.env.CLIENT_SECRET || '';
 const sessions = new Sessions();
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 app.use(cookieParser());
 
 
+
+
 app.get("/init", (req: Request, res: Response) => {
-    console.log(req.url);
-    const signInToken = req.cookies.id;
-    if (!signInToken) {
-        res.redirect("/#newsession" ); 
-        return;
-    } 
-
-    try {
-        const session = sessions.getSession(signInToken);
-        res.redirect("/#" + session.sessionStatus ); 
-    } catch(error) {       
-        if (error instanceof SessionError) {
-            res.cookie("id", sessions.signIn() , { httpOnly: true });
-            res.redirect("/#reseted" ); 
-        } else {
-            console.error('Error', (error as Error).message);
-            res.status(500).json(Error);
-            return
-        }
-    }
-
-
-    res.status(200)
-    
-});
-
-
-app.get("/init2", (req: Request, res: Response) => {
     console.log(req.url);
     const signInToken = req.cookies.id;
     if (!signInToken) {
@@ -104,7 +78,7 @@ app.get("/callback", async (req: Request, res: Response) => {
     }
 });
 
-app.get("/soql/:soql", (req: Request, res: Response) => {
+app.get("/soql/:orgSfName/:soql", (req: Request, res: Response) => {
     console.log(req.url);
     let signInToken = req.cookies.id;
     if (!signInToken) {
@@ -114,10 +88,11 @@ app.get("/soql/:soql", (req: Request, res: Response) => {
 
     try {
         const session = sessions.getSession(signInToken);
-        session.doSOQL(req.params.soql as string).then((result: any) => res.json(result)).catch((error: any) => res.status(404).json(error.message));
+        session.doSOQL(req.params.orgSfName, req.params.soql as string).then((result: any) => res.json(result)).catch((error: any) => res.status(404).json(error.message));
     } catch (error) {   
-        console.error('Error', (error as Error).message);
-        res.status(500).json(Error);
+        const sessionError = error as SessionError;
+        console.error('Error', sessionError.message);
+        res.status(sessionError.getErrorNumber()).json(sessionError.message);
     }
 
 });

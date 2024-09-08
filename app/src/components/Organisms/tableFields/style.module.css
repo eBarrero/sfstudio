@@ -8,5 +8,5 @@ grid-template-columns: 50px 1fr 4fr;
 grid-template-rows: repeat(auto-fill, minmax(22px, 1fr));
 
 gap: 1px;
-width: 50%;
+width: 100%;
 }

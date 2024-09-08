@@ -15,7 +15,7 @@ console.log('*****SObjectPanel', currentView);
             <SOQLPanel/>
             <div className={css.container}>
                 <TableFields/>
-                {(currentView === 'sobject') &&  <TableChildRelationShips/>}
+                <TableChildRelationShips/>}
             </div>
         </div>
     );

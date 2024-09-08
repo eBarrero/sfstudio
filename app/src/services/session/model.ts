@@ -1,11 +1,10 @@
-import { loadSession } from './controller';
+import { request,  URL_PATH } from './controller';
 
 
 
 
   export async function createSession(): Promise<PublicSesionDefinition>  {
-
-    const s = await loadSession();
+    const s = await request('init');
     console.log('createSession:' + s);
     if (s==='newsession') {
       return { currentConnection: 0, connections: [] };
@@ -22,9 +21,12 @@ import { loadSession } from './controller';
   }
 
   export function loginSFDC(): void {
-    window.location.href='/api/auth/login';
+    window.location.href=`${URL_PATH}auth/login`;
   }
 
   export function loginSandBox(): void {
-    window.location.href='/api/auth/test';
+    window.location.href=`${URL_PATH}auth/test`;
   }
+
+
+  

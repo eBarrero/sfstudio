@@ -1,34 +1,14 @@
 import {create} from 'zustand';
 import { modelReader } from '../services/salesforceSchema/proxy';
 import constants from '../components/constants';
-import {allCommandsList, CONTEXT_LEVEL} from '../constants/application';
+import { addCommand,CONTEXT_LEVEL, NODEL_CMD } from '../constants/application';
 import { SelectAllFieldsEnum } from "./../constants/Fields";
 
 import { init } from 'i18next';
 
 
 
-interface ModelState {
-    state: {
-        action: string;
-        orgSfName: SchemaName;
-        sObjectApiName: SObjectApiName;
-        sObjectLocalId: SObjectLocalId;
-    };
-    filerSObject?: SObjectsFilter
-    queryState: QueryState; // It contains the query elements: main quiery, subqueries and releted objects
-    currentSOQLFieldSelection: Map<FieldLocalId, SOQLFieldSelectionState>;  // It contains the fields selected in the current query. filled by createSOQLFieldSelection() fucntion
-    sqlState: SQLState;    // It contains the SQL statement to be executed
-    setOrg: (orgSfName: SchemaName) => void; 
-    setSObject: (sObjectLocalId:SObjectLocalId) => void;
-    addReference: (fieldIndex: FieldLocalId) => void; 
-    showRelataionByApiName: (sObjectApiName: string) => void;
-    showByqueryElemntsIndex: (index: number) => void;
-    doFieldAction: (fieldIndex: number, action: string) => void;
-    setSelectAllFields: (value: SelectAllFields) => void;
-    addWhere: (SimpleCondition: SimpleCondition) => void;
-    initializeModel: () => void;
-  } 
+
 
   const modelState = create<ModelState>((set, get) => {
     return  {
@@ -62,7 +42,7 @@ interface ModelState {
                 currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>                
             });
         },
-        addReference: (fieldIndex: FieldLocalId) => {
+        gotoLookup: (field: GetFieldsIndex) => {
             console.log('addReference');
             const orgSfName = get().state.orgSfName;
             
@@ -72,13 +52,13 @@ interface ModelState {
             const parentQuery = queryState.queryElemnts[indexCurrentElement];  // the current elemwnt is the parent of the new element
             const newlevel = (parentQuery as ReletedObject).level + 1;         // the new level is the parent level + 1 (max. 5) 
 
-            const field = modelReader.getField(orgSfName, parentQuery.sObjectId.sObjectLocalId, fieldIndex);
-            const sObjectLocalId = modelReader.getSObjectLocalIdbyName(orgSfName, field.referenceTo[0]);
+            
+            const sObjectLocalId = field.referenceToLocalId![0];
             const relatedObject : ReletedObject = {
                 sObjectId: {orgSfName, sObjectLocalId, sObjectApiName: field.referenceTo[0]}, 
                 parent: indexCurrentElement, 
                 type:'RELETED', 
-                relatedTo: field.relationshipName,
+                relatedTo: field.relationshipName!,
                 level: newlevel,
                 selectClause: {fields: []}  
             }
@@ -87,22 +67,32 @@ interface ModelState {
             set({state: {orgSfName, 
                          sObjectApiName:field.referenceTo[0], 
                          sObjectLocalId: sObjectLocalId, 
-                         action: 'releted_sobject'}, 
+                         action: 'quitar action'}, 
                  queryState, 
-                 sqlState: sqlState(queryState)
+                 sqlState: sqlState(queryState),
+                 currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>
 
             }); 
         },        
-        showRelataionByApiName: (sObjectApiName: SObjectApiName) => {
-            const appState = get().state;
-            //const sObjectId = Proxy.getSobjectIdByName(appState.orgSfName, sObjectApiName);
-
+        gotoChild: (child: GetChildRelationships) => {
+            const {orgSfName, sObjectLocalId, childSObject, relationshipName} = child;
+            
             const queryState = structuredClone(get().queryState); 
+            const newSubquery: NestedQuery = {
+                sObjectId: {orgSfName, sObjectLocalId, sObjectApiName: childSObject},
+                parent: 0,
+                type:'SUBQUERY',
+                level: 1,
+                selectClause: {fields: []},
+                relationshipName,
+                limit : 1
+            };
 
-            queryState.queryElemnts.push({sObjectId, parent: queryState.currentElement, limit: 1, type:'SUBQUERY'} as fromObject);
-
-            set({state: {orgSfName:appState.orgSfName, sObjectApiName:sObjectId.sObjectApiName, sObjectIndex: sObjectId.sObjectIndex, action: 'sobject'},
-                 queryState, sqlState: sqlState(queryState)
+            queryState.indexCurrentElement = queryState.queryElemnts.push(newSubquery) - 1;
+                
+            set({state: {orgSfName, sObjectApiName:childSObject, sObjectLocalId, action: 'sobject'},
+                 queryState, sqlState: sqlState(queryState),
+                 currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>
             });
         },
 
@@ -178,9 +168,9 @@ interface ModelState {
         },
         initializeModel: () => {
             // Create the commands for the field filter
-            allCommandsList.set('.Select_all_fields',      {command: '.Select_all_fields',      description: 'field.filter.ALL_FIELDS',      context:CONTEXT_LEVEL.OBJECT, action: () => { get().setSelectAllFields(SelectAllFieldsEnum.ALL); } });
-            allCommandsList.set('.Select_standard_fields', {command: '.Select_standard_fields', description: 'field.filter.STANDARD_FIELDS', context:CONTEXT_LEVEL.OBJECT, action: () => { get().setSelectAllFields(SelectAllFieldsEnum.STANDARD); } });
-            allCommandsList.set('.Select_custom_fields',   {command: '.Select_custom_fields',   description: 'field.filter.CUSTOM_FIELDS',   context:CONTEXT_LEVEL.OBJECT, action: () => { get().setSelectAllFields(SelectAllFieldsEnum.CUSTOM); } });
+            addCommand({...NODEL_CMD.SELECT_ALL_FIELDS ,     action: () => { get().setSelectAllFields(SelectAllFieldsEnum.ALL); } });
+            addCommand({...NODEL_CMD.SELECT_STANDARD_FIELDS, action: () => { get().setSelectAllFields(SelectAllFieldsEnum.STANDARD); } });
+            addCommand({...NODEL_CMD.SELECT_CUSTOM_FIELDS,   action: () => { get().setSelectAllFields(SelectAllFieldsEnum.CUSTOM); } });
 
         }
     }
@@ -241,7 +231,7 @@ function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFi
 
 function sqlState( queryState: QueryState  ): SQLState {
     const query = queryState.queryElemnts;
-    let sqlSelect = 'SELECT ';
+    let sqlSelect = '';
     let sqlFrom = 'FROM ';
     let sqlWhere = '';
     let sqlOrderBy = '';
@@ -256,20 +246,27 @@ function sqlState( queryState: QueryState  ): SQLState {
             const rootQuery = queryElemnt as PrimaryQuery;
             if (rootQuery.selectClause?.fieldsAll!==undefined) sqlSelect += `${rootQuery.selectClause?.fieldsAll} `;
             rootQuery.selectClause!.fields!.forEach((field) => {
-                sqlSelect += `${field.fieldId.fieldApiName} `;
+                if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
+                sqlSelect += `${field.fieldId.fieldApiName}`;
             });
             sqlFrom += `${rootQuery.sObjectId.sObjectApiName} `;
 
 
         } else if (queryElemnt.type === 'SUBQUERY') {
             const subQuery = queryElemnt as NestedQuery;
-            sqlSelect += '(SELECT ';
+            let subQuerySelect = '';
             subQuery.selectClause?.fields?.forEach((field) => {
-                sqlSelect += `${subQuery.relationshipName}.${field.fieldId.fieldApiName} `;
+                if (subQuerySelect === '')  subQuerySelect='SELECT '; else subQuerySelect += ', ';
+                subQuerySelect += `${field.fieldId.fieldApiName}`;
             });
+            subQuerySelect+= ` FROM ${subQuery.relationshipName} `;
+            if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
+            sqlSelect += `(${subQuerySelect}) `;
+
         } else if (queryElemnt.type === 'RELETED') {
             const reletedObject = queryElemnt as ReletedObject;
             reletedObject.selectClause?.fields?.forEach((field) => {
+                if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
                 sqlSelect += `${reletedObject.relatedTo}.${field.fieldId.fieldApiName} `;
             });            
         }

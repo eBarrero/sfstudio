@@ -1,7 +1,8 @@
 import {create} from 'zustand';
 import  Proxy  from '../services/salesforceSchema/proxy';
-import { allCommandsList, CONTEXT_LEVEL } from '../constants/application';
-import { objectFilterOptions } from '../constants/filters';
+import { addCommand,deleteCommand,CONTEXT_LEVEL } from '../constants/application';
+import { objectFilterOptions, fieldFilterOptions } from '../constants/filters';
+import { SalesforceFieldTypes } from '../constants/Fields';
 import i18next from 'i18next';
 
 
@@ -33,8 +34,8 @@ function objectsFilterInit(): SObjectsFilter {
 
 function fieldFilterInit(): FieldsFilter {
     return {
-        searchText:'',
-        type:               '',
+        searchText: null,
+        type:               null,
         aggregatable:       null,
         custom:             null,
         defaultedOnCreate:  null,
@@ -43,6 +44,7 @@ function fieldFilterInit(): FieldsFilter {
         encrypted:          null,
         externalId:         null,
         filterable:         null,
+        idLookup:           null,
         groupable:          null,
         nillable:           null,
         queryByDistance:    null,
@@ -52,27 +54,7 @@ function fieldFilterInit(): FieldsFilter {
 }
 
 
-interface DataState {  
-    action: string;                                // It indicates the action to be performed or it being performed
-    sobjects: GetSObjectsIndex[];                  // It contains the list of sObjects. Loaded from getSchema()
-    sObjectFields: GetFieldsIndex[];               // It contains the list of fields of current sObject. Loaded from getFields() 
-    childRelationships: GetChildRelationships[];   // It contains the list of child relationships of current sObject. Loaded from getChildRelationships() 
-    sObjectsFilter: SObjectsFilter;                // It contains the filter to be applied to the sObjects
-    fieldsFilter: FieldsFilter;                   // It contains the filter to be applied to the fields
-    dataLastErrorMessage: string;                  // It contains the last error message
 
-    //getSchema: (orgSfName: string, filterSObject?: SchemaFilter) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
-    loadSchema: (orgSfName: SchemaName) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
-    setObjectFilterText: (orgSfName: SchemaName, searchText: string) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
-    setObjectFilter:  (orgSfName: SchemaName, attrib: string, value: boolean|null) => void;  // set the filter value    
-   
-    loadFields: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void;              // It retrieves the fields of a Salesforce object based on the provided index. 
-    loadFieldsByName: (orgSfName: SchemaName, sObjectName: string, callBack: (sObjectLocalId: SObjectLocalId) => void) => void; // It retrieves the fields of a Salesforce object based on the provided name.
-    setFieldFilterText: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchText: string) => void; // set the filter value
-    loadFieldsFromReference: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void; // same as loadFields but without child relationships after Reference has been selected
-    loadChildRelationships: (orgSfName: SchemaName, objectIndex: SObjectLocalId) => void ;   // It retrieves the child relationships of a Salesforce object based on the provided index. 
-    initializeData: () => void; // It initializes the dataState
-}
 
 const dataState = create<DataState>((set, get) => {
     return  {
@@ -86,7 +68,7 @@ const dataState = create<DataState>((set, get) => {
         loadSchema: (orgSfName: SchemaName) => {
             const f = get().sObjectsFilter;
             Proxy.getSObjectsAdapter(orgSfName, f).then((data) => {
-                if (data!==null) set({sobjects: structuredClone(data)});
+                if (data!==null) set({sobjects: structuredClone(data), dataLastErrorMessage: data.length>0?'':"CMD.NO_OBJECTS"});
             });
         },
         setObjectFilterText: (orgSfName: SchemaName, searchText: string) => {
@@ -108,8 +90,12 @@ const dataState = create<DataState>((set, get) => {
                 if (data!==null) {
                     set({
                          sObjectFields:  structuredClone(data), 
-                         childRelationships: Proxy.getChildRelationships(orgSfName, sObjectIndex) 
+                         
+                         dataLastErrorMessage: '' 
                     });
+                } else {
+                    console.log('CMD.Object_not_found', sObjectIndex);
+                    set({dataLastErrorMessage: `CMD.Object_not_found|${sObjectIndex}`});
                 }
             });       
         },
@@ -122,8 +108,9 @@ const dataState = create<DataState>((set, get) => {
 
             Proxy.getFieldsAdapter(orgSfName,  id, null).then((data) => {
                 if (data!==null) { 
-                    set({sObjectFields:  structuredClone(data)});
+                    set({sObjectFields:  structuredClone(data), dataLastErrorMessage: ''});
                     callBack(id);
+                    get().createLookuoCommands(data);
                 } else {
                     console.log('CMD.Object_not_found', sObjectName);
                     set({dataLastErrorMessage: `CMD.Object_not_found|${sObjectName}`}); 
@@ -136,33 +123,109 @@ const dataState = create<DataState>((set, get) => {
             filter.searchText = searchText;
             set({fieldsFilter: filter});
             get().loadFields(orgSfName, sObjectIndex);
-        },        
-        loadFieldsFromReference: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
-            console.log('loadFieldsFromReference', orgSfName, sObjectIndex);
+        },    
+        setFieldFilterType: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchType: SalesforceFieldTypes) => {
+            console.log('setFieldFilterType', searchType);
             const filter = get().fieldsFilter;
-            Proxy.getFieldsAdapter(orgSfName, sObjectIndex, filter).then((data) => {
-                if (data!==null) set({sObjectFields:  structuredClone(data)});
+            filter.type = searchType;
+            set({fieldsFilter: filter});
+            get().loadFields(orgSfName, sObjectIndex);
+        },            
+        setFieldFilter: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, attrib: string, value: boolean|null) => {  
+            console.log('setFieldFilter', attrib, value);
+            set({fieldsFilter: {...get().fieldsFilter, [attrib] :value    }} );
+            get().loadFields(orgSfName, sObjectIndex);
+        },
+        loadFieldsFromLookup: (field: GetFieldsIndex) => {
+            console.log('loadFieldsFromLookup');
+            const {orgSfName, referenceToLocalId} = field;
+            Proxy.getFieldsAdapter(orgSfName, referenceToLocalId![0], null).then((data) => {
+                if (data!==null) { 
+                    set({sObjectFields:  structuredClone(data), fieldsFilter: fieldFilterInit(), dataLastErrorMessage: ''});
+                    get().createLookuoCommands(data);
+                }
             });       
         },
-
+        loadFieldsFromChild: (child: GetChildRelationships) => {
+            console.log('loadFieldsFromChild');
+            const {orgSfName, sObjectLocalId} = child;
+            set({fieldsFilter: fieldFilterInit()});
+            get().loadFields(orgSfName, sObjectLocalId);
+        },
         loadChildRelationships: (orgSfName: SchemaName, objectIndex: SObjectLocalId) => {
             console.log('loadChildRelationships', orgSfName, objectIndex);
             const data = Proxy.getChildRelationships(orgSfName, objectIndex);
-            if (data!==null) set({childRelationships: structuredClone(data)});            
+            if (data!==null) {
+                get().createChildRelationshipsCommands(data);
+                set({childRelationships: structuredClone(data)});            
+            }
         },
+
         initializeData: () => {
             // Create the commands for the object filter
             for (const key of objectFilterOptions) {
                 const cmdText = '.'+key.name;
-                allCommandsList.set(cmdText, {command: cmdText, description: 'sObject.filter.' + key.name, context:CONTEXT_LEVEL.ORG, 
-                    action: (orgSfName:string, commandText: string) => {
-                    get().setObjectFilter(orgSfName, key.name,  extractValue(commandText));
+                addCommand({command: cmdText, description: 'sObject.filter.' + key.name, context:CONTEXT_LEVEL.ORG, 
+                        action: (actionParams: AcctionParams) => {
+                            const {model,  application} = actionParams;
+                            get().setObjectFilter(model.state.orgSfName, key.name,  extractValue(application.currentCommand));
+                        }
+                });
+            }
+            // Create the commands for the field filter
+            for (const key of fieldFilterOptions) {
+                const cmdText = '.'+key.name;
+                addCommand({command: cmdText, description: 'field.filter.' + key.name, context:CONTEXT_LEVEL.OBJECT, 
+                    action: (actionParams: AcctionParams) => {
+                        const {model,  application} = actionParams;
+                        get().setFieldFilter(model.state.orgSfName, model.state.sObjectLocalId , key.name,  extractValue(application.currentCommand));
+                    }
+                });
+            }
+            // Create the commands for the field filter (field types)
+            for (const key of Object.values(SalesforceFieldTypes)) {
+                const cmdText = '.type.'+key;
+                addCommand({command: cmdText, description: 'field.filter.type.' + key, context:CONTEXT_LEVEL.OBJECT, 
+                    action: (actionParams: AcctionParams) => {
+                        const {model} = actionParams;
+                    get().setFieldFilterType(model.state.orgSfName, model.state.sObjectLocalId,  key);
+                    }
+                });
+            }
+        },
+        createLookuoCommands: (data: GetFieldsIndex[]): void => {
+            deleteCommand('.lookup');
+            for (const field of data) {
+                const cmdText = '.lookup_'+field.fieldApiName;
+                if (field.type!==SalesforceFieldTypes.Reference) continue;
+                addCommand({command: cmdText, description: 'field.go.lookup', context:CONTEXT_LEVEL.OBJECT, 
+                    action: (actionParams: AcctionParams) => {
+                        const {model} = actionParams;
+                        get().loadFieldsFromLookup(field);
+                        model.gotoLookup(field);
+                    }
+                });
+            }
+        },
+        createChildRelationshipsCommands: (childs: GetChildRelationships[]): void => {
+            deleteCommand('.child_');
+            for (const child of childs) {
+                const cmdText = '.child_'+ child.childSObject;
+                addCommand({command: cmdText, description: 'field.go.child', context:CONTEXT_LEVEL.OBJECT, 
+                    action: (actionParams: AcctionParams ) => {
+                        const {model} = actionParams;
+                        get().loadFieldsFromChild(child);
+                        model.gotoChild(child);
                     }
                 });
             }
         }
+
     }
 });
+
+
+
 
 function extractValue(commandText: string): boolean|null {
     console.log('extractValue', commandText);

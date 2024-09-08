@@ -1,9 +1,10 @@
 import css from './style.module.css';
 import constants from '../../constants';
 import { GridTable, GridTableCell, GridTableRow } from "../../atoms/GridTable";
-import { SalesforceFieldEnum } from "../../../constants/Fields";
+import { SalesforceFieldTypes } from "../../../constants/Fields";
 import dataState  from "../../../store/dataState";
 import modelState  from "../../../store/modelState";
+import applicationState from '../../../store/applicationState';
 
 
 
@@ -13,46 +14,51 @@ import modelState  from "../../../store/modelState";
 
 
 export default function TableFields() {
-    const {currentSOQLFieldSelection, doFieldAction: doAction, addReference} = modelState();
+    const {currentSOQLFieldSelection, doFieldAction, addReference} = modelState();
     const {sObjectFields}  = dataState();
-
+    const { exeCommandFromUI} = applicationState();
 
     const onActionRowHandle = (rowId: string, action: string) => {
         console.log('onRowActionHandle:' + action + ' [' + rowId + ']');
-        const fieldLocalId = parseInt(rowId);
+        const fieldLocalId = parseInt(rowId.split('|')[0]);
+        const index = parseInt(rowId.split('|')[1]);
         if (action===constants.GOTO_REFERENCE) { 
-            addReference(fieldLocalId);
-            return
+            console.log('addReference', sObjectFields[index].fieldApiName);
+            exeCommandFromUI('.lookup_' + sObjectFields[index].fieldApiName);
+            return;
         }        
-        doAction(fieldLocalId, action); 
+        doFieldAction(fieldLocalId, action); 
     }
     
     console.log("sObjectFields", sObjectFields.length);
     return (
-        <div className={css.grid}>
-            <GridTable
-            headerOff={true}
-            onActionRow={onActionRowHandle}
-            columns={[{label:'Type'},{label:'Field'}]}
-            data={sObjectFields.map((field):GridTableRow => {
-                const itm = (currentSOQLFieldSelection.has(field.fieldLocalId))? currentSOQLFieldSelection.get(field.fieldLocalId) : undefined    
-                return {
-                rowId:field.fieldLocalId.toString(), 
-                checkDisabled: (itm===undefined)?false:itm.isSelectNotAlled,
-                isSelected: (itm===undefined)?false:itm.isSelected,
-                data:[
-                    parseTypeField(field), 
-                    {label:`${field.sObjectApiName} - ${field.label}`} 
-                ]}
-            })}
-            />    
-        </div>
+        <section>
+            <h2>Fields</h2>
+            <div className={css.grid}>
+                <GridTable
+                headerOff={true}
+                onActionRow={onActionRowHandle}
+                columns={[{label:'Type'},{label:'Field'}]}
+                data={sObjectFields.map((field, index):GridTableRow => {
+                    const itm = (currentSOQLFieldSelection.has(field.fieldLocalId))? currentSOQLFieldSelection.get(field.fieldLocalId) : undefined    
+                    return {
+                    rowId:field.fieldLocalId.toString() + '|' + index.toString(), 
+                    checkDisabled: (itm===undefined)?false:itm.isSelectNotAlled,
+                    isSelected: (itm===undefined)?false:itm.isSelected,
+                    data:[
+                        parseTypeField(field), 
+                        {label:`${field.fieldApiName} - ${field.label}`} 
+                    ]}
+                })}
+                />    
+            </div>
+        </section>
     );
 }
 
 
 const parseTypeField = (field: GetFieldsIndex):GridTableCell => {
-    if (field.type===SalesforceFieldEnum.Reference)
+    if (field.type===SalesforceFieldTypes.Reference)
         return {
             iconType : '1to1',
             tooltip : 'go to reference',

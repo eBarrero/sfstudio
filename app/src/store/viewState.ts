@@ -1,5 +1,5 @@
 import {create} from 'zustand';
-import { allCommandsList, CONTEXT_LEVEL } from '../constants/application';
+import { addCommand, VIEW_CMD } from '../constants/application';
 
 
 
@@ -40,8 +40,8 @@ const viewState = create<ViewState>((set, get) => {
         setComponentShowed: (componentName: string) => {
             console.log('setComponentShowed', componentName, get().componentShowed);
 
-            const newValue =  (get().componentShowed !== componentName)?componentName:undefined
-            set({componentShowed: newValue}) ;
+            //const newValue =  (get().componentShowed !== componentName)?componentName:undefined
+            set({componentShowed: componentName}) ;
         },
         reSetComponentShowed: () => {
             set({componentShowed: undefined});
@@ -55,7 +55,7 @@ const viewState = create<ViewState>((set, get) => {
             set({dialogStack: dialogArray});
         },
         initializeView: () => {
-            allCommandsList.set( '.filter', { command: '.filter', description: 'Filter the list of objects', context:CONTEXT_LEVEL.ORG,  action: () => { get().setComponentShowed('OBJECT_FILTER')}} );
+            addCommand({ ...VIEW_CMD.FILTER, action: () => { get().setComponentShowed('OBJECT_FILTER')}} );
         }
     }
 

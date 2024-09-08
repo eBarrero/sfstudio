@@ -22,6 +22,24 @@ async function request(url: string): Promise<any | null>  {
     }
 }
 
+async function requestWithOutCache(url: string): Promise<any | null>  {
+    console.log('fetching data' + url);
+    try {
+        const res = await fetch(url);
+        if (!res.ok) {
+         console.log('error' + res.statusText);   
+          throw new RequestError(res, res.statusText);
+        }
+        const json = await res.json();
+        return json;
+    } catch (error) {
+        if (error instanceof Error) {
+            console.error(`Unexpected error: ${(error as Error).message}`);
+        }
+        throw error;
+    }
+}
+
 
 export  async function  getDescribe(orgSfName: string): Promise<any | null> {
     const url = `/api/describeGlobal/${orgSfName}`;
@@ -51,3 +69,27 @@ export async function getDescribeObject(orgSfName: string, sObject: string): Pro
     }
     
 }
+
+export async function sendQuery(orgSfName: string,  query: string): Promise<any | null> {    
+    const url = `/api/soql/${orgSfName}/${toBase64UrlSafe(query)}`;
+
+    try {
+        const newResult = await requestWithOutCache(url);
+        
+        return newResult;
+    } catch (error) {
+        console.error(`Unexpected error: ${(error as Error).message}`);
+        throw error;
+    }
+}
+
+
+function toBase64UrlSafe(str: string):string {
+    console.log('toBase64UrlSafe' + str);
+    const base64 = btoa(str);
+    return base64
+      .replace(/\+/g, '-') // replace + con -
+      .replace(/\//g, '_') // replace / con _
+      .replace(/=+$/, ''); // remove padding caracter '='
+  }
+

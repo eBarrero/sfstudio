@@ -1,10 +1,9 @@
 import {create} from 'zustand';
-import { allCommandsList, CONTEXT_LEVEL } from '../constants/application';
+import { addCommand,CONTEXT_LEVEL, SESSION_CMD } from '../constants/application';
 import { createSession, loginSFDC, loginSandBox } from '../services/session/model';
 
 
 interface SessionState {
-    sessionStatus: string;
     publicSession: PublicSesionDefinition;
     createSession: () => void;
     loginSFDC: () => void;
@@ -14,7 +13,6 @@ interface SessionState {
 
 const sessionState = create<SessionState>((set, get) => {
     return  {
-        sessionStatus: CONTEXT_LEVEL.INIT,
         publicSession: { currentConnection: 0, connections: [] },
         createSession: () => {
             createSession().then((s) => {
@@ -29,8 +27,8 @@ const sessionState = create<SessionState>((set, get) => {
             loginSandBox();
         },
         initializeSession: () => {
-            allCommandsList.set( '.prod',    { command: '.prod',    description: 'CMD.init.prod',    context:CONTEXT_LEVEL.INIT,  action: () => { get().loginSFDC();}});
-            allCommandsList.set( '.sandbox', { command: '.sandbox', description: 'CMD.init.sandbox', context:CONTEXT_LEVEL.INIT,  action: () => { get().loginSandBox();}});
+            addCommand({...SESSION_CMD.PROD, action: () => { get().loginSFDC();}});
+            addCommand({...SESSION_CMD.SANDBOX, action: () => { get().loginSandBox();}});
         }
     }   
 });

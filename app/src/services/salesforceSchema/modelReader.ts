@@ -45,7 +45,7 @@ export class ModelReader {
     }
     return fieldApiName;
   }
-  getField(orgSfName: SchemaName, sObjectIndex: SObjectLocalId, fieldIndex: FieldLocalId): Field {
+  getField(orgSfName: SchemaName, sObjectIndex: SObjectLocalId, fieldIndex: FieldLocalId): Fields {
     const org = this.localSchema.get(orgSfName)
     if (!org) {
       throw new Error(`Invalid orgSfName: "${orgSfName}"`);

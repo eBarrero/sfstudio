@@ -2,22 +2,18 @@
 
 
 
-type SchemaName = string;
-type SObjectApiName = string;
-type RelationshipName = string;
+type SchemaName = string;       // Salesforce Org Name
+type SObjectApiName = string;   // Salesforce Object API Name
+type RelationshipName = string; // Salesforce Relationship Name
+type SObjectReferenceId = string;
 type FieldApiName = string;
 type SObjectLocalId = number; // ID from Schema.sobject[ID]
 type FieldLocalId = number;   // ID from Schema.sobject[x].fields[ID]
 
 type FilterValue = boolean | null;
 
-type SalesforceFieldValues =
-  | "TECHNICAL_FIELD" 
-  | "id"
-  | "datetime"
-  | "date"
-  | "reference"
-;
+type SalesforceFieldTypes = string;
+
 
 interface PicklistValue  {
     active: boolean;
@@ -79,7 +75,7 @@ interface Salesforce_Fields  {
     searchPrefilterable: boolean;
     soapType: string;
     sortable: boolean;
-    type: SalesforceFieldValues;
+    type: SalesforceFieldTypes;
     unique: boolean;
     updateable: boolean;
     writeRequiresMasterRead: boolean;
@@ -87,6 +83,9 @@ interface Salesforce_Fields  {
 
 interface Fields extends Salesforce_Fields { 
     fieldLocalId: FieldLocalId
+    sobObjectLocalId: SObjectLocalId;
+    orgSfName: SchemaName;
+    referenceToLocalId: SObjectLocalId[] | null;
 }
 
   
@@ -131,12 +130,13 @@ interface Salesforce_SObject  {
 }
 
 interface SObject extends Salesforce_SObject  {
+    orgSfName: SchemaName;
     sObjectLocalId: SObjectLocalId;  
     mapFields: Map<FieldApiName, FieldLocalId>; // This a index of fields by name
 }
 
 interface Schema  {
-    name: string;
+    name: SchemaName;
     sobjects: SObject[];
     indexMap: Map<SObjectApiName, SObjectLocalId>;
 }
@@ -165,8 +165,8 @@ interface SObjectsFilter  {
 }
 
 interface FieldsFilter {
-    searchText: string;
-    type: string;
+    searchText:             string | null;
+    type:                   SalesforceFieldTypes | null;
     aggregatable:           FilterValue;
     custom:                 FilterValue;
     defaultedOnCreate:      FilterValue;
@@ -175,6 +175,7 @@ interface FieldsFilter {
     encrypted:              FilterValue;
     externalId:             FilterValue;
     filterable:             FilterValue;
+    idLookup:               FilterValue;
     groupable:              FilterValue;
     nillable:               FilterValue;
     queryByDistance:        FilterValue;
@@ -204,11 +205,13 @@ interface GetSObjectsIndex  {
 }
 
 interface GetFieldsIndex {
+    orgSfName: SchemaName,
+    sObjectLocalId: SObjectLocalId,
     fieldLocalId: FieldLocalId, 
     isTechnicalField: boolean, 
-    sObjectApiName: SObjectApiName,
+    fieldApiName: FieldApiName,
     label: string,   
-    type: SalesforceFieldValues,
+    type: SalesforceFieldTypes,
     length: number,
     precision: number,
     scale: number,
@@ -216,14 +219,29 @@ interface GetFieldsIndex {
     custom: boolean,
     referenceTo: SObjectApiName,
     relationshipName: RelationshipName | null
+    referenceToLocalId: SObjectLocalId[] | null;
 }
 
 interface GetChildRelationships {
-    sObjectLocalId: SObjectLocalId;
-    childSObject: string,
-    relationshipName: string,
-    fieldNameAPI: string,
+    orgSfName: SchemaName,
+    sObjectLocalId: SObjectLocalId,
+    childSObject: SObjectApiName,
+    relationshipName: RelationshipName,
+    fieldNameAPI: FieldApiName,
 }
 
 
+interface Rows {
+    col: string[];
+}
 
+interface Captions{
+    objectName?: string;
+    fieldName: string;
+    quantity: number;
+}
+
+interface InlineJsonArray {
+    captions: Captions[];
+    rows: Rows[];
+}

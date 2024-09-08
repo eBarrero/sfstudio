@@ -2,14 +2,6 @@
 
 
 
-interface CommandDefinition  {
-    command: string;
-    description: string;
-    action: () => void;
-    examples?: string[];
-    context: string;
-}
-
 
 
 

@@ -1,39 +1,34 @@
 import css  from  './style.module.css';
-import modelState            from '../../../store/modelState';
+
 import viewState             from '../../../store/viewState';
 import dataState             from '../../../store/dataState';
+import applicationState      from '../../../store/applicationState';
 import ObjectFilter             from '../objectFilter/objectFilter';
 
 export default function SObjectsPanel() {
-    
-    const {state, setSObject} = modelState();
-    const {currentView, componentShowed, setCurrentView} = viewState();
+    const {exeCommand} = applicationState();
+
+    const {componentShowed} = viewState();
     const {sobjects } = dataState();
  
-    function setObject(sObjectIndex: number) {
-        setCurrentView('sobject');
-        setSObject(sObjectIndex);
+    function setObject(sObjectApiNameobject: SObjectApiNameobject) {
+        exeCommand(sObjectApiNameobject)
+        
     }
 
     
     return (
         <article className={css.PanelSObjects}>
-            {state.orgSfName!=='' && 
-                <>
-                    <section>
-                        {componentShowed==="OBJECT_FILTER" && (<ObjectFilter/>)}
-                    </section>                
-                    <section className={css.PanelSObjectsList}>
-                        {sobjects.map((sobject) => (
-                            <div className={css.PanelSObjectItem} key={state.orgSfName + sobject.sObjectLocalId} 
-                                onClick={()=>setObject(sobject.sObjectLocalId)}>
-                                {sobject.name}
-                            </div>))}
-                    </section>
-                </>
-            }
-            {state.orgSfName!=='' ?? <div>There are no objects</div>} 
-
+            <section>
+                {componentShowed==="OBJECT_FILTER" && (<ObjectFilter/>)}
+            </section>                
+            <section className={css.PanelSObjectsList}>
+                {sobjects.map((sobject) => (
+                    <div className={css.PanelSObjectItem} key={sobject.sObjectLocalId} 
+                        onClick={()=>setObject(sobject.name)}>
+                        {sobject.name}
+                    </div>))}
+            </section>
         </article>
 
     );

@@ -3,12 +3,12 @@
 
 
 // src/constants/filters.ts
-export type FilterOption = {
-  name: keyof Salesforce_SObject;
+interface ObjectFilterOptions  {
+  name: keyof SObjectsFilter;
   description: string;
-};
+}
 
-export const objectFilterOptions: FilterOption[] = [
+export const objectFilterOptions: ObjectFilterOptions[] = [
   { name: 'activateable', description: 'Activateable' },
   { name: 'createable', description: 'Createable' },
   { name: 'custom', description: 'Custom' },
@@ -29,4 +29,27 @@ export const objectFilterOptions: FilterOption[] = [
   { name: 'undeletable', description: 'Undeletable' },
   { name: 'updateable', description: 'Updateable' },
 ];
+
+interface FieldFilterOptions {
+  name: keyof FieldsFilter;
+  description: string;
+}
+
+export const fieldFilterOptions: FieldFilterOptions[] = [
+  { name: 'aggregatable', description: 'Aggregatable' },
+  { name: 'custom', description: 'Custom' },
+  { name: 'defaultedOnCreate', description: 'Defaulted on Create' },
+  { name: 'dependentPicklist', description: 'Dependent Picklist' },
+  { name: 'deprecatedAndHidden', description: 'Deprecated and Hidden' },
+  { name: 'encrypted', description: 'Encrypted' },
+  { name: 'externalId', description: 'External Id' },
+  { name: 'filterable', description: 'Filterable' },
+  { name: 'idLookup', description: 'Id Lookup' },
+  { name: 'groupable', description: 'Groupable' },
+  { name: 'nillable', description: 'Nillable' },
+  { name: 'queryByDistance', description: 'Query by Distance' },
+  { name: 'sortable', description: 'Sortable' },
+  { name: 'unique', description: 'Unique' },
+];
+
 

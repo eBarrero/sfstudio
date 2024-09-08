@@ -13,14 +13,13 @@ import { useTranslation } from 'react-i18next';
 
 
 const ObjectFilter = () => {
-    const { setCommand } = applicationState();
+    const { exeCommandFromUI } = applicationState();
     const { sObjectsFilter } = dataState();
-    const { state } = modelState();
     const { t } = useTranslation();
 
     function onActionRowHandle(rowId: string, action: string) {
-        setCommand(`.${rowId} ${ (action==='TRUE')?'':(action==='FALSE')?'off':'rm' }`) ;
-        setCommand('Enter');
+        exeCommandFromUI(`.${rowId} ${ (action==='TRUE')?'':(action==='FALSE')?'off':'rm' }`) ;
+        
         
     }
     

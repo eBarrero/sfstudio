@@ -7,7 +7,7 @@ export class SessionError extends Error {
     constructor(message: string) {
         super(message);
         this.name = "SessionError";
-        if (message.includes("Session expired or invalid")) this.errorNumber = 498;
+        if (message.includes("Session expired or invalid")) this.errorNumber = 401;
         console.error(`${this.name}: ${this.message}`);
     }
     getErrorNumber(): number {  return this.errorNumber; }  
@@ -36,6 +36,31 @@ type PublicSesionDefinition = {
 type SignInToken = {
     id: string;
     }
+
+/**
+ * @description Convert Base64 URL Safe to standard Base64
+ * @param base64UrlSafe String Base64 URL Safe
+ * @returns string Base64
+ */
+function fromBase64UrlSafe(base64UrlSafe: string): string {
+    let base64 = base64UrlSafe
+        .replace(/-/g, '+') // Replace - con +
+        .replace(/_/g, '/'); // Rreplace _ con /
+    
+    // add padding with '='
+    const padding = base64.length % 4;
+    if (padding > 0) {
+        base64 += '='.repeat(4 - padding);
+    }
+    const buffer = Buffer.from(base64, 'base64');
+    
+    
+    console.log(buffer.toString('ascii'));
+    return  buffer.toString('ascii');
+}
+
+
+
 
 export class Connection {
     private alias: string = "";
@@ -168,11 +193,13 @@ export class Session {
     async login(code: string, url: string): Promise<void> {
         await this.connections[this.currentConnection].login(code, url);
     }
-    async doSOQL(query: string) : Promise<any>  {
-        console.info("doSQL" + query);
-        const conn = this.connections[this.currentConnection].connection;
+    async doSOQL(orgSfName:string, query: Base64) : Promise<any>  {
+        console.info("doSOQL");
+        const decodedQuery = fromBase64UrlSafe(query);
+        console.info("doSQL" + decodedQuery);
+        const conn = getConnection(this.connections, orgSfName);
         try {
-            return await conn.query(query);
+            return await conn.query(decodedQuery);
         } catch (error) {
             console.error('SOQL Error', (error as Error).message);
             const sessionError = new SessionError("SOQL Error: " + (error as Error).message);

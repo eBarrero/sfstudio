@@ -1,0 +1,60 @@
+
+
+
+.resizable_table {
+    overflow-x: auto; /* Permite el desplazamiento horizontal si la tabla desborda */
+    overflow-y: auto; /* Activa el scroll vertical */
+    width: 100%; /* Asegura que el contenedor ocupe todo el ancho disponible */    
+    max-height: 100vh;
+  }
+  
+  table {
+    table-layout: fixed; 
+    width: 100%; /* Opcional: para que la tabla ocupe todo el ancho del contenedor */
+    border-collapse: collapse; /* Estética: colapsa los bordes */
+    font-size: 0.8em;
+  }
+  
+  thead th {
+    position: sticky;
+    top:0;
+    background-color: #1538d4;
+    font-weight: bold;
+    z-index: 1;
+  }
+  th, td {
+    padding: 0px;
+    margin: 0px;
+    text-align: left;
+    border:  1px solid rgba(196, 187, 187, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;   
+    vertical-align: top;
+  }
+
+
+  tbody tr {
+    margin: 0px;
+  }
+  tbody tr:nth-child(odd) {
+    background-color: #181717;
+  }
+  .header_content {
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+  }
+  
+  .resizer {
+    display: inline-block;
+    width: 5px;
+    height: 100%;
+    cursor: col-resize;
+    background-color: transparent;
+  }
+  
+  .resizer:hover {
+    background-color: #ddd;
+  }
+  
