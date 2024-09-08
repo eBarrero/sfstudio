@@ -8,6 +8,8 @@
     "api","app"
   ],
   "scripts": {
+    "start": "npm --workspace api run start",
+    "postbuild": "npm install && npm --workspace api run build && npm --workspace app run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

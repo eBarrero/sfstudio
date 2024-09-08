@@ -6,7 +6,8 @@
   "scripts": {
     "tsc": "tsc",
     "dev": "ts-node src/index.ts",
-    "start": "tsc & node --env-file .env build/index.js",
+    "start": "tsc & node build/index.js",
+    "start_local": "tsc & node --env-file .env build/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
