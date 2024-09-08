@@ -1,6 +1,6 @@
 import css from './style.module.css'
 import modelState from '../../../store/modelState'
-import SmartLabel from '../../atoms/SmartLabel/smartLabel';
+import SmartLabel from '../../xatoms/SmartLabel/smartLabel';
 
 
 const SOQLPath = () => {

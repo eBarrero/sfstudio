@@ -1,6 +1,6 @@
 import { useState, useEffect,  CSSProperties } from 'react';
 import css from './style.module.css'
-import ActionIcon from '../../atoms/ActionIcon/actionIcon';
+import ActionIcon from '../../xatoms/ActionIcon/actionIcon';
 
 interface Options {
     id: string;

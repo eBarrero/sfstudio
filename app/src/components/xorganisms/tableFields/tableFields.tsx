@@ -1,6 +1,6 @@
 import css from './style.module.css';
 import constants from '../../constants';
-import { GridTable, GridTableCell, GridTableRow } from "../../atoms/GridTable/gridTable";
+import { GridTable, GridTableCell, GridTableRow } from "../../xatoms/GridTable/gridTable";
 import { SalesforceFieldTypes } from "../../../core/constants/fields";
 import dataState  from "../../../store/dataState";
 import modelState  from "../../../store/modelState";

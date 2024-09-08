@@ -1,11 +1,11 @@
 import css from './style.module.css'
-import DBConnectionManager from '../../organisms/dbConnectionManager/dbConnectionManager'; 
-import SOQLPath from '../../organisms/SOQLPath/xsoqlPath';
-import SchemaPanel from '../../organisms/schemaPanel/schemaPanel';
-import SObjectPanel from '../../organisms/sObjectPanel/sObjectPanel';
+import DBConnectionManager from '../../xorganisms/dbConnectionManager/dbConnectionManager'; 
+import SOQLPath from '../../xorganisms/SOQLPath/xsoqlPath';
+import SchemaPanel from '../../xorganisms/schemaPanel/schemaPanel';
+import SObjectPanel from '../../xorganisms/sObjectPanel/sObjectPanel';
 import viewState from '../../../store/viewState';
-import Console from '../../organisms/console/console';
-import ResultSheet from '../../organisms/resultSheet/resultSheet';
+import Console from '../../xorganisms/console/console';
+import ResultSheet from '../../xorganisms/resultSheet/resultSheet';
 
 console.log('*****HomePage');
 const HomePage = () => {
