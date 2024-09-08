@@ -1,5 +1,5 @@
 import css from './style.module.css';
-import { GridTable, GridTableRow } from "../../atoms/GridTable";
+import { GridTable, GridTableRow } from "../../atoms/GridTable/gridTable";
 import { objectFilterOptions } from "../../../constants/filters";
 import applicationState from '../../../store/applicationState';
 import dataState            from "../../../store/dataState";

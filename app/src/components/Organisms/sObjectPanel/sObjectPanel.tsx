@@ -1,5 +1,5 @@
 import css from './style.module.css';
-import SOQLPanel from "../SOQLPanel/SOQLPanel";
+import SOQLPanel from "../SOQLPanel/soqlPanel";
 import TableFields from "../tableFields/tableFields";
 import TableChildRelationShips from '../tableChildRelationShips/tableChildRelationShips';
 import viewState from '../../../store/viewState';

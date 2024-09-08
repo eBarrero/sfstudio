@@ -1,4 +1,4 @@
-import { Operator } from './Fields';
+import { Operator } from './fields';
 const translationName= 'DataTimeLiteral' as const;
 
 
@@ -11,7 +11,7 @@ const DateTimeLiteralTypeEnum = {
     FISCAL_QUARTER:6,
     FISCAL_YEAR: 7
 } as const;
-
+  
 
 const DateTimeLiteralKeyWord: [string, number][] = [
     ['YESTERDAY', DateTimeLiteralTypeEnum.DAY],

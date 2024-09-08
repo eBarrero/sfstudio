@@ -1,4 +1,4 @@
-import useApplication from '../../../store/ApplicationHook';
+import useApplication from '../../../store/applicationHook';
 import css from './style.module.css';
 
 
