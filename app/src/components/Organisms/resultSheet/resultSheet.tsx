@@ -1,36 +1,16 @@
-import {useEffect, useState} from 'react'
-import { use } from 'i18next'
+import React, { useState } from 'react'
 import css from './style.module.css'
 import sqlExecutionState from '../../../store/sqlExecutionState'
 
-
-
-
-
-    
 const ResultSheet = () => {
     const {captions, rows} = sqlExecutionState().selectResponse;
-     
-
-        
-    
-    /*
-    const [rows, setRows] = useState<Rows[]>();
-    //const [captions, setCaptions] = useState<Captions>();
-    const [columnWidths, setColumnWidths] = useState<number[]>(); 
-
-    useEffect(() => {
-            setRows(Array(8).fill({row: Array(8).fill('dato')}));
-       //     setCaptions({ caption: Array(8).fill('name')});
-            setColumnWidths(Array(8).fill(170));
-
-    }, [])
+    const [columnWidths, setColumnWidths] = useState<number[]>(Array(captions.length).fill(150)); 
 
     const handleMouseDown = (index: number, event: React.MouseEvent<HTMLDivElement>) => {
         const startX = event.clientX;
         const startWidth = columnWidths[index];
     
-        const handleMouseMove = (e:React.MouseEvent<HTMLDivElement>) => {
+        const handleMouseMove = (e:MouseEvent) => {
           const newWidth = startWidth + (e.clientX - startX);
           const updatedWidths = [...columnWidths];
           updatedWidths[index-1] = Math.max(newWidth, 50); // Asegura un ancho mínimo
@@ -46,7 +26,7 @@ const ResultSheet = () => {
         document.addEventListener('mouseup', handleMouseUp);
       };
       
-      */
+      
     return (
         <section>
             <div className={css.resizable_table}>

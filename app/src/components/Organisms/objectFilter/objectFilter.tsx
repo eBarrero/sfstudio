@@ -3,7 +3,6 @@ import { GridTable, GridTableRow } from "../../atoms/GridTable";
 import { objectFilterOptions } from "../../../constants/filters";
 import applicationState from '../../../store/applicationState';
 import dataState            from "../../../store/dataState";
-import modelState           from '../../../store/modelState';
 import { useTranslation } from 'react-i18next';
 
 

@@ -11,7 +11,7 @@ export default function SObjectsPanel() {
     const {componentShowed} = viewState();
     const {sobjects } = dataState();
  
-    function setObject(sObjectApiNameobject: SObjectApiNameobject) {
+    function setObject(sObjectApiNameobject: SObjectApiName) {
         exeCommand(sObjectApiNameobject)
         
     }

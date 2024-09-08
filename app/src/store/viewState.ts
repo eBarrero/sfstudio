@@ -3,18 +3,7 @@ import { addCommand, VIEW_CMD } from '../constants/application';
 
 
 
-interface ViewState {
-    currentView: string;
-    componentShowed?: string;
-    dialogStack: string[];
 
-    setCurrentView: (newView: string) => void;
-    setComponentShowed: (componentName: string) => void;
-    reSetComponentShowed: () => void;
-    pushDialog: (newWindow: string) => void;
-    popDialog: () => void;
-    initializeView: () => void;
-}
 
 const viewState = create<ViewState>((set, get) => {
     return  {

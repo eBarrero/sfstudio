@@ -14,7 +14,7 @@ import applicationState from '../../../store/applicationState';
 
 
 export default function TableFields() {
-    const {currentSOQLFieldSelection, doFieldAction, addReference} = modelState();
+    const {currentSOQLFieldSelection, doFieldAction } = modelState();
     const {sObjectFields}  = dataState();
     const { exeCommandFromUI} = applicationState();
 
@@ -23,10 +23,12 @@ export default function TableFields() {
         const fieldLocalId = parseInt(rowId.split('|')[0]);
         const index = parseInt(rowId.split('|')[1]);
         if (action===constants.GOTO_REFERENCE) { 
-            console.log('addReference', sObjectFields[index].fieldApiName);
             exeCommandFromUI('.lookup_' + sObjectFields[index].fieldApiName);
             return;
-        }        
+        }  
+        if (action===constants.ONCLICK) {
+            exeCommandFromUI('_' + sObjectFields[index].fieldApiName);
+        }      
         doFieldAction(fieldLocalId, action); 
     }
     

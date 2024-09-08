@@ -1,5 +1,5 @@
 import { useState, useEffect,  CSSProperties } from 'react';
-import css from './local.module.css'
+import css from './style.module.css'
 import ActionIcon from '../../atoms/ActionIcon';
 
 interface Options {
@@ -31,7 +31,7 @@ const OptionList = (props:OptionListProps) => {
             setCurrentTitle(title);
         }
         
-    }, [level]);
+    }, [level,options,title]);
 
     const handleSelect = (id: string) => () => {
         console.log('OptionList: ' + id + ':' + level);
@@ -54,7 +54,7 @@ const OptionList = (props:OptionListProps) => {
         <article className={css.OptionList}> 
             <div className={css.header}>
                 <ActionIcon onClick={()=>{ setLevel(1);}} iconName={(level===1)?'NONE':'back'}/>    
-                <span className={css.title} >{title}</span>
+                <span className={css.title} >{currentTitle}</span>
             </div>
             <div  className={css.options}> 
                 {currentOptions.map( (option) => (

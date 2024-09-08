@@ -224,7 +224,7 @@ export default class Proxy {
     }
 
 
-
+/*
     public static getReferenceSObjectId(orgSfName: string, sObjectIndex: number, fieldIndex: number): SObjectReferenceId {
         console.log(`getReferenceSObjectId orgSfName: "${orgSfName}" sObjectIndex: "${sObjectIndex}" fieldIndex: "${fieldIndex}"`);
         if (!cache.has(orgSfName)) {
@@ -241,7 +241,7 @@ export default class Proxy {
         return {...Proxy.getSobjectIdByName(orgSfName, field.referenceTo[0]), referenceName: field.relationshipName!};
         
     }
-
+*/
     public static async sendSoqlAdapter(orgSfName: string, query: string): Promise<string> {
         console.log(`soqlAdapter orgSfName: "${orgSfName}" query: "${query}"`);
         return await sendQuery(orgSfName, query);   

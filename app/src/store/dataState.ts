@@ -3,7 +3,7 @@ import  Proxy  from '../services/salesforceSchema/proxy';
 import { addCommand,deleteCommand,CONTEXT_LEVEL } from '../constants/application';
 import { objectFilterOptions, fieldFilterOptions } from '../constants/filters';
 import { SalesforceFieldTypes } from '../constants/Fields';
-import i18next from 'i18next';
+
 
 
 function objectsFilterInit(): SObjectsFilter {
@@ -189,6 +189,19 @@ const dataState = create<DataState>((set, get) => {
                     action: (actionParams: AcctionParams) => {
                         const {model} = actionParams;
                     get().setFieldFilterType(model.state.orgSfName, model.state.sObjectLocalId,  key);
+                    }
+                });
+            }
+        },
+        createFieldsCommands: (data: GetFieldsIndex[]): void => {
+            deleteCommand('._');
+            for (const field of data) {
+                const cmdText = '._'+field.fieldApiName;
+                addCommand({command: cmdText, description: 'field.config', context:CONTEXT_LEVEL.OBJECT, 
+                    action: (actionParams: AcctionParams) => {
+                        const {model, view} = actionParams;
+                        model.setField(field);
+                        view.pushDialog('DataTime');
                     }
                 });
             }

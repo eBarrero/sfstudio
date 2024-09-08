@@ -25,7 +25,8 @@ export enum delimeterType
  * @param salesforceJson 
  * @returns 
  */
-export function salesforceJsontoInlineJson(salesforceJson):InlineJson {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function salesforceJsontoInlineJson(salesforceJson: any): InlineJson {
     const records = salesforceJson.records;
     let header: string[] = [];     // it is used to store the header of the records 
     let headerExt: string[] = [];  // it is used to store the header of the subrecords when the header is not defined in the first record therefoce it is necessary to store it to be added to the header when it is defined
@@ -34,7 +35,7 @@ export function salesforceJsontoInlineJson(salesforceJson):InlineJson {
     let rows: string='';           // it is used to store the rows of the records in inline json format  
     let indexHeader: number = 0;   // 
     
-    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     records.forEach((record: any) => {
         for (const [key, value] of Object.entries(record)) {
             // skip attributes
@@ -83,9 +84,11 @@ export function salesforceJsontoInlineJson(salesforceJson):InlineJson {
                 indexHeader++;
                 indexRow++;
                 // process the subrecords
-                const subrecords = value!.records;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const subrecords = (value as any).records;
                 let firstrecord = true;
                 //the first interation we build the header of the subrecords
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 subrecords.forEach((subrecord: any) => {
                     if (!firstrecord) {
                         currentRow[indexRow] = `${delimeterType.newRecord}`   

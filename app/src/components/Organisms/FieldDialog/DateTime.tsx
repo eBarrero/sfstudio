@@ -1,33 +1,61 @@
 import { useState, useEffect } from 'react';
 import css from './local.module.css'
 import DataTime from '../../../constants/DataTime';
-import OptionList from '../OptionList';
+import OptionList from '../OptionList/optionList';
 import { useTranslation } from 'react-i18next';
-import  modelState  from '../../../store/modelState';  
+import modelState  from '../../../store/modelState';  
 import viewState from '../../../store/viewState';
 
 
 
-const DateTime = (props: DateTimeProps) => {
-    const fieldId = props.fieldId;
-    const { fieldApiName, fieldIndex } = fieldId;
+
+const Select = () => {
+    return (
+        <div>
+            <p>DateTime_Select</p>
+        </div>
+    );
+}
+
+const Orderby = () => {
+    return (
+        <form className="OrderBy">
+            <select >
+                <option>ASC</option>
+                <option>DESC</option>
+            </select>
+            <button type="button" >Add</button>
+        </form>
+    );
+}
+
+
+
+const DateTime = () => {
+    const { currentField  }  = modelState().state;
+    
 
     const [currentTab, setCurrentTab] = useState('W');
 
     return (
         <article className={css.container}>
             <div className={css.win}>
-                <TitleBar title={`${fieldIndex} - ${fieldApiName}`}  />
-                <Tabs tabs={[['Select',"S"],['Where',"W"],['Order',"O"]]} value={currentTab} onTabChange={setCurrentTab}/>
-                {currentTab === 'S' && <Select/>}
-                {currentTab === 'W' && <Where fieldId={fieldId} />}
-                {currentTab === 'O' && <Orderby/>}
+                {currentField &&  <>
+                    <TitleBar title={`${currentField.fieldLocalId} - ${currentField.fieldApiName}`}  />
+                    <Tabs tabs={[['Select',"S"],['Where',"W"],['Order',"O"]]} value={currentTab} onTabChange={setCurrentTab}/>
+                    {currentTab === 'S' && <Select/>}
+                    {currentTab === 'W' && <Where field={currentField} />}
+                    {currentTab === 'O' && <Orderby/>}
+                </>}
             </div>
         </article>
     );
 } 
 
 export default DateTime;
+
+
+
 
 
 interface DateTimeLiteral {
@@ -37,26 +65,28 @@ interface DateTimeLiteral {
 }
 
 interface WhereProps {
-    fieldId: FieldId;
+    field: GetFieldsIndex
 }
 
 
 const Where = (props:WhereProps) => {
     const { addWhere } = modelState();
-    const { fieldApiName } = props.fieldId;
+    const { fieldApiName, fieldLocalId } = props.field;
     const { t } = useTranslation(); 
-    const [typeDataTime, setTypeDataTime] = useState(0);
-    const [dateTimeLiteral , setDateTimeLiteral] = useState<DateTimeLiteral>({});
+    //const [typeDataTime, setTypeDataTime] = useState(0);
+    const [dateTimeLiteral , setDateTimeLiteral] = useState<DateTimeLiteral>();
     const [condition, setCondition] = useState<string>('');
     const [periods, setPeriods] = useState(1);
     const [sqlWhere, setSqlWhere] = useState<string>('');
     const [sqlValue, setSqlValue] = useState<string>('');
     
     useEffect(() => {
+        if (!dateTimeLiteral) return
         const value = dateTimeLiteral.sqlKeyWord + (dateTimeLiteral.paramRequired ? `:${periods}` : '');
-        setSqlValue(value);         
+        setSqlValue(value);
         setSqlWhere(fieldApiName + " " + condition + " " + value);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     },[condition,periods,dateTimeLiteral]);
 
     const handelDataTime = (type: string) =>  {
@@ -67,7 +97,7 @@ const Where = (props:WhereProps) => {
     }
 
     const handelButton = () => () => {
-        addWhere({field: props.fieldId, operator: condition, value: sqlValue});
+        addWhere({field: { fieldApiName, fieldIndex: fieldLocalId }, operator: condition, value: sqlValue});
     }
 
 // {DataTime.getType().map( (typeDataTime) =>  (<button onClick={handelTypeDataTime(typeDataTime.type)} >{typeDataTime.description}</button>))}   
@@ -94,8 +124,10 @@ const Where = (props:WhereProps) => {
             </div>
 
             <div className={css.panel}>
-                <p>{dateTimeLiteral.description}</p>
-                {dateTimeLiteral.paramRequired &&   <QuantitySelector value={periods} min={1} max={10} label="Periods" onChange={setPeriods}/>}
+                { dateTimeLiteral && <>
+                    <p>{dateTimeLiteral.description}</p>
+                     {dateTimeLiteral.paramRequired &&   <QuantitySelector value={periods} min={1} max={10} label="Periods" onChange={setPeriods}/>}
+                </>}
                 <label>Seleccione fecha y hora:</label>    
                 <input type="datetime-local" id="datetime" name="datetime"/>
             
@@ -117,24 +149,7 @@ const Where = (props:WhereProps) => {
     );
 }
 
-const OrderBy = () => {
-    /*
-    const [direction, setDirection] = useState<'ASC' | 'DESC'>('ASC');
 
-    const handleDirection = (e) => setDirection(e.target.value as 'ASC' | 'DESC');
-
-    const handleSubmit = () => onOrderBy(direction);
-*/
-    return (
-        <form className="OrderBy">
-            <select >
-                <option>ASC</option>
-                <option>DESC</option>
-            </select>
-            <button type="button" >Add</button>
-        </form>
-    );
-}
 
 
 
@@ -165,7 +180,7 @@ const Tabs = (props:TabsProps) => {
     return (
         <div>
             {tabs.map(([label, code]) => (
-                <span className="titleSection" key={code} onClick={() => onTabChange(code)}>{label}</span>
+                <span className="titleSection" key={code} onClick={() => onTabChange(code)}>{label}-{value}</span>
             ))}
         </div>
     );
@@ -185,7 +200,7 @@ const Tabs = (props:TabsProps) => {
 interface QuantitySelectorProps {
     value: number;
     min: number;
-    max?: number;
+    max: number;
     label: string;
     onChange: (value: number) => void;  
 }
@@ -193,7 +208,7 @@ interface QuantitySelectorProps {
 const QuantitySelector = (props:QuantitySelectorProps) => {
     const {value, min, max, label, onChange} = props;
 
-    const handleInput = (e) => {
+    const handleInput = (e:  React.ChangeEvent<HTMLInputElement>) => {
         const value = parseInt(e.target.value);
         if (value >= min && value <= max) onChange(value);
     };

@@ -1,11 +1,11 @@
-import css from './local.module.css';
+import css from './style.module.css';
 
 
 /* SVG library */
 
 type SVGIcons = string | 'NOTFOUND' | 'search' | 'reference' | '1toN' | '1to1' | 'add' | 'save' | 'cancel' | 'close' | 'menu' | 'more' | 'filter' | 'sort' | 'download' | 'upload' | 'print' | 'refresh' | 'settings' | 'help' | 'info' | 'warning' | 'error' | 'success' | 'notification' | 'notification-off' | 'notification-on' | 'notification-error' | 'notification-success' | 'notification-warning' | 'notification-info' | 'notification-question' | 'notification-alert'
 
-type SVGPlace = 'CELL_TABLE' | 'HEADER_TABLE' | 'FOOTER_TABLE' | 'CELL_FORM' | 'HEADER_FORM' | 'FOOTER_FORM' | 'CELL_CARD' | 'HEADER_CARD' | 'FOOTER_CARD' | 'CELL_MODAL' | 'HEADER_MODAL' | 'FOOTER_MODAL' | 'CELL_PAGE' | 'HEADER_PAGE' | 'FOOTER_PAGE' | 'CELL_NAV' | 'HEADER_NAV' | 'FOOTER_NAV' | 'CELL_MENU' | 'HEADER_MENU' | 'FOOTER_MENU' | 'CELL_BAR' | 'HEADER_BAR' | 'FOOTER_BAR' | 'CELL_PANEL' | 'HEADER_PANEL' | 'FOOTER_PANEL' | 'CELL_DIALOG' | 'HEADER_DIALOG' | 'FOOTER_DIALOG' | 'CELL_DRAWER' | 'HEADER_DRAWER' | 'FOOTER_DRAWER' | 'CELL_POPOVER' | 'HEADER_POPOVER' | 'FOOTER_POPOVER' | 'CELL_TOOLTIP' | 'HEADER_TOOLTIP' | 'FOOTER_TOOLTIP' | 'CELL_DROPDOWN' | 'HEADER_DROPDOWN' | 'FOOTER_DROPDOWN' | 'CELL_SELECT' | 'HEADER_SELECT' | 'FOOTER_SELECT' | 'CELL_LIST' | 'HEADER_LIST' | 'FOOTER_LIST' | 'CELL_TREE' | 'HEADER_TREE' | 'FOOTER_TREE'
+
 
     /* fill-rule: Define la regla que se utiliza para determinar qué partes de la geometría de un trazado se consideran el interior de la forma.
     nonzero: La regla de no cero. Cuenta el número de veces que una línea cruza el trazado. Si este número es impar, el punto está dentro de la forma. Si es par, el punto está fuera de la forma.
@@ -109,11 +109,10 @@ MapSVG.set('1to1', [
 
 interface IconProps {
     iconType: SVGIcons 
-    place?: SVGPlace
     tooltip: string | undefined
 }
 
-const SVGIcon: React.FC<IconProps> = ({tooltip ,iconType, place="CELL_TABLE" }) => {
+const SVGIcon: React.FC<IconProps> = ({tooltip ,iconType}) => {
     
     const paths = (!MapSVG.has(iconType))? MapSVG.get('NOTFOUND') :  MapSVG.get(iconType);
 

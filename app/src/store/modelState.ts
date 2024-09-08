@@ -1,10 +1,10 @@
 import {create} from 'zustand';
 import { modelReader } from '../services/salesforceSchema/proxy';
 import constants from '../components/constants';
-import { addCommand,CONTEXT_LEVEL, NODEL_CMD } from '../constants/application';
+import { addCommand, NODEL_CMD } from '../constants/application';
 import { SelectAllFieldsEnum } from "./../constants/Fields";
 
-import { init } from 'i18next';
+
 
 
 
@@ -12,13 +12,13 @@ import { init } from 'i18next';
 
   const modelState = create<ModelState>((set, get) => {
     return  {
-        state:   { orgSfName: '', action: '', sObjectApiName: '', sObjectLocalId: - 1},
+        state:   { orgSfName: '', action: '', sObjectApiName: '', sObjectLocalId: - 1, currentField: null},
         queryState: { queryElemnts: [], indexCurrentElement: 0  },
         sqlState:   { sql: ''},
         currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>,
         setOrg: (orgSfName: SchemaName)  => {
             if (orgSfName === '') return;
-            set({state: {orgSfName, action:'INI', sObjectApiName:'',  sObjectLocalId: -1}});
+            set({state: {orgSfName, action:'INI', sObjectApiName:'',  sObjectLocalId: -1, currentField: null},});
         },  
                                                
             
@@ -41,6 +41,12 @@ import { init } from 'i18next';
                 sqlState: sqlState(queryState),
                 currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>                
             });
+        },
+        setField: (field: GetFieldsIndex) => {
+            const state = get().state;
+            state.currentField = field;
+            state.action = 'field';
+            set({state});
         },
         gotoLookup: (field: GetFieldsIndex) => {
             console.log('addReference');

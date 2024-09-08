@@ -6,6 +6,7 @@ interface ModelState {
         orgSfName: SchemaName;
         sObjectApiName: SObjectApiName;
         sObjectLocalId: SObjectLocalId;
+        currentField?: GetFieldsIndex | null;
     };
     filerSObject?: SObjectsFilter
     queryState: QueryState; // It contains the query elements: main quiery, subqueries and releted objects
@@ -13,6 +14,7 @@ interface ModelState {
     sqlState: SQLState;    // It contains the SQL statement to be executed
     setOrg: (orgSfName: SchemaName) => void; 
     setSObject: (sObjectLocalId:SObjectLocalId) => void;
+    setField: (field: GetFieldsIndex) => void;
     gotoLookup: (field: GetFieldsIndex) => void; 
     gotoChild: (child: GetChildRelationships) => void;
     showByqueryElemntsIndex: (index: number) => void;
@@ -30,6 +32,7 @@ interface ModelState {
     sObjectsFilter: SObjectsFilter;                // It contains the filter to be applied to the sObjects
     fieldsFilter: FieldsFilter;                    // It contains the filter to be applied to the fields
     dataLastErrorMessage: string;                  // It contains the last error message
+    
 
     //getSchema: (orgSfName: string, filterSObject?: SchemaFilter) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
     loadSchema: (orgSfName: SchemaName) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
@@ -48,6 +51,20 @@ interface ModelState {
     createLookuoCommands: (data: GetFieldsIndex[]) => void; // It creates the lookup commands for the lookup's fields
     createChildRelationshipsCommands: (childs: GetChildRelationships[]) => void 
 }
+
+interface ViewState {
+    currentView: string;
+    componentShowed?: string;
+    dialogStack: string[];
+
+    setCurrentView: (newView: string) => void;
+    setComponentShowed: (componentName: string) => void;
+    reSetComponentShowed: () => void;
+    pushDialog: (newWindow: string) => void;
+    popDialog: () => void;
+    initializeView: () => void;
+}
+
 
 interface AcctionParams {
     data: DataState;

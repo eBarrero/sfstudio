@@ -6,7 +6,7 @@ interface TitleProps {
 
 export const Title =(props:TitleProps) => {
     return (
-        <div className='{css.title}'> 
+        <div className={css.title}> 
             <span>{props.value}</span>
         </div>
         
@@ -16,7 +16,7 @@ export const Title =(props:TitleProps) => {
 
 export const TitleSection =(props:TitleProps) => {
     return (
-        <div className="{css.titleSection}">
+        <div className={css.titleSection}>
             <span>{props.value}</span>
         </div>
     );

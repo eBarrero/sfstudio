@@ -1,5 +1,5 @@
 import {create} from 'zustand';
-import { addCommand,CONTEXT_LEVEL, SESSION_CMD } from '../constants/application';
+import { addCommand, SESSION_CMD } from '../constants/application';
 import { createSession, loginSFDC, loginSandBox } from '../services/session/model';
 
 
