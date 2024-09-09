@@ -57,7 +57,7 @@ app.get("/api/auth/:type", (req: Request, res: Response) => {
     }
 
     const session = sessions.getSession(signInToken);
-    const url = session.requestAuthorization(sandbox, "http://localhost:3000/callback", clientId, clientSecret );
+    const url = session.requestAuthorization(sandbox, "https://sfstudio.onrender.com/api/callback", clientId, clientSecret );
     res.redirect(url);
 });
 

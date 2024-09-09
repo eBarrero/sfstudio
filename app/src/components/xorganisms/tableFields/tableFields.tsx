@@ -27,7 +27,7 @@ export default function TableFields() {
             return;
         }  
         if (action===constants.ONCLICK) {
-            exeCommandFromUI('_' + sObjectFields[index].fieldApiName);
+            exeCommandFromUI('._' + sObjectFields[index].fieldApiName);
         }      
         doFieldAction(fieldLocalId, action); 
     }

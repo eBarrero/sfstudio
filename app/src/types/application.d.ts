@@ -50,6 +50,7 @@ interface ModelState {
     initializeData: () => void; // It initializes the dataState
     createLookuoCommands: (data: GetFieldsIndex[]) => void; // It creates the lookup commands for the lookup's fields
     createChildRelationshipsCommands: (childs: GetChildRelationships[]) => void 
+    createFieldsCommands: (data: GetFieldsIndex[]) => void; // It creates the fields commands for the fields
 }
 
 interface ViewState {

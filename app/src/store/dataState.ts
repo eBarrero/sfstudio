@@ -111,6 +111,7 @@ const dataState = create<DataState>((set, get) => {
                     set({sObjectFields:  structuredClone(data), dataLastErrorMessage: ''});
                     callBack(id);
                     get().createLookuoCommands(data);
+                    get().createFieldsCommands(data);
                 } else {
                     console.log('CMD.Object_not_found', sObjectName);
                     set({dataLastErrorMessage: `CMD.Object_not_found|${sObjectName}`}); 
