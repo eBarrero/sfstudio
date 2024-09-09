@@ -21,7 +21,7 @@ app.use(express.static('../app/dist'));
 
 
 
-app.get("/init", (req: Request, res: Response) => {
+app.get("/api/init", (req: Request, res: Response) => {
     console.log(req.url);
     const signInToken = req.cookies.id;
     if (!signInToken) {
@@ -47,7 +47,7 @@ app.get("/init", (req: Request, res: Response) => {
 
 
 
-app.get("/auth/:type", (req: Request, res: Response) => {
+app.get("/api/auth/:type", (req: Request, res: Response) => {
     console.log(req.url);
     const sandbox = (req.params.type==="sandbox") ? true : false;
     let signInToken = req.cookies.id;
@@ -61,7 +61,7 @@ app.get("/auth/:type", (req: Request, res: Response) => {
     res.redirect(url);
 });
 
-app.get("/callback", async (req: Request, res: Response) => {
+app.get("/api/callback", async (req: Request, res: Response) => {
     let signInToken = req.cookies.id;
     if (!signInToken) {
         res.status(500).json('Authentication failed');
@@ -78,7 +78,7 @@ app.get("/callback", async (req: Request, res: Response) => {
     }
 });
 
-app.get("/soql/:orgSfName/:soql", (req: Request, res: Response) => {
+app.get("/api/soql/:orgSfName/:soql", (req: Request, res: Response) => {
     console.log(req.url);
     let signInToken = req.cookies.id;
     if (!signInToken) {
@@ -97,7 +97,7 @@ app.get("/soql/:orgSfName/:soql", (req: Request, res: Response) => {
 
 });
 
-app.get("/describeglobal/:orgSfName", (req: Request, res: Response) => {
+app.get("/api/describeglobal/:orgSfName", (req: Request, res: Response) => {
     console.log(req.url +  ' = ' + req.params.orgSfName);
     let signInToken = req.cookies.id;
     if (!signInToken) {
@@ -117,7 +117,7 @@ app.get("/describeglobal/:orgSfName", (req: Request, res: Response) => {
 
 });
 
-app.get("/describe/:orgSfName", (req: Request, res: Response) => {
+app.get("/api/describe/:orgSfName", (req: Request, res: Response) => {
     console.log(req.url);
     let signInToken = req.cookies.id;
     if (!signInToken) {
@@ -135,7 +135,7 @@ app.get("/describe/:orgSfName", (req: Request, res: Response) => {
 
 });
 
-app.get("/describe/:orgSfName/:sobject", (req: Request, res: Response) => {
+app.get("/api/describe/:orgSfName/:sobject", (req: Request, res: Response) => {
     console.log(req.url);
     let signInToken = req.cookies.id;
     if (!signInToken) {
@@ -159,7 +159,7 @@ app.get("/describe/:orgSfName/:sobject", (req: Request, res: Response) => {
 
 
 
-app.get("/listmetadata", (req: Request, res: Response) => {
+app.get("/api/listmetadata", (req: Request, res: Response) => {
     console.log(req.url);
     let signInToken = req.cookies.id;
     if (!signInToken) {
@@ -177,7 +177,7 @@ app.get("/listmetadata", (req: Request, res: Response) => {
 
 });
 
-app.get("/getObjectmetadata", (req: Request, res: Response) => {
+app.get("/api/getObjectmetadata", (req: Request, res: Response) => {
     console.log(req.url);
     let signInToken = req.cookies.id;
     if (!signInToken) {
@@ -198,6 +198,6 @@ app.get("/getObjectmetadata", (req: Request, res: Response) => {
 
 
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+    console.log(`Server is running on Port: ${port}`);
 });
 
