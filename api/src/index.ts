@@ -17,7 +17,7 @@ const sessions = new Sessions();
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(cookieParser());
-
+app.use(express.static('../app/dist'));
 
 
 
@@ -71,7 +71,7 @@ app.get("/callback", async (req: Request, res: Response) => {
 
     try {
         await session.login( req.query.code as string, "http://localhost:3000/callback");
-        res.redirect("http://localhost:5173");
+        res.redirect("https://sfstudio.onrender.com");
     } catch (error) {
         console.error('Access Token Error', (error as Error).message);
         res.status(500).json('Authentication failed');
