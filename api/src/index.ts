@@ -9,7 +9,8 @@ import {SessionError, Sessions, Session } from './session'
 
 const clientId= process.env.CLIENT_ID || '';
 const clientSecret= process.env.CLIENT_SECRET || '';
-
+const redirectUri= process.env.REDIRECT_URI!;
+const callbackUrl = redirectUri + "/api/callback";
 
 
 const sessions = new Sessions();
@@ -57,7 +58,7 @@ app.get("/api/auth/:type", (req: Request, res: Response) => {
     }
 
     const session = sessions.getSession(signInToken);
-    const url = session.requestAuthorization(sandbox, "https://sfstudio.onrender.com/api/callback", clientId, clientSecret );
+    const url = session.requestAuthorization(sandbox, callbackUrl, clientId, clientSecret );
     res.redirect(url);
 });
 
@@ -70,8 +71,8 @@ app.get("/api/callback", async (req: Request, res: Response) => {
     const session = sessions.getSession(signInToken);
 
     try {
-        await session.login( req.query.code as string, "http://localhost:3000/callback");
-        res.redirect("https://sfstudio.onrender.com");
+        await session.login( req.query.code as string, callbackUrl);
+        res.redirect(redirectUri);
     } catch (error) {
         console.error('Access Token Error', (error as Error).message);
         res.status(500).json('Authentication failed');
