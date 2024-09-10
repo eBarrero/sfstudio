@@ -9,8 +9,9 @@ import {SessionError, Sessions, Session } from './session'
 
 const clientId= process.env.CLIENT_ID || '';
 const clientSecret= process.env.CLIENT_SECRET || '';
-const redirectUri= process.env.REDIRECT_URI!;
-const callbackUrl = redirectUri + "/api/callback";
+const ENV= process.env.ENV || 'NODEV';
+const redirectUri= (ENV==="DEV")? "http://Localhost:5173": process.env.REDIRECT_URI!;
+const callbackUrl= ((ENV==="DEV")? "http://Localhost:3000": redirectUri) + "/api/callback";
 
 
 const sessions = new Sessions();
@@ -18,7 +19,7 @@ const sessions = new Sessions();
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(cookieParser());
-app.use(express.static('../app/dist'));
+if ((ENV!=="DEV")) app.use(express.static('../app/dist'));
 
 
 
@@ -50,7 +51,7 @@ app.get("/api/init", (req: Request, res: Response) => {
 
 app.get("/api/auth/:type", (req: Request, res: Response) => {
     console.log(req.url);
-    const sandbox = (req.params.type==="sandbox") ? true : false;
+    const sandbox = (req.params.type==="test") ? true : false;
     let signInToken = req.cookies.id;
     if (!signInToken) {
         signInToken = sessions.signIn();
