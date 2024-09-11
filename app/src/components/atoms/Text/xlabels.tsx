@@ -21,3 +21,4 @@ export const TitleSection =(props:TitleProps) => {
         </div>
     );
 }
+

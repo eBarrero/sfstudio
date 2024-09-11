@@ -21,12 +21,10 @@ const DBConnectionManager = () => {
             <button onClick={onClikHandler(cmd_prod)}>Prod</button>
             <span>&nbsp;</span>
             <button onClick={onClikHandler(cmd_sandbox)}>Sanbox</button>
+            &nbsp;
             {publicSession.connections && publicSession.connections.map((c, i) => {
                 return (
-                    <div key={i}>
-                        <div>{c.name}</div>
-                        <div>{c.alias}</div>
-                    </div>
+                    <span key={i}>{c.name}</span>
                 )
             })}
         </div>

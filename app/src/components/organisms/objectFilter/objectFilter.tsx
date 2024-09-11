@@ -1,5 +1,5 @@
 import css from './style.module.css';
-import { GridTable, GridTableRow } from "../../xatoms/GridTable/gridTable";
+import { GridTable, GridTableRow } from "../../atoms/GridTable/gridTable";
 import { objectFilterOptions } from "../../../core/constants/filters";
 import applicationState from '../../../store/applicationState';
 import dataState            from "../../../store/dataState";
@@ -17,7 +17,7 @@ const ObjectFilter = () => {
     const { t } = useTranslation();
 
     function onActionRowHandle(rowId: string, action: string) {
-        exeCommandFromUI(`.${rowId} ${ (action==='TRUE')?'':(action==='FALSE')?'off':'rm' }`) ;
+        exeCommandFromUI(`.${rowId} ${ (action==='TRUE')?'on':(action==='FALSE')?'off':'rm' }`) ;
         
         
     }

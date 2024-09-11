@@ -48,11 +48,17 @@ const applicationState = create<ApplicationState>((set, get) => {
             set({currentCommand: newFilter});
         },
         setCommand: (newCommand: string | null) => {
+            console.log('setCommand', newCommand);
+            if (newCommand === ".Backspace") { 
+                set({currentCommand: get().currentCommand.slice(0, get().currentCommand.length-1), errorState: undefined, commandConfirmed: undefined,helpOnLine:'',  suggestions:[]});
+                return;
+            }
+
             if (newCommand === null || newCommand === '') {
                 set({currentCommand: '', commandConfirmed: undefined,helpOnLine:'',  suggestions:[]});
                 return;
             }
-            
+ 
             if (!newCommand.startsWith('.') && !get().currentCommand.startsWith('.')) {
                 get().setFilter(newCommand);
                 return;
@@ -93,7 +99,7 @@ const applicationState = create<ApplicationState>((set, get) => {
             const c = newCommand.trim();
             const firstWord = c.split(' ')[0];
             const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: c, helpOnLine:'',  filterConfirmed: '', errorState: undefined, suggestions:[], command: undefined};   
-            const command = readCommand(firstWord);                     
+            const command = readCommand(firstWord, newState.context_level);                     
             if (command !== undefined) {
                 newState.commandConfirmed = command;
             } else {
@@ -102,7 +108,9 @@ const applicationState = create<ApplicationState>((set, get) => {
             set(newState);
         },        
         initializeApp: () => {
-            addCommand( { ...APP_CMD.BACK,  action: () => { get().setContextLevel(CONTEXT_LEVEL.ORG) }} );
+            addCommand( { ...APP_CMD.BACK_FROM_ORG,  action: () => { get().setContextLevel(CONTEXT_LEVEL.INIT) }} );
+            addCommand( { ...APP_CMD.BACK_FROM_OBJ,  action: () => { get().setContextLevel(CONTEXT_LEVEL.ORG) }} );
+            addCommand( { ...APP_CMD.BACK_FROM_SQL,  action: () => { get().setContextLevel(CONTEXT_LEVEL.OBJECT) }} );
         }        
     }   
 });

@@ -78,7 +78,8 @@ interface CommandDefinition  {
     command: string;
     description: string;
     examples?: string[];
-    context: string | null;
+    context: string;
+    iconSymbol?: string;
 }
 
 interface CommandImplementation extends CommandDefinition {

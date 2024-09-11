@@ -3,26 +3,22 @@
 .console {
   display: flex;
   flex-direction: column;
-  margin: 0;
-  padding: 0;
+  margin: 0pt;
+  padding: 5pt;
   height: 100%;
   width: 100%;
-  background-color: #1e1e1e;
+  background-color: var(--color-console-bg);
   color: #fff;
   font-family: system-ui, sans-serif;  
   font-size: 0.8rem;
-
+  box-sizing: border-box;
   
 
-  .consoleHeader {
+  .toolBar {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-
-    .consoleTitle {
-      font-size: 1.5rem;
-    }
+    flex-direction: row;
+    background-color:transparent;
+    padding-bottom: 1pt;
   }
   .console_input {
     margin: 0;

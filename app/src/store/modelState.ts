@@ -243,7 +243,7 @@ function sqlState( queryState: QueryState  ): SQLState {
     let sqlOrderBy = '';
     let sqlGroupBy = '';
     let sqlHaving = '';
-
+    let sqlLimit = '';
 
 
 
@@ -278,7 +278,10 @@ function sqlState( queryState: QueryState  ): SQLState {
         }
 
     });
-    const sql = `${sqlSelect} ${sqlFrom} ${sqlWhere} ${sqlOrderBy} ${sqlGroupBy} ${sqlHaving} `;
+
+    sqlLimit = ` LIMIT ${ (query[0] as PrimaryQuery).limit} `;
+
+    const sql = `${sqlSelect} ${sqlFrom} ${sqlWhere} ${sqlOrderBy} ${sqlGroupBy} ${sqlHaving} ${sqlLimit}`;
     console.log('SQL:' + sql);
     return {sql};
 }   

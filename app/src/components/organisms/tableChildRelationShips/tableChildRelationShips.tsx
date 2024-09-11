@@ -1,5 +1,5 @@
 import css from './style.module.css';
-import { GridTable,  GridTableRow } from "../../xatoms/GridTable/gridTable";
+import { GridTable,  GridTableRow } from "../../atoms/GridTable/gridTable";
 import  dataState  from "../../../store/dataState";
 import applicationState from '../../../store/applicationState';
 

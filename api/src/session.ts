@@ -102,8 +102,8 @@ export class Connection {
         };
 
         this.accessToken= await this.client.getToken(tokenParams);
-        this.alias = (this.sandbox) ? "Sbox" : "PROD";
-        const regexp = /(?<=\/\/).*?(?=\.my)/
+        this.alias = (this.sandbox) ? "sandbox" : "PROD";
+        const regexp = /(?<=\/\/).*?(?=\.my|\.sandbox)/
         this.name = (this.accessToken.token.instance_url as string).match(regexp)![0];
         this.conn = new jsforce.Connection({
             instanceUrl: this.accessToken.token.instance_url as string,

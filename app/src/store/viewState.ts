@@ -29,8 +29,8 @@ const viewState = create<ViewState>((set, get) => {
         setComponentShowed: (componentName: string) => {
             console.log('setComponentShowed', componentName, get().componentShowed);
 
-            //const newValue =  (get().componentShowed !== componentName)?componentName:undefined
-            set({componentShowed: componentName}) ;
+            const newValue =  (get().componentShowed !== componentName)?componentName:undefined
+            set({componentShowed: newValue}) ;
         },
         reSetComponentShowed: () => {
             set({componentShowed: undefined});

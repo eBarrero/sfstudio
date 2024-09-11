@@ -72,6 +72,7 @@ const dataState = create<DataState>((set, get) => {
             });
         },
         setObjectFilterText: (orgSfName: SchemaName, searchText: string) => {
+            console.log('setObjectFilterText', searchText);
             const filter = get().sObjectsFilter;
             filter.searchText = searchText;
             set({sObjectsFilter: filter});

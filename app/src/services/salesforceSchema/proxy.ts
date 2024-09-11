@@ -21,7 +21,7 @@ export default class Proxy {
      * @throws Error if the orgSfName is invalid or if the Salesforce objects are not found.
      */
     public static async getSObjectsAdapter(orgSfName: SchemaName, filter: SObjectsFilter) : Promise<GetSObjectsIndex[] | null> {
-        console.log(`getSObjectsIndex orgSfName: "${orgSfName}"`);
+        console.log(`getSObjectsAdapter orgSfName: "${orgSfName}"`);
         if (orgSfName.length < 3) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }

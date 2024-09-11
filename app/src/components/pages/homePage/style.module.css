@@ -24,9 +24,7 @@ main {
             .frame_features {
                 border: 0px solid rgba(196, 187, 187, 0.5);
             }
-            .frame_explorer {
-                border: 0px solid rgba(196, 187, 187, 0.5);
-            }
+
         }    
 
         .panel_container {
