@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import css from './local.module.css'
 import DataTime from '../../../core/constants/dataTime';
-import OptionList from '../OptionList/optionList';
+import OptionList from '../optionList/optionList';
 import { useTranslation } from 'react-i18next';
 import modelState  from '../../../store/modelState';  
 import viewState from '../../../store/viewState';
