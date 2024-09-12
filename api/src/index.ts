@@ -24,7 +24,8 @@ if ((ENV!=="DEV")) app.use(express.static('../app/dist'));
 
 
 app.get("/api/init", (req: Request, res: Response) => {
-    console.log(req.url);
+    console.log(`${req.url} ${req.ip}  ${req.headers['user-agent']} ${req.headers['x-forwarded-for']} ${req.headers['x-real-ip']} ${req.headers['x-forwarded-host']}`); 
+    console.log(req.headers);
     const signInToken = req.cookies.id;
     if (!signInToken) {
         res.json("newsession" ); 
@@ -41,7 +42,7 @@ app.get("/api/init", (req: Request, res: Response) => {
         } else {
             console.error('Error', (error as Error).message);
             res.json(500).json("Error");
-            return
+            return;
         }
     }
 });

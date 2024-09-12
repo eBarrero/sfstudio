@@ -21,14 +21,11 @@ main {
             flex-direction: column;
             height: 100vh;
             border: 1px solid rgba(196, 187, 187, 0.5);
-            .frame_features {
-                border: 0px solid rgba(196, 187, 187, 0.5);
-            }
 
         }    
 
         .panel_container {
-            border: 0px solid rgba(196, 187, 187, 0.5);
+            
             overflow-y: auto;
             height: 100vh;
             max-height: 100%;

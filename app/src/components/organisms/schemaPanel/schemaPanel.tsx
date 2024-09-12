@@ -19,8 +19,10 @@ export default function SObjectsPanel() {
     
     return (
         <article className={css.PanelSObjects}>
+            <span>{`${sobjects.length} SObjects`}</span>
             <section>
                 {componentShowed==="OBJECT_FILTER" && (<ObjectFilter/>)}
+                
             </section>                
             <section className={css.PanelSObjectsList}>
                 {sobjects.map((sobject) => (

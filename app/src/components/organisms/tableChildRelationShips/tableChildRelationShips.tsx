@@ -15,7 +15,7 @@ export default function TableChildRelationShips() {
 
     }
     return (
-        <section>
+        <section className={css.section}>
         <h2>Child Relationships</h2>    
         <div className={css.grid}>
             <GridTable 

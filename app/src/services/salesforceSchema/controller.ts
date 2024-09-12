@@ -12,11 +12,17 @@ async function request(url: string): Promise<any | null>  {
           throw new RequestError(res, res.statusText);
         }
         const json = await res.json();
-        window.localStorage.setItem(url, JSON.stringify(json));
+        try {
+            window.localStorage.setItem(url, JSON.stringify(json));
+        } catch (error) {
+            console.error(`localStorage.setItem() error: ${(error as Error).message}`);
+        }
+
         return json;
     } catch (error) {
         if (error instanceof Error) {
             console.error(`Unexpected error: ${(error as Error).message}`);
+            removeOlderLocalStoreItem();
         }
         throw error;
     }
@@ -93,3 +99,16 @@ function toBase64UrlSafe(str: string):string {
       .replace(/=+$/, ''); // remove padding caracter '='
   }
 
+function removeOlderLocalStoreItem(): void {
+    try {
+        for (let i = localStorage.length; i > 0; i--) {
+            const key = localStorage.key(i);
+            if (key?.startsWith('/api/')) {
+                localStorage.removeItem(key);
+                return;
+            }
+        }
+    } catch (error) {
+        console.error(`removeOlderLocalStoreItem error: ${(error as Error).message}`);
+    }    
+}    

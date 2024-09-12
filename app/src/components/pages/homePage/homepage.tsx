@@ -24,9 +24,9 @@ const HomePage = () => {
                 </aside>
                 <section className={css.panel_container}>
                     <section className={css.frame_editor}>
-                    {currentView==='org' && <SchemaPanel/> }
-                    {currentView==='sobject' && <SObjectPanel/> }     
-                    {currentView==='SQL_RESULT' && <ResultSheet/> }                   
+                        {currentView==='org' && <SchemaPanel/> }
+                        {currentView==='sobject' && <SObjectPanel/> }     
+                        {currentView==='SQL_RESULT' && <ResultSheet/> }                   
                     </section>
                 </section>    
             </main>
