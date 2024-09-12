@@ -94,6 +94,7 @@ interface SOQLFieldSelectionState {
 }
 interface SQLState {        
     sql: string;
+    isValid: boolean;
 }
 
 

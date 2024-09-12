@@ -282,8 +282,9 @@ function sqlState( queryState: QueryState  ): SQLState {
     sqlLimit = ` LIMIT ${ (query[0] as PrimaryQuery).limit} `;
 
     const sql = `${sqlSelect} ${sqlFrom} ${sqlWhere} ${sqlOrderBy} ${sqlGroupBy} ${sqlHaving} ${sqlLimit}`;
+    const isValid = (sql.split("SELECT").length ===sql.split("FROM").length);
     console.log('SQL:' + sql);
-    return {sql};
+    return {sql, isValid};
 }   
 
 /*            sql += `SELECT ${queryElemnt.selectClause?.fieldsAll} `;

@@ -10,7 +10,5 @@ export function t(message:string | null) {
     for (let i = 1; i < parts.length; i++) {
       params[`p${i - 1}`] = parts[i];
     }
-    console.log('params', params);
-    console.log('parts', parts[0]);
     return i18next.t(parts[0], params);
   } 

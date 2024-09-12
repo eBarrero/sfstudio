@@ -4,9 +4,9 @@ visit yhe live project at: https://sfstudio.dev
 
 BUGs
 Problema del comnado ".custom"
-impementar comando ".back"
+v impementar comando ".back"
 focus en el input
 
 Features
 terminar dialog
-control de sql valido
+v control de sql valido (mejorar usando throw new Error)

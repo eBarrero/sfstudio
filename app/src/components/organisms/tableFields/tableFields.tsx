@@ -35,7 +35,7 @@ export default function TableFields() {
     console.log("sObjectFields", sObjectFields.length);
     return (
         <section>
-            <h2>Fields</h2>
+            <h2>{sObjectFields.length} Fields</h2>
             <div className={css.grid}>
                 <GridTable
                 headerOff={true}

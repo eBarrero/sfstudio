@@ -1,6 +1,7 @@
 {
     "Error.Command_is_null": "Command is null",
     "Error.WrongParam": "[on]/off/rm was expected instead of {{p0}}",
+    "Error.SQL_NOT_VALID": "SQL is not valid",
     "CMD.generalError": "General error: {{p0}}",
     "CMD.init.prod": "login to production environment",
     "CMD.init.sandbox": "login to sandbox environment",
