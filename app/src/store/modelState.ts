@@ -31,7 +31,7 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             const mainQuery: PrimaryQuery = {
                 sObjectId:{orgSfName, sObjectLocalId, sObjectApiName},  
                 parent:-1, 
-                limit:1, 
+                limit:50, 
                 type:'ROOT',
                 level: 0,
                 selectClause: {fields: []} 

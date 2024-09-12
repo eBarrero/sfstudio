@@ -1,6 +1,7 @@
 
 import {create} from 'zustand';
 import { addCommand, searchCommand, readCommand, CONTEXT_LEVEL,APP_CMD } from '../core/commandManager';
+import viewState from './viewState';
 
 
 interface LocalAplicationState {
@@ -108,9 +109,22 @@ const applicationState = create<ApplicationState>((set, get) => {
             set(newState);
         },        
         initializeApp: () => {
-            addCommand( { ...APP_CMD.BACK_FROM_ORG,  action: () => { get().setContextLevel(CONTEXT_LEVEL.INIT) }} );
-            addCommand( { ...APP_CMD.BACK_FROM_OBJ,  action: () => { get().setContextLevel(CONTEXT_LEVEL.ORG) }} );
-            addCommand( { ...APP_CMD.BACK_FROM_SQL,  action: () => { get().setContextLevel(CONTEXT_LEVEL.OBJECT) }} );
+            addCommand( { ...APP_CMD.BACK_FROM_ORG,  action: () => { 
+                // missing implementation
+                // close salesforce connection
+                get().setContextLevel(CONTEXT_LEVEL.INIT) 
+            }} );
+            addCommand( { ...APP_CMD.BACK_FROM_OBJ,  action: (params: AcctionParams ) => { 
+                const { view, model } = params;
+                view.setCurrentView(CONTEXT_LEVEL.ORG);
+                model.setOrg(model.state.orgSfName);
+                get().setContextLevel(CONTEXT_LEVEL.ORG);
+            }} );
+            addCommand( { ...APP_CMD.BACK_FROM_SQL,  action: (params: AcctionParams) => { 
+                const { view } = params;
+                view.setCurrentView('sobject');
+                get().setContextLevel(CONTEXT_LEVEL.OBJECT) 
+            }} );
         }        
     }   
 });

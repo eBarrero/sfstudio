@@ -34,7 +34,7 @@ export function salesforceJsontoInlineJson(salesforceJson: any): InlineJson {
     let indexRow: number = 0;      // it is used to store the index of the current data row of the records  
     let rows: string='';           // it is used to store the rows of the records in inline json format  
     let indexHeader: number = 0;   // 
-    
+    console.log(salesforceJson);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     records.forEach((record: any) => {
         for (const [key, value] of Object.entries(record)) {
