@@ -14,7 +14,7 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
     return  {
         state:   { orgSfName: '', action: '', sObjectApiName: '', sObjectLocalId: - 1, currentField: null},
         queryState: { queryElemnts: [], indexCurrentElement: 0  },
-        sqlState:   { sql: ''},
+        sqlState:   { sql: '', isValid: false},
         currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>,
         setOrg: (orgSfName: SchemaName)  => {
             if (orgSfName === '') return;

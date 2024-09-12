@@ -1,7 +1,7 @@
 
 import {create} from 'zustand';
 import { addCommand, searchCommand, readCommand, CONTEXT_LEVEL,APP_CMD } from '../core/commandManager';
-import viewState from './viewState';
+
 
 
 interface LocalAplicationState {
