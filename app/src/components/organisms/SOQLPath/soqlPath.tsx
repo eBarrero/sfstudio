@@ -12,11 +12,11 @@ const SOQLPath = () => {
 
 
     return (
-        <div className={css.container}>
+        <div className={css.container}><div>hola</div>
         {queryState.queryElemnts.map((element, index) => {
             const iconType = element.type==='RELETED' ? '1to1' : '1toN';
             return (
-                <SmartLabel key={index} iconType={iconType} label={element.sObjectId.sObjectApiName} active={false} action={`${index}`} onAcionHandler={onActionHandler} optionalTags={{}}/>
+                <SmartLabel key={index} iconType={iconType} label={`${element.parent}-${element.sObjectId.sObjectApiName}`} active={false} action={`${index}`} onAcionHandler={onActionHandler} optionalTags={{}}/>
                 
             )
             })}        

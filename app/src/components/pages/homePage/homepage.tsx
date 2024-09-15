@@ -6,6 +6,12 @@ import SObjectPanel from '../../organisms/sObjectPanel/sObjectPanel';
 import viewState from '../../../store/viewState';
 import Console from '../../organisms/console/console';
 import ResultSheet from '../../organisms/resultSheet/resultSheet';
+/*
+import {salesforceJsontoInlineJson } from '../../../utils/inlineJson';
+import json  from '../../../Mocks/resp.json' assert { type: 'json'};
+
+salesforceJsontoInlineJson(json);
+*/
 
 console.log('*****HomePage');
 const HomePage = () => {

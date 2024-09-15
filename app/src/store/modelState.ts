@@ -55,7 +55,7 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
                   
             const queryState = structuredClone(get().queryState); 
             const indexCurrentElement = queryState.indexCurrentElement;
-            const parentQuery = queryState.queryElemnts[indexCurrentElement];  // the current elemwnt is the parent of the new element
+            const parentQuery = queryState.queryElemnts[indexCurrentElement];  // the current element is the parent of the new element
             const newlevel = (parentQuery as ReletedObject).level + 1;         // the new level is the parent level + 1 (max. 5) 
 
             
@@ -236,6 +236,26 @@ function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFi
 
 
 function sqlState( queryState: QueryState  ): SQLState {
+
+    function addLookupSelect(parent: number, currentSelect: string, previousRelatedTo: string): string {
+        console.log('>>>>' + parent + ' ' + currentSelect + ' ' + previousRelatedTo);
+        let select = currentSelect;
+        query.forEach((queryElemnt, index) => {
+        if (queryElemnt.type === 'RELETED' && queryElemnt.parent === parent) {
+            
+            const reletedObject = queryElemnt as ReletedObject;
+            const newRelatedTo = previousRelatedTo + reletedObject.relatedTo + '.';
+            select = addLookupSelect(index, select, newRelatedTo);
+            reletedObject.selectClause?.fields?.forEach((field) => {
+                if  (select !== '')  select += ', ';
+                select += `${newRelatedTo}${field.fieldId.fieldApiName} `;
+            });            
+        }
+        });
+
+        return select;
+    }
+
     const query = queryState.queryElemnts;
     let sqlSelect = '';
     let sqlFrom = 'FROM ';
@@ -247,7 +267,7 @@ function sqlState( queryState: QueryState  ): SQLState {
 
 
 
-    query.forEach((queryElemnt) => {
+    query.forEach((queryElemnt,index) => {
         if (queryElemnt.type === 'ROOT') {
             const rootQuery = queryElemnt as PrimaryQuery;
             if (rootQuery.selectClause?.fieldsAll!==undefined) sqlSelect += `${rootQuery.selectClause?.fieldsAll} `;
@@ -255,8 +275,11 @@ function sqlState( queryState: QueryState  ): SQLState {
                 if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
                 sqlSelect += `${field.fieldId.fieldApiName}`;
             });
+            console.log('sqlSelect:' + sqlSelect);
+            sqlSelect = addLookupSelect(0, sqlSelect, '');
+            console.log('sqlSelect:*******************' + sqlSelect);
             sqlFrom += `${rootQuery.sObjectId.sObjectApiName} `;
-
+              
 
         } else if (queryElemnt.type === 'SUBQUERY') {
             const subQuery = queryElemnt as NestedQuery;
@@ -265,19 +288,16 @@ function sqlState( queryState: QueryState  ): SQLState {
                 if (subQuerySelect === '')  subQuerySelect='SELECT '; else subQuerySelect += ', ';
                 subQuerySelect += `${field.fieldId.fieldApiName}`;
             });
+            subQuerySelect = addLookupSelect(index, subQuerySelect, '');
             subQuerySelect+= ` FROM ${subQuery.relationshipName} `;
             if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
             sqlSelect += `(${subQuerySelect}) `;
 
-        } else if (queryElemnt.type === 'RELETED') {
-            const reletedObject = queryElemnt as ReletedObject;
-            reletedObject.selectClause?.fields?.forEach((field) => {
-                if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
-                sqlSelect += `${reletedObject.relatedTo}.${field.fieldId.fieldApiName} `;
-            });            
-        }
-
+        } 
     });
+
+
+
 
     sqlLimit = ` LIMIT ${ (query[0] as PrimaryQuery).limit} `;
 

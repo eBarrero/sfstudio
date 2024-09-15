@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 
 
@@ -20,12 +21,119 @@ export enum delimeterType
     newLine = '|n'
 }
 
+interface FieldSet {
+    fieldName: string;
+    backColumn: string;
+    nextColumn: string;
+    type: delimeterType; // value, array, object
+}
+
+
+type FieldsSet  = Map<string, FieldSet>;
+let fieldsSet: FieldsSet;
+let lastField: FieldSet | null;
+type RecordSet = Map<string, string[]|string[][]>;
+let recordSet: RecordSet;
+let recordIndex: number;
+
+
+
+function processCaption(record: any, path: string ): void {
+    
+    
+    function details(key: string, value: any): void {
+        // skip attributes
+        if (key === 'attributes') {
+            return;
+        }
+        let type: delimeterType;
+        if (typeof value!=='object' || value===null) {
+            if (key==='NewLine') type = delimeterType.newLine;
+            else if (key==='pop:') { type = delimeterType.pop0; }
+            else if (value===null) { type = delimeterType.nullValue; }
+            else { type = delimeterType.value; console.log('****VALUE', key, value);}
+        } else {  
+            type = (value.records!==undefined) ? delimeterType.arrayNode: delimeterType.singleNode
+        }
+        
+        const fieldName = path + key;
+        let insertToColumn =  '';
+        let currentField: FieldSet;
+        if (fieldsSet.has(fieldName)) {
+            currentField = fieldsSet.get(fieldName)!;
+        } else {
+            if (lastField!==null) {
+                if (lastField.nextColumn!=='') {
+                    insertToColumn = lastField.nextColumn;
+                    const nextField = fieldsSet.get(lastField.nextColumn);
+                    nextField!.backColumn = fieldName;
+                    fieldsSet.set(lastField.nextColumn, nextField!);
+                } 
+                lastField.nextColumn = fieldName;
+                fieldsSet.set(lastField.fieldName, lastField);
+                //console.log('/////', lastField);
+            }
+
+            currentField = {fieldName, backColumn: lastField ? lastField.fieldName: '', nextColumn: insertToColumn, type};
+            //console.log('****', currentField);
+            fieldsSet.set(fieldName, currentField);
+        }
+        if (type===delimeterType.value || type===delimeterType.nullValue) { 
+            if (!recordSet.has(fieldName)) recordSet.set(fieldName, []);
+            recordSet.get(fieldName)![recordIndex]= [...value]  ;
+        }        
+        lastField = currentField;
+        if (type===delimeterType.arrayNode) {
+            processCaption(record[key].records, `${fieldName}.`);
+        }
+        if (type===delimeterType.singleNode) {
+            processCaption(value, `${fieldName}.`);
+        }
+
+    }
+
+
+    //console.log('****RECORD', record);
+
+    
+    if (Array.isArray(record)) {
+        record.forEach((element: any) => {
+            if (path==='') lastField=null;
+            for (const [key, value] of Object.entries(element)) {   
+                //console.log('****ARRAY'+ key);
+                details(key, value);
+            }
+            if (path==='') { details('NewLine','system'); recordIndex++;}
+            else { details('pop:','system');}
+        });    
+    } else {
+
+        for (const [key, value] of Object.entries(record)) {
+            //console.log('****OBJ');
+            details(key, value);
+        }    
+       
+        details('pop:', 'pop')
+    }
+}    
+
+export function xsalesforceJsontoInlineJson(salesforceJson: any): InlineJson {
+    fieldsSet = new Map<string, FieldSet>();
+    recordSet = new Map<string, string[]>;
+    recordIndex = 0;
+    processCaption(salesforceJson.records, '' );
+    console.log(fieldsSet);
+    console.log(recordSet);
+    
+    return '';
+}
+
+
 /**
  * @description Convert a salesforce json to inline json, excluding "attribute" nodes
  * @param salesforceJson 
  * @returns 
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function salesforceJsontoInlineJson(salesforceJson: any): InlineJson {
     const records = salesforceJson.records;
     let header: string[] = [];     // it is used to store the header of the records 
