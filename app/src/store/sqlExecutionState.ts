@@ -18,7 +18,7 @@ const sqlExecutionState = create<SqlExecutionState>((set, get) => {
         selectResponse: ({captions:[], rows:[]}),
         executeSql: (orgSfName: SchemaName, query: string) => {
             Proxy.sendSoqlAdapter(orgSfName, query).then((data) => {
-                set({selectResponse: inlineJsonToArray(salesforceJsontoInlineJson(data))});
+                set({selectResponse: salesforceJsontoInlineJson(data)});
             });
         },
         initializeSqlExecution: () => {

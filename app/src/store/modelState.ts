@@ -61,7 +61,7 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             
             const sObjectLocalId = field.referenceToLocalId![0];
             const relatedObject : ReletedObject = {
-                sObjectId: {orgSfName, sObjectLocalId, sObjectApiName: field.referenceTo[0]}, 
+                sObjectId: {orgSfName, sObjectLocalId, sObjectApiName: field.referenceTo}, 
                 parent: indexCurrentElement, 
                 type:'RELETED', 
                 relatedTo: field.relationshipName!,
@@ -71,7 +71,7 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             queryState.indexCurrentElement = queryState.queryElemnts.push(relatedObject) - 1;
 
             set({state: {orgSfName, 
-                         sObjectApiName:field.referenceTo[0], 
+                         sObjectApiName:field.referenceTo, 
                          sObjectLocalId: sObjectLocalId, 
                          action: 'quitar action'}, 
                  queryState, 
@@ -238,7 +238,6 @@ function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFi
 function sqlState( queryState: QueryState  ): SQLState {
 
     function addLookupSelect(parent: number, currentSelect: string, previousRelatedTo: string): string {
-        console.log('>>>>' + parent + ' ' + currentSelect + ' ' + previousRelatedTo);
         let select = currentSelect;
         query.forEach((queryElemnt, index) => {
         if (queryElemnt.type === 'RELETED' && queryElemnt.parent === parent) {
@@ -275,9 +274,7 @@ function sqlState( queryState: QueryState  ): SQLState {
                 if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
                 sqlSelect += `${field.fieldId.fieldApiName}`;
             });
-            console.log('sqlSelect:' + sqlSelect);
             sqlSelect = addLookupSelect(0, sqlSelect, '');
-            console.log('sqlSelect:*******************' + sqlSelect);
             sqlFrom += `${rootQuery.sObjectId.sObjectApiName} `;
               
 

@@ -1,28 +1,23 @@
-npm init -y
-cd api
-npm init -y
-npm install typescript -D
-add  "tsc": "tsc" to scripts
-npm run tsc -- --init  (crea el tsconfig.json )
-npm install express simple-oauth2 ts-node -E
-npm install @types/express  @types/simple-oauth2 -D -E -w api
-npm install cookie-parser -E -w api
-npm install @types/cookie-parser -D -E -w api
-npm install jsforce -E -w api
-npm install @types/jsforce -D-E -w api
+SF Studio - Salesforce Navigator and SOQL Generator
 
-cd ..
-npm intall vita@lasted
+visit yhe live project at: https://sfstudio.dev
 
-crear proxy para vite en ite.config.ts
-...
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      }
-    }
-  }
+##BUGs
+Problema del comnado ".custom"
+focus en el input
+inicializar filtro al borrar la cadena
 
+##Mejoras:
+Convertir el historico en un div
+
+##Features
+terminar dialog
+Path sql
+
+- mostrar jeraqrquía
+- abilitar click
+
+##Done:
+BUGFIX implementar comando ".back"
+FEATURE: validar la sentencias SOQL
+BUGFIX problemas en la respuesta SQL cuando hay un campo de un objeto relacionado

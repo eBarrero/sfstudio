@@ -50,10 +50,10 @@ const ResultSheet = () => {
                                 {row.col.map((cell, index) => (
                                     <td key={`${index}|${cell[0]}`} style={{ width: 150 }}>
                                         {
-                                         cell.split('|').map((value, index) => ( 
+                                         cell && cell.split('|').map((value, index) => ( 
                                             <div key={`${index}`}>
                                                 <div className={css.resizer} onMouseDown={(e) => handleMouseDown(index, e)} >&nbsp;</div>
-                                                <span key={index}>&nbsp;{value}<br/></span>
+                                                <span key={index}>&nbsp;{value && value}<br/></span>
                                             </div>))
                                         }
                                     </td>

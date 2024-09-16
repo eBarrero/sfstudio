@@ -29,103 +29,74 @@ interface FieldSet {
 }
 
 
-type FieldsSet  = Map<string, FieldSet>;
-let fieldsSet: FieldsSet;
-let lastField: FieldSet | null;
-type RecordSet = Map<string, string[]|string[][]>;
+
+type RecordSet = Map<string, string[]>;
 let recordSet: RecordSet;
 let recordIndex: number;
 
 
 
 function processCaption(record: any, path: string ): void {
-    
-    
     function details(key: string, value: any): void {
         // skip attributes
         if (key === 'attributes') {
             return;
         }
-        let type: delimeterType;
-        if (typeof value!=='object' || value===null) {
-            if (key==='NewLine') type = delimeterType.newLine;
-            else if (key==='pop:') { type = delimeterType.pop0; }
-            else if (value===null) { type = delimeterType.nullValue; }
-            else { type = delimeterType.value; console.log('****VALUE', key, value);}
-        } else {  
-            type = (value.records!==undefined) ? delimeterType.arrayNode: delimeterType.singleNode
-        }
-        
         const fieldName = path + key;
-        let insertToColumn =  '';
-        let currentField: FieldSet;
-        if (fieldsSet.has(fieldName)) {
-            currentField = fieldsSet.get(fieldName)!;
-        } else {
-            if (lastField!==null) {
-                if (lastField.nextColumn!=='') {
-                    insertToColumn = lastField.nextColumn;
-                    const nextField = fieldsSet.get(lastField.nextColumn);
-                    nextField!.backColumn = fieldName;
-                    fieldsSet.set(lastField.nextColumn, nextField!);
-                } 
-                lastField.nextColumn = fieldName;
-                fieldsSet.set(lastField.fieldName, lastField);
-                //console.log('/////', lastField);
-            }
-
-            currentField = {fieldName, backColumn: lastField ? lastField.fieldName: '', nextColumn: insertToColumn, type};
-            //console.log('****', currentField);
-            fieldsSet.set(fieldName, currentField);
-        }
-        if (type===delimeterType.value || type===delimeterType.nullValue) { 
+        if (typeof value!=='object' || value===null) {
             if (!recordSet.has(fieldName)) recordSet.set(fieldName, []);
-            recordSet.get(fieldName)![recordIndex]= [...value]  ;
-        }        
-        lastField = currentField;
-        if (type===delimeterType.arrayNode) {
-            processCaption(record[key].records, `${fieldName}.`);
+            if (recordSet.get(fieldName)![recordIndex]===undefined) {
+                recordSet.get(fieldName)![recordIndex]= value;
+            } else {
+                recordSet.get(fieldName)![recordIndex]+= "|" + value;
+            }
+        } else {    
+            if ( (value.records!==undefined)) {
+                processCaption(value['records'], `${fieldName}.`);
+            } else {
+                processCaption(value, `${fieldName}.`);
+            }
         }
-        if (type===delimeterType.singleNode) {
-            processCaption(value, `${fieldName}.`);
-        }
-
     }
-
-
-    //console.log('****RECORD', record);
-
     
     if (Array.isArray(record)) {
         record.forEach((element: any) => {
-            if (path==='') lastField=null;
             for (const [key, value] of Object.entries(element)) {   
-                //console.log('****ARRAY'+ key);
                 details(key, value);
             }
-            if (path==='') { details('NewLine','system'); recordIndex++;}
-            else { details('pop:','system');}
+            if (path==='')  recordIndex++;
         });    
     } else {
-
         for (const [key, value] of Object.entries(record)) {
-            //console.log('****OBJ');
             details(key, value);
         }    
        
-        details('pop:', 'pop')
+        
     }
 }    
 
-export function xsalesforceJsontoInlineJson(salesforceJson: any): InlineJson {
-    fieldsSet = new Map<string, FieldSet>();
+export function salesforceJsontoInlineJson(salesforceJson: any): InlineJsonArray {
     recordSet = new Map<string, string[]>;
     recordIndex = 0;
     processCaption(salesforceJson.records, '' );
-    console.log(fieldsSet);
     console.log(recordSet);
+    const captions: Captions[] = [];         
+    const rows: Rows[] = [];
+    let col: number=0;   recordSet.forEach((value, key) => {
+        const path = key.split('.');
+        const fieldName = path[path.length-1];
+        const objectName = path.slice(0, path.length-1).join('.');
+        const quantity = 0;
+        captions.push({fieldName, objectName, quantity});
+        value.forEach((element, index) => {
+            if (col===0) rows[index] = {col: []};
+            rows[index].col[col] = element;
+        });
+        col++;
+        
+    });
     
-    return '';
+    return {captions, rows};
 }
 
 
@@ -134,7 +105,7 @@ export function xsalesforceJsontoInlineJson(salesforceJson: any): InlineJson {
  * @param salesforceJson 
  * @returns 
  */
-export function salesforceJsontoInlineJson(salesforceJson: any): InlineJson {
+export function xsalesforceJsontoInlineJson(salesforceJson: any): InlineJson {
     const records = salesforceJson.records;
     let header: string[] = [];     // it is used to store the header of the records 
     let headerExt: string[] = [];  // it is used to store the header of the subrecords when the header is not defined in the first record therefoce it is necessary to store it to be added to the header when it is defined
