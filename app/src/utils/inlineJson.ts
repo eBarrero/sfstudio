@@ -21,12 +21,7 @@ export enum delimeterType
     newLine = '|n'
 }
 
-interface FieldSet {
-    fieldName: string;
-    backColumn: string;
-    nextColumn: string;
-    type: delimeterType; // value, array, object
-}
+
 
 
 
@@ -215,94 +210,3 @@ return data;
 
 
 
-/**
- * @description Convert an inline json to array
- * @param data as inline json format
- * @returns InlineJsonArray
- */
-export function inlineJsonToArray(inlineJson: InlineJson): InlineJsonArray {
-    // TEMPORARY VARIABLES
-    let word = ''; // it stores the current word
-    let objectName = ''; // it stores the object name
-    let backToken = '';
-    let columnObjectMark = 0; // it stores the index when the last object starts to be defined
-    let index = 0; // it is used to store the index of the current character
-    //Result
-    const captions: Captions[] = []; 
-
-    // Caption part
-    do {
-        const token: string  = inlineJson.slice(index,index+2); // read the next 2 characters 
-        
-        if (inlineJson[index]==="|") { // it comes a token
-            
-            if (word!=='' )  {
-                // word from prevuios token
-                if (backToken === delimeterType.value)  captions.push({fieldName: word, objectName, quantity:1 }); 
-                if (backToken === delimeterType.arrayNode)  objectName=word;  
-                word = '';
-            }
-            if (token === delimeterType.arrayNode)  columnObjectMark = captions.length;
-            if (token === delimeterType.pop0)       captions[columnObjectMark].quantity = captions.length - columnObjectMark; 
-            if (token === delimeterType.newLine)   break;
-            backToken = token;
-            index+=2;
-        } else {
-            word += inlineJson[index]; index++;   
-        }  
-    } while (index<inlineJson.length && inlineJson[index]!==delimeterType.newLine);
-
-    // Data part
-    let dataIndexRow = 0;
-    let columnObjectIndex = 0;
-    //Result
-    const rows: Rows[] = [];
-    rows[dataIndexRow] = { col: []};
-    columnObjectMark = 0;
-    do {
-        const token: string  = inlineJson.slice(index,index+2);
-        if (inlineJson[index]==="|") {
-            if (word!=='' )  {
-                if (backToken === delimeterType.value) { 
-                    if (columnObjectIndex===0) { rows[dataIndexRow].col.push(word); }
-                    else { rows[dataIndexRow].col[columnObjectIndex] += '|'+ word;
-                        columnObjectIndex++;
-                     }
-                }    
-                word = '';
-            }
-            if (token === delimeterType.nullValue)  {
-                if (columnObjectIndex===0) {
-                    //scenario: null value in the first column, that means the object is null and we need to add the rest of the columns
-                    const added : string[] = Array(captions[ rows[dataIndexRow].col.length  ].quantity).fill('|');  
-                    rows[dataIndexRow].col = rows[dataIndexRow].col.concat(added);
-                } else {
-                    //scenario: null value in the middle of the columns, that means the object is not null but the value of any column is null
-                    rows[dataIndexRow].col[columnObjectIndex] += '|'; 
-                    columnObjectIndex++;
-                }
-            }
-            if (token === delimeterType.arrayNode) { 
-                columnObjectIndex=0;
-                columnObjectMark=rows[dataIndexRow].col.length;
-            }
-            if (token === delimeterType.newRecord) { 
-                columnObjectIndex=columnObjectMark;
-            }
-            if (token === delimeterType.pop0) { 
-                columnObjectIndex=0;
-            }
-            if (token === delimeterType.newLine) { 
-                dataIndexRow++;
-                columnObjectIndex=0;
-
-                rows[dataIndexRow] = { col: []};
-            }
-            backToken = token;
-            index+=2;
-        } else {
-            word += inlineJson[index]; index++;   
-        }
-    } while (index<inlineJson.length);
-    return {captions, rows};
-}
