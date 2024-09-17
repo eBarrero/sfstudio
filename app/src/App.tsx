@@ -7,8 +7,10 @@ import modelState    from './store/modelState.ts';
 import viewState     from './store/viewState.ts'
 import sqlExecutionState from './store/sqlExecutionState.ts';
 import applicationState from './store/applicationState.ts';
+import { Dialog } from './components/constants.ts';
 import HomePage from './components/pages/homePage/homepage.tsx';
 import DateTime from './components/organisms/fieldDialog/dateTime.tsx';
+import Help from './components/organisms/helpDialog/help.tsx';
 
 
 
@@ -32,8 +34,11 @@ useEffect(() => {
 },[]);
   return (
     <>
-    <HomePage/>
-    {dialogStack && dialogStack.map((dialog) => { if (dialog==="DataTime") return <DateTime key={dialog}/>})}
+      <HomePage/>
+      {dialogStack && dialogStack.map((dialog) => { 
+        if (dialog===Dialog.DateTime) return <DateTime key={dialog}/>
+        if (dialog===Dialog.Help) return <Help/>
+      })}
     </>
   )
 }

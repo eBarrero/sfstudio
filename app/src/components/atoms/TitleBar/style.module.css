@@ -1,0 +1,33 @@
+.titleBar {
+    display: flex;
+    
+    flex-direction: row;
+    justify-content: space-between;
+    vertical-align:bottom;
+    background-color: var(--color-data_background);
+    color: rgb(173, 168, 168);
+    padding-left: 10px;
+    padding-right: 0px;
+    margin: 0px;
+    border: 1px solid rgba(83, 80, 80, 0.5);
+    
+    box-sizing: border-box;
+
+    span {
+        font-family: system-ui, sans-serif;
+        padding: 0px;
+        margin: 0px;
+        cursor: pointer;
+    }
+
+    button {
+        color: rgb(200, 200, 200, 0.5);
+        padding: 1px, 5px;
+        margin: 0px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        color: rgb(255, 255, 255, 1);
+    }   
+}

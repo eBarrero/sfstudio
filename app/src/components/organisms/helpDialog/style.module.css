@@ -1,0 +1,50 @@
+.container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .win {
+        margin: auto;
+        overflow:none;
+        height: 600px;
+        width: 800px;
+        padding: 5px;
+        border: 1px solid rgba(196, 187, 187, 0.5);
+        background-color:rgb(32, 32, 31) ;
+        color: rgb(166, 228, 192);
+        
+        .winInner {
+            padding-top: 10px;
+            .panel {
+                border: 1pt solid rgba(255, 255, 255, 0.5);
+                display: grid;
+                overflow: scroll;
+                height: 550px;
+                grid-template-columns: 20pt 110pt 1fr;
+                gap: 5pt;
+                padding-top: 5pt;
+                padding-left: 5pt;
+
+                .row {
+                    display: contents;
+                    .command {
+                        overflow: hidden;
+
+                        .label {
+                            padding-left: 10pt;
+                            text-overflow: ellipsis;
+                            
+                        }
+                    }
+                }
+            }
+        }    
+    }
+}
+

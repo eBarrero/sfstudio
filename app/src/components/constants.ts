@@ -16,3 +16,10 @@ export enum IconCharacter  {
     WHERE = '&#128269;',   // 🔍  U+1F50D
     EXE = "🗲" //'&#128498;', U+1F5F2
   }
+
+
+export enum Dialog {
+    DateTime = 'DateTime',   // fieldDialog <DateTime>  
+    Help = 'Help'            // helpDoalog <Help>
+}
+

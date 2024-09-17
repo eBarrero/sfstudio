@@ -9,6 +9,10 @@ export enum CONTEXT_LEVEL  {
 
 export const VIEW_CMD : { [key: string]: CommandDefinition } = {
     FILTER: { command: '.Filter', description: 'CMD.filterObjects',  iconSymbol: '🔍', context: CONTEXT_LEVEL.ORG } as const,
+    HELP0:  { command: '.Help',   description: 'CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.INIT } as const,
+    HELP1:  { command: '.Help',   description: 'CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.ORG } as const,
+    HELP2:  { command: '.Help',   description: 'CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.OBJECT } as const,
+    HELP3:  { command: '.Help',   description: 'CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.SQL_EXECUTION } as const,
   };
   
 export const SESSION_CMD : { [key: string]: CommandDefinition } = {
@@ -88,4 +92,15 @@ export function getCommands(contextLevel: CONTEXT_LEVEL) : CommandImplementation
     return Array
           .from(allCommandsList.values())
           .filter((commandImplementation) => commandImplementation.context === contextLevel && commandImplementation.iconSymbol !== undefined);
+}
+
+/**
+ * @description retrieve command buttons base the context provided 
+ * @param contextLevel - The context level to filter the commands by.
+ * @returns An array of matching command keys or a single command implementation.
+ */
+export function getAllCommands(contextLevel: CONTEXT_LEVEL) : CommandImplementation[] {
+  return Array
+        .from(allCommandsList.values())
+        .filter((commandImplementation) => commandImplementation.context === contextLevel);
 }

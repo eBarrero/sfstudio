@@ -1,6 +1,6 @@
 import {create} from 'zustand';
 import { addCommand, VIEW_CMD } from '../core/commandManager';
-
+import { Dialog } from '../components/constants';
 
 
 
@@ -45,6 +45,10 @@ const viewState = create<ViewState>((set, get) => {
         },
         initializeView: () => {
             addCommand({ ...VIEW_CMD.FILTER, action: () => { get().setComponentShowed('OBJECT_FILTER')}} );
+            addCommand({ ...VIEW_CMD.HELP0, action: () => { get().pushDialog(Dialog.Help)}} );
+            addCommand({ ...VIEW_CMD.HELP1, action: () => { get().pushDialog(Dialog.Help)}} );
+            addCommand({ ...VIEW_CMD.HELP2, action: () => { get().pushDialog(Dialog.Help)}} );
+            addCommand({ ...VIEW_CMD.HELP3, action: () => { get().pushDialog(Dialog.Help)}} );
         }
     }
 
