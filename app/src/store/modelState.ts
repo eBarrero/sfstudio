@@ -103,6 +103,7 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
         },
 
         showByqueryElemntsIndex(index: number) {
+            console.log('showByqueryElemntsIndex', index);
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement = index;
             const query = queryState.queryElemnts[currentElement];
@@ -177,7 +178,16 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             addCommand({...NODEL_CMD.SELECT_ALL_FIELDS ,     action: () => { get().setSelectAllFields(SelectAllFieldsEnum.ALL); } });
             addCommand({...NODEL_CMD.SELECT_STANDARD_FIELDS, action: () => { get().setSelectAllFields(SelectAllFieldsEnum.STANDARD); } });
             addCommand({...NODEL_CMD.SELECT_CUSTOM_FIELDS,   action: () => { get().setSelectAllFields(SelectAllFieldsEnum.CUSTOM); } });
+            addCommand({...NODEL_CMD.SET_QUERY,              
+                action: (actionParams: AcctionParams) => { 
+                    const {data, application} = actionParams;
+                    const params = application.currentCommand.split(' ');
 
+                    const index = parseInt((params[1]==='')?'0':params[1]);
+                    get().showByqueryElemntsIndex(index);
+                    data.loadFields(get().state.orgSfName, get().state.sObjectLocalId);
+                } 
+            });
         }
     }
 });

@@ -1,27 +1,38 @@
-SF Studio - Salesforce Navigator and SOQL Generator
+# SF Studio - Salesforce Navigator and SOQL Generator
 
-visit yhe live project at: https://sfstudio.dev
+Visit the live project at: [https://sfstudio.dev](https://sfstudio.dev)
 
-###BUGs
--Problema del comnado ".custom"
--focus en el input
--inicializar filtro al borrar la cadena
--add commando para limpiar filtro
--Limpiar comandos
+## Bugs
 
-##Mejoras:
--Convertir el historico en un div
--animaión al cargar campos
+- Issue with the ".custom" command
+- Focus on the input
+- Initialize filter when clearing the string
+- Add command to clear filter .cls
 
-##Features
--terminar dialog
--Path sql (mostrar jerarquía)
+## Improvements
 
-- mostrar jeraqrquía
-- abilitar click
+- Convert history to a div
+- Animation when loading fields
+- Add Limit and offset dialog (or maybe command
 
-##Done:
--FEATURE: HELP
--BUGFIX implementar comando ".back"
--FEATURE: validar la sentencias SOQL
--BUGFIX problemas en la respuesta SQL cuando hay un campo de un objeto relacionado
+### Results
+
+- Fltrar, Agrupar, orderna
+
+### Help
+
+- Add topic to commnds to improve the help component
+
+## Features
+
+- Complete dialog
+- Path SQL (show hierarchy) and fix the shorcut
+- Show hierarchy
+- Enable click
+
+## Done
+
+- **FEATURE**: HELP
+- **BUGFIX**: Implement ".back" command
+- **FEATURE**: Validate SOQL statements
+- **BUGFIX**: Issues with SQL response when there is a field from a related object

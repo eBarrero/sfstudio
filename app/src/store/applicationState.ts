@@ -97,6 +97,7 @@ const applicationState = create<ApplicationState>((set, get) => {
             set(newState);              
         },
         exeCommandFromUI: (newCommand: string) => {
+            console.log('exeCommandFromUI', newCommand);
             const c = newCommand.trim();
             const firstWord = c.split(' ')[0];
             const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: c, helpOnLine:'',  filterConfirmed: '', errorState: undefined, suggestions:[], command: undefined};   

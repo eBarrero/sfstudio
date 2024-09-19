@@ -91,7 +91,6 @@ const dataState = create<DataState>((set, get) => {
                 if (data!==null) {
                     set({
                          sObjectFields:  structuredClone(data), 
-                         
                          dataLastErrorMessage: '' 
                     });
                 } else {
@@ -190,7 +189,7 @@ const dataState = create<DataState>((set, get) => {
                 addCommand({command: cmdText, description: 'field.filter.type.' + key, context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams) => {
                         const {model} = actionParams;
-                    get().setFieldFilterType(model.state.orgSfName, model.state.sObjectLocalId,  key);
+                        get().setFieldFilterType(model.state.orgSfName, model.state.sObjectLocalId,  key);
                     }
                 });
             }
