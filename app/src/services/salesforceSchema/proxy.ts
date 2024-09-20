@@ -104,13 +104,15 @@ export default class Proxy {
                     data.fields?.forEach((field) => data.mapFields.set(field.name, field.fieldLocalId));
                     // Link the child relationships to the object index of the child object
                     data.childRelationships?.forEach((item:ChildRelationships) => {
-                        item.sObjectLocalId = modelReader.getSObjectLocalIdbyName(orgSfName, item.childSObject);
+                        const tmp = modelReader.getSObjectLocalIdbyName(orgSfName, item.childSObject);
+                        item.sObjectLocalId = (tmp===null)?-1:tmp;
                     });
                     // Update Lookup fields with the referenceTo field
                     data.fields?.forEach((field) => {
                         if (field.type === 'reference') {
                             field.referenceToLocalId = [];
-                            field.referenceToLocalId[0] = modelReader.getSObjectLocalIdbyName(orgSfName, field.referenceTo[0]);
+                            const tmp  = modelReader.getSObjectLocalIdbyName(orgSfName, field.referenceTo[0]);
+                            field.referenceToLocalId[0] = (tmp===null)?-1:tmp;
                         }
                     });
                     sobject.childRelationships = structuredClone(data.childRelationships);
