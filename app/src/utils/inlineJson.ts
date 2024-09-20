@@ -85,7 +85,7 @@ export function salesforceJsontoInlineJson(salesforceJson: any): InlineJsonArray
         captions.push({fieldName, objectName, quantity});
         value.forEach((element, index) => {
             if (col===0) rows[index] = {col: []};
-            rows[index].col[col] = element;
+            rows[index].col[col] = (element===null)?'null':  element.toString();
         });
         col++;
         

@@ -143,7 +143,8 @@ export default class Proxy {
             console.log("leido:" + result.length);    
             return new Promise((resolve) => resolve(result));
         } catch (error) {
-            console.error(`******Unexpected error: ${(error as Error).message}`);
+            console.error(`******Unexpected error: ${(error as Error).stack}`);
+            
             throw new Error((error as Error).message);
         }
     }

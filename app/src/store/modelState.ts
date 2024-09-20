@@ -279,7 +279,7 @@ function sqlState( queryState: QueryState  ): SQLState {
     query.forEach((queryElemnt,index) => {
         if (queryElemnt.type === 'ROOT') {
             const rootQuery = queryElemnt as PrimaryQuery;
-            if (rootQuery.selectClause?.fieldsAll!==undefined) sqlSelect += `${rootQuery.selectClause?.fieldsAll} `;
+            if (rootQuery.selectClause?.fieldsAll!==undefined) sqlSelect += `SELECT ${rootQuery.selectClause?.fieldsAll} `;
             rootQuery.selectClause!.fields!.forEach((field) => {
                 if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
                 sqlSelect += `${field.fieldId.fieldApiName}`;

@@ -8,7 +8,7 @@ export class SessionError extends Error {
         super(message);
         this.name = "SessionError";
         if (message.includes("Session expired or invalid")) this.errorNumber = 401;
-        console.error(`${this.name}: ${this.message}`);
+        console.error(`[${this.name}]: [${this.message}]`);
     }
     getErrorNumber(): number {  return this.errorNumber; }  
 }
@@ -107,7 +107,8 @@ export class Connection {
         this.name = (this.accessToken.token.instance_url as string).match(regexp)![0];
         this.conn = new jsforce.Connection({
             instanceUrl: this.accessToken.token.instance_url as string,
-            accessToken: this.accessToken.token.access_token as string
+            accessToken: this.accessToken.token.access_token as string,
+            version: "60.0"
         });
     }
 

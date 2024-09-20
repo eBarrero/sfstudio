@@ -8,16 +8,15 @@ Visit the live project at: [https://sfstudio.dev](https://sfstudio.dev)
 - Focus on the input
 - Initialize filter when clearing the string
 - Add command to clear filter .cls
+- Proxy Error when the cached obeject is newer then the schema
 
 ## Improvements
 
-- Convert history to a div
-- Animation when loading fields
 - Add Limit and offset dialog (or maybe command
 
 ### Results
 
-- Fltrar, Agrupar, orderna
+- Fltrar, Agrupar, orderna, create csv, copy
 
 ### Help
 
@@ -26,13 +25,32 @@ Visit the live project at: [https://sfstudio.dev](https://sfstudio.dev)
 ## Features
 
 - Complete dialog
-- Path SQL (show hierarchy) and fix the shorcut
-- Show hierarchy
-- Enable click
+
+## Little touch-ups
+
+- Convert history to a div
+- Animation when loading fields
+- create a reset botton to force the schema to load
+
+## Ideas:
+
+- mostrar un solo registro
+
+## BUGFIX
+
+# BUGFIX01
+
+- SOQL Deduction issue when the FILEDS(ALL) Clause is used
+- Update API version to 60
+- resultSheet issue with boolean values
+- Proxy Error when the obeject cached is newer then the schema (parcial solution)
 
 ## Done
 
+- **FEATURE**: Path SQL - show hierarchy and fix the shorcut
 - **FEATURE**: HELP
 - **BUGFIX**: Implement ".back" command
 - **FEATURE**: Validate SOQL statements
 - **BUGFIX**: Issues with SQL response when there is a field from a related object
+
+totales (todos + custom y (%) )
