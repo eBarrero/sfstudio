@@ -16,14 +16,15 @@
 
 .gridTableCell {
   display:flex ;
-  
   padding-right: 10px;
+  overflow: hidden;
+  height: 22px;
+  
+  .label {
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
 }
-
-.gridTableCell .label {
-  text-overflow: ellipsis;
-}
-
 .gridTableCheckbox{
     color: white;
     font-size: 1rem;
@@ -49,7 +50,7 @@
     display: contents;
     font-family: system-ui;
     font-size:1rem;
-    color: rgb(32, 109, 42);
+    color: var(--color-data_text2);
     text-align: left;
     vertical-align: text-top;
     cursor: pointer;  

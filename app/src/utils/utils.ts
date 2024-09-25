@@ -4,6 +4,8 @@ import i18next from "i18next";
 /* split the message into an array of strings, the first one is the key and the rest (if exist) add params as p0,p1,pn  */
 export function t(message:string | null) { 
     if (message===undefined || message===null || message==='')  return 'null value';
+    if (/\s/.test(message)) return message; // if there is a space, it is not a key
+
     const parts = message.split('|');
     if (parts.length === 1) return i18next.t(message);
     const params: { [key: string]: string } = {};
@@ -12,3 +14,11 @@ export function t(message:string | null) {
     }
     return i18next.t(parts[0], params);
   } 
+
+
+
+  export enum LITERAL {
+    DataTimeLiteral_Periods = 'DataTimeLiteral.Periods',
+    DataTimeLiteral_Type = 'DataTimeLiteral.Type',
+  }
+

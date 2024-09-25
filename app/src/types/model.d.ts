@@ -6,20 +6,19 @@
 
 
 type OperatorType = '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN' | 'NOT IN' | 'INCLUDES' | 'EXCLUDES' | string;
-
-
-
-enum LogicalOperator {
-    And = 'AND',
-    Or = 'OR',
-    Open = '(',
-    Close = ')'
-  }
+type LogicalOperator = 'AND' | 'OR' | '(' | ')';
+  
 
 interface SimpleCondition {
+    sqlString: string;
     field: FieldId;
     operator: OperatorType;
     value: Any;
+}
+interface pairCondition extends SimpleCondition {
+    logicalOperator: LogicalOperator;
+    operatorTo: OperatorType;
+    valueTo: Any;
 }
 
 interface OrderBy {
@@ -36,6 +35,7 @@ type SelectClauseField = {
     fieldId: FieldId;
     alias?: string;
     aggregateFunction?: AggregateFunction
+    function?: 'format(%1)'
 }
 
 type SelectClause = {
@@ -55,7 +55,7 @@ interface QueryElementAbstract {
     sObjectId: SObjectId;
     parent: number;
     selectClause: SelectClause;
-    where?: SimpleCondition[];
+    where?: (SimpleCondition | pairCondition)[];
     whereLogic?: (LogicalOperator | number )[];
     orderBy?: OrderBy[];
     level: 0|1|2|3|4|number;                       // It indicates the level of the query element in the query max. 5. ROOT and SUBQUERY are always level 0
@@ -79,6 +79,7 @@ interface NestedQuery extends QueryElementAbstract  {
 interface ReletedObject extends QueryElementAbstract  {
     type: 'RELETED' ;
     relatedTo: RelationshipName ;
+    path: string;
 }
 
 type QueryElement = PrimaryQuery | NestedQuery | ReletedObject;
@@ -99,3 +100,30 @@ interface SQLState {
 
 
 
+type RankQueryElements =  [string,  number];
+
+interface ModelState {
+    state: {
+        action: string;
+        orgSfName: SchemaName;
+        sObjectApiName: SObjectApiName;
+        sObjectLocalId: SObjectLocalId;
+        currentField?: GetFieldsIndex | null;
+        currentPath?: string;
+    };
+    filerSObject?: SObjectsFilter
+    queryState: QueryState; // It contains the query elements: main quiery, subqueries and releted objects
+    currentSOQLFieldSelection: Map<FieldLocalId, SOQLFieldSelectionState>;  // It contains the fields selected in the current query. filled by createSOQLFieldSelection() fucntion
+    sqlState: SQLState;    // It contains the SQL statement to be executed
+    rankQueryElements?: RankQueryElements[]; // It ranks the query elements to be displayed in the SOQLPath component
+    setOrg: (orgSfName: SchemaName) => void; 
+    setSObject: (sObjectLocalId:SObjectLocalId) => void;
+    setField: (field: GetFieldsIndex) => void;
+    gotoLookup: (field: GetFieldsIndex) => void; 
+    gotoChild: (child: GetChildRelationships) => void;
+    showByqueryElemntsIndex: (index: number) => void;
+    doFieldAction: (fieldIndex: number, action: string) => void;
+    setSelectAllFields: (value: SelectAllFields) => void;
+    addWhere: (SimpleCondition: SimpleCondition) => void;
+    initializeModel: () => void;
+  } 

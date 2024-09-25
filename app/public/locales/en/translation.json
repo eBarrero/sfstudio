@@ -13,6 +13,7 @@
     "CMD.back": "press ENTER to go back",
     "Condition": "Condition",
 
+    "DataTimeLiteral.Periods": "Time frames",
     "DataTimeLiteral.Type": "Period types",
     "DataTimeLiteral.Type.DAY": "Day",
     "DataTimeLiteral.Type.WEEK": "Week",
@@ -21,6 +22,8 @@
     "DataTimeLiteral.Type.YEAR": "Year",
     "DataTimeLiteral.Type.FISCAL_QUARTER": "Fiscal Quarter",
     "DataTimeLiteral.Type.FISCAL_YEAR": "Fiscal Year",
+   
+
     "DataTimeLiteral.Types": "Periods",
 
     "DataTimeLiteral.TODAY": "Today",
@@ -29,6 +32,8 @@
     "DataTimeLiteral.LAST_N_DAYS": "Last N Days",  
     "DataTimeLiteral.NEXT_N_DAYS": "Next N Days",
     "DataTimeLiteral.N_DAYS_AGO": "N Days Ago",
+    "DataTimeLiteral.ACUSTOM_DAY": "Custom date",
+    "DataTimeLiteral.CUSTOM_RANGE_DAYS": "Custom data range",
 
     "DataTimeLiteral.THIS_WEEK": "This Week",
     "DataTimeLiteral.LAST_WEEK": "Last Week",
@@ -36,6 +41,8 @@
     "DataTimeLiteral.LAST_N_WEEKS": "Last N Weeks",
     "DataTimeLiteral.NEXT_N_WEEKS": "Next N Weeks",
     "DataTimeLiteral.N_WEEKS_AGO": "N Weeks Ago",
+    "DataTimeLiteral.ACUSTOM_WEEK": "Custom week.",
+    "DataTimeLiteral.CUSTOM_RANGE_WEEKS": "custom weeks range",    
 
     "DataTimeLiteral.THIS_MONTH": "This Month",
     "DataTimeLiteral.LAST_MONTH": "Last Month",
@@ -43,6 +50,8 @@
     "DataTimeLiteral.LAST_N_MONTHS": "Last N Months",
     "DataTimeLiteral.NEXT_N_MONTHS": "Next N Months",
     "DataTimeLiteral.N_MONTHS_AGO": "N Months Ago",
+    "DataTimeLiteral.ACUSTOM_MONTH": "Custom month.",
+    "DataTimeLiteral.CUSTOM_RANGE_MONTHS": "custom months range",
 
     "DataTimeLiteral.THIS_QUARTER": "This Quarter",
     "DataTimeLiteral.LAST_QUARTER": "Last Quarter",
@@ -59,6 +68,8 @@
     "DataTimeLiteral.LAST_N_YEARS": "Last N Years",
     "DataTimeLiteral.NEXT_N_YEARS": "Next N Years",
     "DataTimeLiteral.N_YEARS_AGO": "N Years Ago",
+    "DataTimeLiteral.ACUSTOM_YEAR": "Custom year.",
+    "DataTimeLiteral.CUSTOM_RANGE_YEARS": "custom years range",    
 
     "DataTimeLiteral.THIS_FISCAL_QUARTER": "This Fiscal Quarter",
     "DataTimeLiteral.LAST_FISCAL_QUARTER": "Last Fiscal Quarter",
@@ -74,6 +85,14 @@
     "DataTimeLiteral.NEXT_N_FISCAL_YEARS": "Next N Fiscal Years",
     "DataTimeLiteral.N_FISCAL_YEARS_AGO": "N Fiscal Years Ago",
 
+    "ACUSTOM_DAY.doc": "Custom date.",
+    "CUSTOM_RANGE_DAYS.doc": "custom date range",
+    "ACUSTOM_WEEK.doc": "Custom week.",
+    "CUSTOM_RANGE_WEEKS.doc": "custom weeks range",
+    "ACUSTOM_MONTH.doc": "Custom month.",
+    "CUSTOM_RANGE_MONTHS.doc": "custom months range",
+    "ACUSTOM_YEAR.doc": "Custom year.",
+    "CUSTOM_RANGE_YEARS.doc": "custom years range",
 
     "YESTERDAY.doc": "Starts at 12:00:00 AM on the day before the current day and continues for 24 hours.",
     "TODAY.doc": "Starts at 12:00:00 AM on the current day and continues for 24 hours.",
@@ -249,10 +268,28 @@
     "field.attribute.type":"Specifies the field's data type, such as string, number, or date.",
     "field.attribute.unique":"Indicates if the field's values must be unique across all records.",
     "field.attribute.updateable":"Specifies if the field can be updated after a record is created.",
-    "field.attribute.writeRequiresMasterRead":"Indicates if the field can be updated only if the user has read access to the master record in a master-detail relationship."
+    "field.attribute.writeRequiresMasterRead":"Indicates if the field can be updated only if the user has read access to the master record in a master-detail relationship.",
     
 
-
+    "SOQL.Fun.COUNT()" : "Use this function to return the total number of records that match the query criteria. It simply counts the number of rows without considering any field values..",
+    "SOQL.Fun.COUNT(%1)" : "This version of the COUNT function counts the number of non-null values in a specific field. Use it when you want to count only the records where the specified field is populated.",
+    "SOQL.Fun.COUNT_DISTINCT(%1)" : "This function counts the number of unique values in a specified field. It’s useful when you want to avoid duplicate values in your count.",
+    "SOQL.Fun.SUM" : "Calculates the sum of a numeric field.",
+    "SOQL.Fun.AVG" : "Calculates the average of a numeric field.",
+    "SOQL.Fun.MIN" : "Finds the minimum value of a field.",
+    "SOQL.Fun.MAX" : "Finds the maximum value of a field.",
+    "SOQL.Fun.TYPEOF" : "Used to query polymorphic fields.",
+    "SOQL.Fun.FORMAT" : "FORMAT() is used to format values like dates, numbers, and currencies into a user-friendly format based on the locale of the current user.",
+    "SOQL.Fun.CALENDAR_MONTH" : "Groups results by calendar month.",
+    "SOQL.Fun.CALENDAR_QUARTER" : "Groups results by calendar quarter.",
+    "SOQL.Fun.CALENDAR_YEAR" : "Groups results by calendar year.",
+    "SOQL.Fun.DAY_ONLY" : "Extracts the day part of a date.",
+    "SOQL.Fun.FISCAL_MONTH" : "Groups results by fiscal month.",
+    "SOQL.Fun.FISCAL_QUARTER" : "Groups results by fiscal quarter.",
+    "SOQL.Fun.FISCAL_YEAR" : "Groups results by fiscal year.",
+    "SOQL.Fun.HOUR_IN_DAY" : "Extracts the hour part of a date.",
+    "SOQL.Fun.WEEK_IN_YEAR" : "Groups results by week in year.",
+    "SOQL.Fun.convertTimezone" : "Converts time to a different time zone."
 
 
     

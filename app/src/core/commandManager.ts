@@ -16,8 +16,8 @@ export const VIEW_CMD : { [key: string]: CommandDefinition } = {
   };
   
 export const SESSION_CMD : { [key: string]: CommandDefinition } = {
-    PROD:    { command: '.Login_to_Prod',    description: 'CMD.init.prod',    context: CONTEXT_LEVEL.INIT } as const,
-    SANDBOX: { command: '.Login_to_Sandbox', description: 'CMD.init.sandbox', context: CONTEXT_LEVEL.INIT } as const
+    PROD:    { command: '.Login_to_Prod',    description: 'CMD.init.prod',   iconSymbol: 'Prod',   context: CONTEXT_LEVEL.INIT } as const,
+    SANDBOX: { command: '.Login_to_Sandbox', description: 'CMD.init.sandbox',iconSymbol: 'SBox',   context: CONTEXT_LEVEL.INIT } as const
   };
 
 export const APP_CMD : { [key: string]: CommandDefinition } = {

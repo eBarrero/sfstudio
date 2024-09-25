@@ -12,14 +12,14 @@ interface SmartLabelProps {
         subLabel?: string
         tooltip?: string
     }
-    onAcionHandler: (action: string) => void
+    onActionHandler: (action: string) => void
 }
 
-const SmartLabel: React.FC<SmartLabelProps> = ({label, iconType, action, active, optionalTags,  onAcionHandler}) => {
+const SmartLabel: React.FC<SmartLabelProps> = ({label, iconType, action, active, optionalTags,  onActionHandler}) => {
     const {subLabel, tooltip} = optionalTags;
 
     const onClickHandler = () => () =>  {
-        active || onAcionHandler(action);
+        active && onActionHandler(action);
     }   
 
     return (   

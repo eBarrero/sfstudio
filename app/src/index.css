@@ -3,18 +3,20 @@
   --color-data_background: #111111;
   --color-data_panel: #101010;
   --color-data_text: rgb(32, 189, 42);
+  --color-data_text2:rgb(0, 120, 0);
   --color-error-text: #ff0000;
   --color-commend-text: #646cff;  
   --color-data_hover:white;
   --color-data_Select:white;
-  --background-data_Select:var(--color-data_text);
+  --background-data_Select: #646cff;
   --color-data_Select_hover:var(--color-data_background);
 
   --color-border:rgba(196, 187, 187, 0.5);
-
+  --color-secction_current: #4fee4f;
+  --bgcolor-active_desk: rgb(32, 32, 31);
   font-family: system-ui, sans-serif;
   
-  
+  --color-info: rgb(166, 228, 192);
 
   color-scheme: light dark;
   color: white;

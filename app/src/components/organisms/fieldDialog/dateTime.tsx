@@ -1,23 +1,35 @@
 import { useState, useEffect } from 'react';
-import css from './local.module.css'
-import DataTime from '../../../core/constants/dataTime';
-import OptionList from '../optionList/optionList';
-import { useTranslation } from 'react-i18next';
+import css from './style.module.css'
+import DataTime, {CUSTOM_DATE, CUSTOM_RANGE_DATE} from '../../../core/constants/dataTime';
+import { t, LITERAL } from '../../../utils/utils';
 import modelState  from '../../../store/modelState';  
 import viewState from '../../../store/viewState';
 
-
-
+// Components
+import OptionList from '../optionList/optionList';
+import TitleBar from '../../atoms/TitleBar/titleBar';
+import Tabs     from '../../atoms/Tabs/tabs';
+import { RetroDateInput, RetroDateRangeInput }  from '../../atoms/RetroStyle/DateTimeInput/RetroDateTime';
+import RetroQuantitySelector                    from '../../atoms/RetroStyle/QuantitySelector/RetroQuantitySelector';
+import RetroCheckboxGroup                       from '../../atoms/RetroStyle/RadioGroup/RetroRadioGroup';
 
 const Select = () => {
+    const handelButton = (newCode: string) => () => {
+        console.log('OrderBy', newCode);
+    }
     return (
         <div>
-            <p>DateTime_Select</p>
+            <RetroCheckboxGroup 
+                label="Select" 
+                options={[{code:'C1', label:'ISO 8601', help:"(By Default) AAAA-MM-DDTHH:MM:SSZ"},{code:'Format(%1)', label:'Format()', help:"is used to format values like dates, numbers, and currencies into a user-friendly format based on the locale of the current user.a"},  ]} 
+                currentCodes={[]}
+                onChange={handelButton}/>
         </div>
     );
 }
 
 const Orderby = () => {
+
     return (
         <form className="OrderBy">
             <select >
@@ -32,19 +44,23 @@ const Orderby = () => {
 
 
 const DateTime = () => {
-    const { currentField  }  = modelState().state;
-    
+    const { currentField, currentPath  }  = modelState().state;
+    const { popDialog } = viewState();  
 
     const [currentTab, setCurrentTab] = useState('W');
+
+    function onClose() {
+        popDialog();
+    }   
 
     return (
         <article className={css.container}>
             <div className={css.win}>
                 {currentField &&  <>
-                    <TitleBar title={`${currentField.fieldLocalId} - ${currentField.fieldApiName}`}  />
+                    <TitleBar title={`${currentField.type} - ${currentPath}${currentField.fieldApiName}`} onClose={onClose}  />
                     <Tabs tabs={[['Select',"S"],['Where',"W"],['Order',"O"]]} value={currentTab} onTabChange={setCurrentTab}/>
                     {currentTab === 'S' && <Select/>}
-                    {currentTab === 'W' && <Where field={currentField} />}
+                    {currentTab === 'W' && <Where field={currentField} path={ (currentPath===undefined) ?'':currentPath } />}
                     {currentTab === 'O' && <Orderby/>}
                 </>}
             </div>
@@ -65,39 +81,41 @@ interface DateTimeLiteral {
 }
 
 interface WhereProps {
-    field: GetFieldsIndex
+    field: GetFieldsIndex,
+    path: string | undefined
 }
 
 
 const Where = (props:WhereProps) => {
     const { addWhere } = modelState();
-    const { fieldApiName, fieldLocalId } = props.field;
-    const { t } = useTranslation(); 
+    const { field, path} = props;
+    const { fieldApiName, fieldLocalId, type: typeField } = field;
     //const [typeDataTime, setTypeDataTime] = useState(0);
     const [dateTimeLiteral , setDateTimeLiteral] = useState<DateTimeLiteral>();
     const [condition, setCondition] = useState<string>('');
     const [periods, setPeriods] = useState(1);
-    const [sqlWhere, setSqlWhere] = useState<string>('');
-    const [sqlValue, setSqlValue] = useState<string>('');
+    const [sqlChunck, setSqlChunck] = useState<(SimpleCondition | pairCondition)>();
+    const [dateTimes, setDateTimes] = useState<{type: string, from: string, to: string}>();
     
     useEffect(() => {
         if (!dateTimeLiteral) return
-        const value = dateTimeLiteral.sqlKeyWord + (dateTimeLiteral.paramRequired ? `:${periods}` : '');
-        setSqlValue(value);
-        setSqlWhere(fieldApiName + " " + condition + " " + value);
+
+        const sqlKeyWord = dateTimeLiteral.sqlKeyWord + (dateTimeLiteral.paramRequired ? `:${periods}` : '');
+
+        const dateTimesValue: DateTimeValues|undefined  = (dateTimes)? {type: dateTimes.type, from: dateTimes.from, to: dateTimes.to, typeField}:undefined;
+
+        setSqlChunck(DataTime.getSQLChunck ({fieldApiName: path + fieldApiName ,  fieldIndex:fieldLocalId, condition, sqlKeyWord, dateTimes: dateTimesValue}));
+        
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    },[condition,periods,dateTimeLiteral]);
+    },[condition,periods,dateTimeLiteral, dateTimes]);
 
     const handelDataTime = (type: string) =>  {
         setDateTimeLiteral({sqlKeyWord:type, description:t(type+".doc"), paramRequired:type.includes("N_")});        
     }   
-    const handelCondition = (type: string) =>  {
-        setCondition(type);
-    }
 
     const handelButton = () => () => {
-        addWhere({field: { fieldApiName, fieldIndex: fieldLocalId }, operator: condition, value: sqlValue});
+        sqlChunck && addWhere(sqlChunck) ;
     }
 
 // {DataTime.getType().map( (typeDataTime) =>  (<button onClick={handelTypeDataTime(typeDataTime.type)} >{typeDataTime.description}</button>))}   
@@ -107,40 +125,47 @@ const Where = (props:WhereProps) => {
 
             <div className={css.panel}>
                 <OptionList options={DataTime.getType().map( (typeDataTime) => { return  {id: typeDataTime.type.toString(), label:t(typeDataTime.description)}})}  
-                title={t("DataTimeLiteral.Type")} 
+                title={t(LITERAL.DataTimeLiteral_Type)} 
                 onSelect={handelDataTime}
                 secondLevel={{
-                    title: t("DataTimeLiteral.Literals"),
+                    title: t(LITERAL.DataTimeLiteral_Periods),
                     load2ndLevel: (type: string) => { return DataTime.getDateTimeLiteral(parseInt(type)).map( (dateTimeLiteral) => { return  {id: dateTimeLiteral.sqlKeyWord, label:t(dateTimeLiteral.description)}}) }
                 }}
-
                 />
-            </div>
-
-            <div className={css.panel}>
-                <OptionList options={DataTime.getDateTimeCondition().map( (dateTimeLiteral) => { return  {id: dateTimeLiteral.sqlKeyWord, label:t(dateTimeLiteral.description)}})}  
-                title={t("Condition")} 
-                onSelect={handelCondition}/>
             </div>
 
             <div className={css.panel}>
                 { dateTimeLiteral && <>
                     <p>{dateTimeLiteral.description}</p>
-                     {dateTimeLiteral.paramRequired &&   <QuantitySelector value={periods} min={1} max={10} label="Periods" onChange={setPeriods}/>}
+                    {dateTimeLiteral.paramRequired &&   <RetroQuantitySelector value={periods} min={1} max={30} label="Periods" onChange={setPeriods}/>}
                 </>}
-                <label>Seleccione fecha y hora:</label>    
-                <input type="datetime-local" id="datetime" name="datetime"/>
-            
-            </div>
+                {dateTimeLiteral?.sqlKeyWord.includes(CUSTOM_DATE)   &&  
+                    <RetroDateInput 
+                        type={DataTime.figureOutInputType(dateTimeLiteral.sqlKeyWord, typeField )} 
+                        onChangeDateValue={setDateTimes}/>
+                }
+                {dateTimeLiteral?.sqlKeyWord.includes(CUSTOM_RANGE_DATE)   &&  
+                    <RetroDateRangeInput 
+                        type={DataTime.figureOutInputType(dateTimeLiteral.sqlKeyWord, typeField )} 
+                        labelFrom="From" 
+                        labelTo='To'  
+                        onChangeDateValue={setDateTimes}/>
+                }                
+            </div>            
 
-            
+                 
+            <div className={css.panel}>
+                <OptionList options={DataTime.getDateTimeCondition().map( (dateTimeLiteral) => { return  {id: dateTimeLiteral.sqlKeyWord, label:t(dateTimeLiteral.description)}})}  
+                title={t("Condition")} 
+                onSelect={setCondition}/>
+            </div>            
             
 
         </div>
         <section className={css.card}>
             <span className={css.cardTitle}>Predicate</span>
             <div>
-                <span className={css.sql}>{sqlWhere}</span>
+                <span className={css.sql}>{sqlChunck?.sqlString}</span>
             </div>
             <button type="button" onClick={handelButton()} >Add</button>
             </section>        
@@ -153,80 +178,10 @@ const Where = (props:WhereProps) => {
 
 
 
-interface TitleBarProps {
-    title: string;
-}
-
-const TitleBar = (props:TitleBarProps) => {
-    const popDialog =  viewState().popDialog;
-    const {title} = props;
-    return (
-        <div className={css.titleBar}>
-            <span>{title}</span>
-            <button onClick={popDialog}>&#x2573;</button>
-        </div>
-    );
-}
-
-
-interface TabsProps {
-    tabs: [string, string][];
-    value: string;
-    onTabChange: (value: string) => void;
-}
-
-const Tabs = (props:TabsProps) => {
-    const {tabs, value, onTabChange} = props;
-    return (
-        <div>
-            {tabs.map(([label, code]) => (
-                <span className="titleSection" key={code} onClick={() => onTabChange(code)}>{label}-{value}</span>
-            ))}
-        </div>
-    );
-}   
 
 
 
-/**
- * @description This component is a number selector, allows put a number directly or use the buttons to increase or decrease the value.
- * @param {number} value - The current value of the selector.
- * @param {number} min - The minimum value allowed.
- * @param {number} max - The maximum value allowed.
- * @param {string} label - The label to show in the selector.
- * @param {function} onChange - The function to call when the value changes.
- * @returns {JSX.Element} - The JSX element to render.
- */
-interface QuantitySelectorProps {
-    value: number;
-    min: number;
-    max: number;
-    label: string;
-    onChange: (value: number) => void;  
-}
 
-const QuantitySelector = (props:QuantitySelectorProps) => {
-    const {value, min, max, label, onChange} = props;
 
-    const handleInput = (e:  React.ChangeEvent<HTMLInputElement>) => {
-        const value = parseInt(e.target.value);
-        if (value >= min && value <= max) onChange(value);
-    };
 
-    const handleDecrease = () => {
-        if (value > min) onChange(value - 1);
-    };
 
-    const handleIncrease = () => {
-        if (value < max) onChange(value + 1);
-    };
-
-    return (
-        <div className="Select">
-            <label>{label}</label>
-            <button onClick={handleDecrease}>-</button>
-            <input type="number" value={value} onChange={handleInput}/>
-            <button onClick={handleIncrease}>+</button>
-        </div>
-    );
-}

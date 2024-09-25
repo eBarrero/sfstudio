@@ -1,6 +1,6 @@
 .container {
     display:flex ;
-    background-color: var(--color-data_background);
+    background-color: transparent;
     color: var(--color-data_text);
     padding-right: 10px;
     button {
@@ -12,16 +12,11 @@
       padding: 0;
       cursor: pointer;
       border-radius: 40%;
-      transition: all 0.3s ease;
+      transition: all 1.0s ease;
     }  
 
     button:hover {
-      background-color: rgb(25, 25, 25);
-
+      border: 1px solid rgb(25, 25, 25);
     }
   }
 
-  .active {
-    background-color: var(--background-data_Select);
-    color: var(--color-data_select);
-  }

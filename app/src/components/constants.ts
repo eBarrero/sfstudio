@@ -14,7 +14,8 @@ export enum IconCharacter  {
     ORDER_ASC = '&#8593;', // ⬆️
     ORDER_DESC = '&#8595;',// ⬇️
     WHERE = '&#128269;',   // 🔍  U+1F50D
-    EXE = "🗲" //'&#128498;', U+1F5F2
+    EXE = "🗲", //'&#128498;', U+1F5F2
+    ARROW1 = "⮘"
   }
 
 

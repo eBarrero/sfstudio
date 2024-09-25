@@ -6,8 +6,9 @@ interface TitleBarProps {
 }
 
 const TitleBar = (props:TitleBarProps) => {
-    
     const {title, onClose} = props;
+
+
     return (
         <div className={css.titleBar}>
             <span>{title}</span>

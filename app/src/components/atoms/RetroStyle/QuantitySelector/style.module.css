@@ -1,0 +1,51 @@
+
+
+.retro_quantity_selector {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+
+    .retro_quantity_button {
+        background-color: #000;
+        color: #0f0;
+        border: 1px solid #0f0;
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 18px;
+    }
+
+    .retro_quantity_button:disabled {
+        color: #555;
+        border-color: #555;
+        cursor: not-allowed;
+    }
+
+    .retro_quantity_input {
+        width: 60px;
+        text-align: center;
+        margin: 0 5px;
+    }
+}
+
+
+.retro_label {
+    display: block;
+    margin-bottom: 5px;
+    padding-right: 5px;
+}
+  
+.retro_input {
+    background-color: #000;
+    color: #0f0;
+    border: 1px solid #0f0;
+    padding: 8px;
+    margin-bottom: 15px;
+
+    box-sizing: border-box;
+}
+  
+.retro_input:focus {
+    outline: none;
+    border-color: #0ff;
+}

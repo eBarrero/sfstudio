@@ -39,7 +39,6 @@ const OptionList = (props:OptionListProps) => {
             setLevel(2);
             setCurrentOptions(secondLevel.load2ndLevel(id));
             setCurrentTitle(secondLevel.title);
-            
             return;
         }
         onSelect && onSelect(id);
@@ -52,17 +51,20 @@ const OptionList = (props:OptionListProps) => {
 
     return (
         <article className={css.OptionList}> 
+            
             <div className={css.header}>
                 <ActionIcon onClick={()=>{ setLevel(1);}} iconName={(level===1)?'NONE':'back'}/>    
                 <span className={css.title} >{currentTitle}</span>
             </div>
             <div  className={css.options}> 
+                <form>
                 {currentOptions.map( (option) => (
                     <label key={option.id} className={css.option} onClick={handleSelect(option.id)}>
                         <input type="radio" name="option" value={option.id} style={inputStyle()}/>
                         {option.label}
                     </label>
                 ))}            
+                </form>
             </div>  
         </article>
     );

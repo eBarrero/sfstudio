@@ -21,7 +21,7 @@
     width: 800px;
     padding: 5px;;
     border: 1px solid rgba(196, 187, 187, 0.5);
-    background-color:rgb(32, 32, 31) ;
+    background-color: var(--bgcolor-active_desk);
     color: rgb(166, 228, 192);
 }
 
@@ -43,7 +43,7 @@
     margin: 5px;
     padding: 5px;
     
-    background-color: var(--color-data_background);
+
     color: var(--color-data_text);
     
     transition: background-color 0.25s;

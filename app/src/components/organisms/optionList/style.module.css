@@ -1,9 +1,9 @@
 .OptionList {
     display:block;
     padding: 5px;
-    background-color: #111111;
+    background-color: transparent;
     color: var(--color-data_text);
-    height: 100%;
+    
 
     .header {
         display: flex;
@@ -27,7 +27,7 @@
         align-items:baseline;
 
 
-        background-color: var(--color-data_background);
+
         color: var(--color-data_text);
         
         transition: background-color 0.25s;
@@ -36,7 +36,9 @@
         box-sizing: border-box;
         border: 1px solid transparent;     
  
-
+        form {
+            display: contents;
+        }
         .option {
             font-family: Helvetica, sans-serif;
             font-size: 1.0rem;

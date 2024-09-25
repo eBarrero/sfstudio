@@ -9,6 +9,7 @@ Visit the live project at: [https://sfstudio.dev](https://sfstudio.dev)
 - Initialize filter when clearing the string
 - Add command to clear filter .cls
 - Proxy Error when the cached obeject is newer then the schema
+- manage 2nd click in look up and childs
 
 ## Improvements
 
@@ -31,6 +32,7 @@ Visit the live project at: [https://sfstudio.dev](https://sfstudio.dev)
 - Convert history to a div
 - Animation when loading fields
 - create a reset botton to force the schema to load
+- set elipsis in
 
 ## Ideas:
 

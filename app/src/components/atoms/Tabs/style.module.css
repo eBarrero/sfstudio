@@ -1,0 +1,39 @@
+.container {
+    display: flex;
+    flex-direction: row;
+
+    justify-content:left;
+    margin-bottom: 20px;
+    background-color: var(--bgcolor-active_desk);
+
+    .item {
+        align-items: center;
+        margin-left: 20px;
+        cursor: pointer;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 1.5rem;        
+    }
+
+    .itemActived {
+        background-color: var(--background);
+        border-bottom: 1px solid rgba(83, 80, 80, 0.5);
+    }
+    .itemNoActived {
+        opacity: 0.5;
+        transition: all 0.3s;
+
+        &:hover {
+            opacity: 1;
+        }
+
+
+    }
+
+    .titleSection {
+        margin-bottom: 1rem;
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
+
+}
+

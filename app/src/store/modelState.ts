@@ -39,10 +39,12 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             const queryState:QueryState = {queryElemnts: [mainQuery], indexCurrentElement: 0};
             set({state: {orgSfName, action:'sobject', sObjectApiName,  sObjectLocalId },queryState, 
                 sqlState: sqlState(queryState),
-                currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>                
+                currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>,
+                rankQueryElements: rankQueryElements(queryState.queryElemnts)                
             });
         },
         setField: (field: GetFieldsIndex) => {
+            console.log('setField', );
             const state = get().state;
             state.currentField = field;
             state.action = 'field';
@@ -57,11 +59,15 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             const indexCurrentElement = queryState.indexCurrentElement;
             const parentQuery = queryState.queryElemnts[indexCurrentElement];  // the current element is the parent of the new element
             const newlevel = (parentQuery as ReletedObject).level + 1;         // the new level is the parent level + 1 (max. 5) 
-
+            const parentPath = (parentQuery as ReletedObject).path; // the new path is the parent path + fieldApiName + '.'
+            const path = ((parentPath)?parentPath:'') + field.relationshipName + '.'; 
+            console.log('path', path);
+            
             
             const sObjectLocalId = field.referenceToLocalId![0];
             const relatedObject : ReletedObject = {
                 sObjectId: {orgSfName, sObjectLocalId, sObjectApiName: field.referenceTo}, 
+                path, 
                 parent: indexCurrentElement, 
                 type:'RELETED', 
                 relatedTo: field.relationshipName!,
@@ -71,12 +77,14 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             queryState.indexCurrentElement = queryState.queryElemnts.push(relatedObject) - 1;
 
             set({state: {orgSfName, 
-                         sObjectApiName:field.referenceTo, 
+                         sObjectApiName: field.referenceTo, 
                          sObjectLocalId: sObjectLocalId, 
+                         currentPath: path,
                          action: 'quitar action'}, 
                  queryState, 
                  sqlState: sqlState(queryState),
-                 currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>
+                 currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>,
+                 rankQueryElements: rankQueryElements(queryState.queryElemnts)            
 
             }); 
         },        
@@ -98,7 +106,8 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
                 
             set({state: {orgSfName, sObjectApiName:childSObject, sObjectLocalId, action: 'sobject'},
                  queryState, sqlState: sqlState(queryState),
-                 currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>
+                 currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>,
+                 rankQueryElements: rankQueryElements(queryState.queryElemnts)            
             });
         },
 
@@ -161,7 +170,8 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
                  currentSOQLFieldSelection
             });
         },
-        addWhere: (SimpleCondition: SimpleCondition) => {
+        addWhere: (SimpleCondition: SimpleCondition | pairCondition) => {
+            console.log('addWhere',SimpleCondition);
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement;
             const query = queryState.queryElemnts[currentElement];  
@@ -250,20 +260,26 @@ function sqlState( queryState: QueryState  ): SQLState {
     function addLookupSelect(parent: number, currentSelect: string, previousRelatedTo: string): string {
         let select = currentSelect;
         query.forEach((queryElemnt, index) => {
-        if (queryElemnt.type === 'RELETED' && queryElemnt.parent === parent) {
-            
-            const reletedObject = queryElemnt as ReletedObject;
-            const newRelatedTo = previousRelatedTo + reletedObject.relatedTo + '.';
-            select = addLookupSelect(index, select, newRelatedTo);
-            reletedObject.selectClause?.fields?.forEach((field) => {
-                if  (select !== '')  select += ', ';
-                select += `${newRelatedTo}${field.fieldId.fieldApiName} `;
-            });            
-        }
+            if (queryElemnt.type === 'RELETED' && queryElemnt.parent === parent) {
+                
+                const reletedObject = queryElemnt as ReletedObject;
+                const newRelatedTo = previousRelatedTo + reletedObject.relatedTo + '.';
+                select = addLookupSelect(index, select, newRelatedTo);
+                
+                reletedObject.selectClause?.fields?.forEach((field) => {
+                    if  (select !== '')  select += ', ';
+                    select += `${newRelatedTo}${field.fieldId.fieldApiName} `;
+                });            
+            }
         });
 
         return select;
     }
+
+
+
+
+
 
     const query = queryState.queryElemnts;
     let sqlSelect = '';
@@ -286,7 +302,11 @@ function sqlState( queryState: QueryState  ): SQLState {
             });
             sqlSelect = addLookupSelect(0, sqlSelect, '');
             sqlFrom += `${rootQuery.sObjectId.sObjectApiName} `;
-              
+            rootQuery.where?.forEach((where) => {
+                if  (sqlWhere === '')  sqlWhere='WHERE '; else sqlWhere += ' AND ';
+                sqlWhere += `${where.sqlString} `;
+            });
+
 
         } else if (queryElemnt.type === 'SUBQUERY') {
             const subQuery = queryElemnt as NestedQuery;
@@ -310,17 +330,20 @@ function sqlState( queryState: QueryState  ): SQLState {
 
     const sql = `${sqlSelect} ${sqlFrom} ${sqlWhere} ${sqlOrderBy} ${sqlGroupBy} ${sqlHaving} ${sqlLimit}`;
     const isValid = (sql.split("SELECT").length ===sql.split("FROM").length);
-    console.log('SQL:' + sql);
     return {sql, isValid};
 }   
 
-/*            sql += `SELECT ${queryElemnt.selectClause?.fieldsAll} `;
-            queryElemnt.selectClause?.fields?.forEach((field) => {
-                sql += `${field.fields.orgSfName}.${field.fields.fieldApiName} `;
-            });
-            sql += `FROM ${queryElemnt.sObjectId.orgSfName}.${queryElemnt.sObjectId.sObjectApiName} `;
-            sql += "WHERE ";    
-            (queryElemnt as fromObject).where?.forEach((where) => {
-                sql += `${where.field.orgSfName}.${where.field.fieldApiName} ${where.operator} ${where.value} `;
-            });
-*/
+function rankQueryElements(queryElemnts: QueryElement[]): RankQueryElements[] {
+    function calculateRankingPath(index: number ): string {
+        let solution = '';
+        if (index===0) return '';
+        const parent = queryElemnts[index].parent;
+        solution += calculateRankingPath(parent) + parent ; 
+        return solution;
+    }    
+
+    return queryElemnts
+        .map((_element, index): [string,  number] => [calculateRankingPath(index)+index.toString(),  index])
+        .sort((a, b) => a[0].localeCompare(b[0]));
+}
+

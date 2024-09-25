@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '../../../utils/utils';
 import applicationState from '../../../store/applicationState';
 import useApplication from '../../../store/applicationHook';
 import {getCommands} from '../../../core/commandManager';
@@ -12,12 +13,9 @@ import css from './style.module.css';
  Goal: This component allows the user to interact to other components by typing commands, for exemple, to filter the data in the table.
 */
 const Console = () => {
-        const [swKeyDown, setSwKeyDown] = useState(false);
-        const { setCommand, exeCommand, lastError,  currentCommand, helpOnLine, history, context_level, suggestions } = useApplication();
-        const { exeCommandFromUI } = applicationState();
-
-
-        
+    const [swKeyDown, setSwKeyDown] = useState(false);
+    const { setCommand, exeCommand, lastError,  currentCommand, helpOnLine, history, context_level, suggestions } = useApplication();
+    const { exeCommandFromUI } = applicationState();
 
     const handleCommandChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const inputValue = e.target.value;
@@ -54,7 +52,7 @@ const Console = () => {
             <div className={css.toolBar} aria-label={"tool Bar"} id="toolbar"> 
                 {getCommands(context_level).map((command, index) => (
                     <div key={index}>
-                        <MiniButton  iconSymbol={command.iconSymbol!}  tooltip={command.description}  onClick={() => exeCommandFromUI(command.command)}/>
+                        <MiniButton  iconSymbol={command.iconSymbol!}  tooltip={t(command.description)}  onClick={() => exeCommandFromUI(command.command)}/>
                     </div>
                     )
                 )}
