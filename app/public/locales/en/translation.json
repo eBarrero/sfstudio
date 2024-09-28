@@ -289,12 +289,14 @@
     "SOQL.Fun.FISCAL_YEAR" : "Groups results by fiscal year.",
     "SOQL.Fun.HOUR_IN_DAY" : "Extracts the hour part of a date.",
     "SOQL.Fun.WEEK_IN_YEAR" : "Groups results by week in year.",
-    "SOQL.Fun.convertTimezone" : "Converts time to a different time zone."
+    "SOQL.Fun.convertTimezone" : "Converts time to a different time zone.",
 
 
     
     
- 
+    "APP.Welcome": "sfStudio is a tool to help Salesforce developers and administrators to write and execute SOQL queries. It provides a simple and intuitive interface to interact with Salesforce data.",
+    "APP.Disclaimer": "sfStudio is free to use, but it is not an officially supported product. it has not been thoroughly tested or documented, and no formal support is provided. For support requests, bug reports, or suggestions, please visit the                     <a href='https://github.com/eBarrero/sfstudio/issues'  target=\"_blank\" rel=\"noopener\"> GitHub Issues page.</a> Users are encouraged to use this page to report any issues or suggest improvements. <br/>                    The source code for SFStudio is available at <a href='https://github.com/eBarrero/sfstudio' target=\"_blank\" rel=\"noopener\"> GitHub Repository</a> under separate and different license terms."
+
 }
 
  

@@ -1,4 +1,6 @@
 import css from './style.module.css'
+import {t} from '../../../utils/utils';
+import parse from 'html-react-parser';
 import DBConnectionManager from '../../organisms/dbConnectionManager/dbConnectionManager'; 
 import SOQLPath from '../../organisms/SOQLPath/soqlPath';
 import SchemaPanel from '../../organisms/schemaPanel/schemaPanel';
@@ -6,12 +8,8 @@ import SObjectPanel from '../../organisms/sObjectPanel/sObjectPanel';
 import viewState from '../../../store/viewState';
 import Console from '../../organisms/console/console';
 import ResultSheet from '../../organisms/resultSheet/resultSheet';
-/*
-import {salesforceJsontoInlineJson } from '../../../utils/inlineJson';
-import json  from '../../../Mocks/resp.json' assert { type: 'json'};
 
-salesforceJsontoInlineJson(json);
-*/
+
 
 console.log('*****HomePage');
 const HomePage = () => {
@@ -19,7 +17,7 @@ const HomePage = () => {
 
     return (
             <main className={css.main}>
-                <aside className={css.options_container}>
+                <nav className={css.options_container}>
                     <section className={css.frame_features}>
                         <DBConnectionManager/>
                     </section>                    
@@ -27,9 +25,10 @@ const HomePage = () => {
                         <SOQLPath/>
                         <Console/>
                     </section>
-                </aside>
+                </nav>
                 <section className={css.panel_container}>
                     <section className={css.frame_editor}>
+                        {currentView==='INIT' && <AppIntro/> }
                         {currentView==='org' && <SchemaPanel/> }
                         {currentView==='sobject' && <SObjectPanel/> }     
                         {currentView==='SQL_RESULT' && <ResultSheet/> }                   
@@ -38,8 +37,27 @@ const HomePage = () => {
             </main>
             
           )
-}   
+};
 
 export default HomePage;
 
 
+const AppIntro = () => {
+
+    return (
+        <article className={css.AppPresentation}>
+            <header className={css.AppHeader}>
+                <img src="Logo64.png" alt="SFStudio Logo" className={css.AppHeader__logo} />
+                <h1 className={css.AppHeader__title}>sfStudio</h1>
+            </header>
+            <section className={css.AppBody}>
+                <p className={css.AppBody__subtitle}>
+                    {t('APP.Welcome')}
+                </p>
+                <aside className={css.AppBody__disclaimer}>
+                    {parse(t('APP.Disclaimer'))}
+                </aside>
+            </section>    
+        </article>
+    );
+};

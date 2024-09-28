@@ -113,23 +113,8 @@ a:hover {
 }
 
 
-header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding: 0;
-  display:  inline-block;
-  justify-content: space-between;
-  align-items: center;
-  background-color: black
 
-}
-nav {
-  display: inline-block;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
+
 
 .Option {
   display: grid;
@@ -149,14 +134,7 @@ nav {
   background-color: #3f3f41;
 }
 
-.Tree {
-  background-color: #9c1919;
-  color: #ffffff;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background-color 0.25s;
-  justify-content: left;
-}
+
 
 .Caption {
   text-align: left;
@@ -166,11 +144,7 @@ nav {
 }
 
 
-.flex-item {
-  flex-grow: 0; /* Evitar que los elementos crezcan para llenar el contenedor */
-  flex-shrink: 1; /* Permitir que los elementos se encojan si es necesario */
-  flex-basis: auto; /* La base del tamaño es el tamaño del contenido */
-}
+
 
 
 .invisible {
