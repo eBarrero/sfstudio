@@ -1,9 +1,11 @@
 .container {
     display: flex;
+    position:sticky;
+    top:25px;
     flex-direction: row;
 
     justify-content:left;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     background-color: var(--bgcolor-active_desk);
 
     .item {

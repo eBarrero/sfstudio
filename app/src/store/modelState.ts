@@ -12,13 +12,15 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
 
   const modelState = create<ModelState>((set, get) => {
     return  {
-        state:   { orgSfName: '', action: '', sObjectApiName: '', sObjectLocalId: - 1, currentField: null},
+        state:   { orgSfName: '', action: '', sObjectApiName: '', sObjectLocalId: - 1, currentField: null, currentPath: ''},    
         queryState: { queryElemnts: [], indexCurrentElement: 0  },
         sqlState:   { sql: '', isValid: false},
         currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>,
+
+
         setOrg: (orgSfName: SchemaName)  => {
             if (orgSfName === '') return;
-            set({state: {orgSfName, action:'INI', sObjectApiName:'',  sObjectLocalId: -1, currentField: null},});
+            set({state: {orgSfName, action:'INI', sObjectApiName:'',  sObjectLocalId: -1, currentField: null, currentPath: ''}});
         },  
                                                
             
@@ -34,12 +36,12 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
                 limit:50, 
                 type:'ROOT',
                 level: 0,
-                selectClause: {fields: []} 
+                selectClause: {fields: []}
             };
             const queryState:QueryState = {queryElemnts: [mainQuery], indexCurrentElement: 0};
-            set({state: {orgSfName, action:'sobject', sObjectApiName,  sObjectLocalId },queryState, 
+            set({state: {orgSfName, action:'sobject', sObjectApiName,  sObjectLocalId, currentPath:'' },queryState, 
                 sqlState: sqlState(queryState),
-                currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>,
+                currentSOQLFieldSelection: createSOQLFieldSelection(queryState.queryElemnts[0]),
                 rankQueryElements: rankQueryElements(queryState.queryElemnts)                
             });
         },
@@ -104,7 +106,7 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
 
             queryState.indexCurrentElement = queryState.queryElemnts.push(newSubquery) - 1;
                 
-            set({state: {orgSfName, sObjectApiName:childSObject, sObjectLocalId, action: 'sobject'},
+            set({state: {orgSfName, sObjectApiName:childSObject, sObjectLocalId, action: 'sobject', currentPath:''},
                  queryState, sqlState: sqlState(queryState),
                  currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>,
                  rankQueryElements: rankQueryElements(queryState.queryElemnts)            
@@ -117,18 +119,25 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             const currentElement = queryState.indexCurrentElement = index;
             const query = queryState.queryElemnts[currentElement];
             let action ='sobject';
-            if (query.type === 'RELETED') action = 'releted_sobject';   
-
-            set({state: {
-                orgSfName: query.sObjectId.orgSfName, 
-                sObjectApiName: query.sObjectId.sObjectApiName, 
-                sObjectLocalId: query.sObjectId.sObjectLocalId, 
-                action},
-                queryState,
+            let path = '';
+            if (query.type === 'RELETED')   {
+                action = 'releted_sobject';   
+                path = (query as ReletedObject).path;
+            }
+            set({state: 
+                {
+                    orgSfName: query.sObjectId.orgSfName, 
+                    sObjectApiName: query.sObjectId.sObjectApiName, 
+                    sObjectLocalId: query.sObjectId.sObjectLocalId, 
+                    currentPath: path,
+                    action
+                }, 
+                queryState, 
+                sqlState: sqlState(queryState),
                 currentSOQLFieldSelection: createSOQLFieldSelection(query),
             });
         },
-        doFieldAction: (fieldIndex: FieldLocalId, action: string) => {
+        doFieldAction: (fieldIndex: FieldLocalId, action: string, soqlFunction: string = '%1', isAggregateFunction: boolean = false) => {
             const { orgSfName } = get().state;
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement;
@@ -136,7 +145,7 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
 
             if (action === constants.SELECTED) {
                 const fieldId: FieldId = {fieldApiName: modelReader.getFieldApiName(orgSfName, query.sObjectId.sObjectLocalId, fieldIndex), fieldIndex};
-                const SelectClauseField = {fieldId: fieldId, alias: undefined, aggregateFunction: undefined};
+                const SelectClauseField = {fieldId: fieldId, alias: undefined, soqlFunction, isAggregateFunction};
                 query.selectClause!.fields!.push(SelectClauseField);
             }
 
@@ -210,26 +219,30 @@ function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFi
     const map = new Map<FieldLocalId, SOQLFieldSelectionState>();
 
 
+    const { orgSfName, sObjectLocalId } = query.sObjectId;
+    const object =  modelReader.getSObject(orgSfName,  sObjectLocalId);    
+
+    // initialize the map with all fields of the object
+    object.fields!.forEach((field) => {
+        map.set(field.fieldLocalId, {isSelected:false, isWhere: false, isOrderBy: false, isSelectNotAlled:false, selectFunction: []});
+    });    
 
     // if we use "ALL" or "CUSTOM" or "STANDARD", we need to: remove teh acurate fields from current selection and mark them as not selectable
-    
     if (query.selectClause?.fieldsAll!==undefined ) {
-        const { orgSfName, sObjectLocalId } = query.sObjectId;
-        const object =  modelReader.getSObject(orgSfName,  sObjectLocalId);
         object.fields!.forEach((field) => {
             if ((query.selectClause?.fieldsAll === SelectAllFieldsEnum.ALL) || 
                 (query.selectClause?.fieldsAll === SelectAllFieldsEnum.CUSTOM && field.custom) ||
                 (query.selectClause?.fieldsAll === SelectAllFieldsEnum.STANDARD && !field.custom)) {
-                    map.set(field.fieldLocalId, {isSelected:true, isWhere: false, isOrderBy: false, isSelectNotAlled:true});
-                }
-                
+                    map.set(field.fieldLocalId, {isSelected:true, isWhere: false, isOrderBy: false, isSelectNotAlled:true, selectFunction: []});
+            } 
         });
     }
 
     query.selectClause?.fields?.forEach((field) => {
-        if (!map.has(field.fieldId.fieldIndex)) {
-            map.set(field.fieldId.fieldIndex, {isSelected:true, isWhere: false, isOrderBy: false, isSelectNotAlled:false});
-        }
+        const current =  map.get(field.fieldId.fieldIndex);
+        current!.isSelected = true;
+        current!.selectFunction.push(field.soqlFunction);
+        map.set(field.fieldId.fieldIndex, current!);
     });
 
     query.where?.forEach((where) => {
@@ -238,16 +251,17 @@ function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFi
             item!.isWhere = true;
             map.set(where.field.fieldIndex, item!);
         } else {
-            map.set(where.field.fieldIndex, {isSelected:true, isWhere: true, isOrderBy: false, isSelectNotAlled:false});
+            map.set(where.field.fieldIndex, {isSelected:true, isWhere: true, isOrderBy: false, isSelectNotAlled:false, selectFunction: []});
         }
     });
+
     query.orderBy?.forEach((orderBy) => {
         if (map.has(orderBy.field.fieldIndex)) {
             const item = map.get(orderBy.field.fieldIndex);
             item!.isOrderBy = true;
             map.set(orderBy.field.fieldIndex, item!);
         } else {
-            map.set(orderBy.field.fieldIndex, {isSelected:true, isWhere: false, isOrderBy: true, isSelectNotAlled:false});
+            map.set(orderBy.field.fieldIndex, {isSelected:true, isWhere: false, isOrderBy: true, isSelectNotAlled:false, selectFunction: []});
         }
     });
     
@@ -268,7 +282,7 @@ function sqlState( queryState: QueryState  ): SQLState {
                 
                 reletedObject.selectClause?.fields?.forEach((field) => {
                     if  (select !== '')  select += ', ';
-                    select += `${newRelatedTo}${field.fieldId.fieldApiName} `;
+                    select += field.soqlFunction.replace('%1', `${newRelatedTo}${field.fieldId.fieldApiName} `);
                 });            
             }
         });
@@ -298,7 +312,11 @@ function sqlState( queryState: QueryState  ): SQLState {
             if (rootQuery.selectClause?.fieldsAll!==undefined) sqlSelect += `SELECT ${rootQuery.selectClause?.fieldsAll} `;
             rootQuery.selectClause!.fields!.forEach((field) => {
                 if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
-                sqlSelect += `${field.fieldId.fieldApiName}`;
+                sqlSelect += field.soqlFunction.replace('%1',`${field.fieldId.fieldApiName}`);
+                if (field.isAggregateFunction) {
+                    if (sqlGroupBy === '') sqlGroupBy = 'GROUP BY '; else sqlGroupBy += ', ';
+                    sqlGroupBy += field.soqlFunction.replace('%1',`${field.fieldId.fieldApiName}`);
+                }
             });
             sqlSelect = addLookupSelect(0, sqlSelect, '');
             sqlFrom += `${rootQuery.sObjectId.sObjectApiName} `;
@@ -309,16 +327,26 @@ function sqlState( queryState: QueryState  ): SQLState {
 
 
         } else if (queryElemnt.type === 'SUBQUERY') {
+            let subQueryGroupBy = '';
+            let subQueryWhere = ''
             const subQuery = queryElemnt as NestedQuery;
             let subQuerySelect = '';
             subQuery.selectClause?.fields?.forEach((field) => {
                 if (subQuerySelect === '')  subQuerySelect='SELECT '; else subQuerySelect += ', ';
-                subQuerySelect += `${field.fieldId.fieldApiName}`;
+                subQuerySelect += field.soqlFunction.replace('%1',`${field.fieldId.fieldApiName}`);
+                if (field.isAggregateFunction) {
+                    if (subQueryGroupBy === '') subQueryGroupBy = 'GROUP BY '; else sqlGroupBy += ', ';
+                    subQueryGroupBy += field.soqlFunction.replace('%1',`${field.fieldId.fieldApiName}`);
+                }                
             });
             subQuerySelect = addLookupSelect(index, subQuerySelect, '');
             subQuerySelect+= ` FROM ${subQuery.relationshipName} `;
+            subQuery.where?.forEach((where) => {
+                if  (subQueryWhere === '')  subQueryWhere='WHERE '; else subQueryWhere += ' AND ';
+                subQueryWhere += `${where.sqlString} `;
+            });            
             if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
-            sqlSelect += `(${subQuerySelect}) `;
+            sqlSelect += `(${subQuerySelect} ${subQueryWhere} ${subQueryGroupBy}) `;
 
         } 
     });

@@ -16,8 +16,9 @@
     display: flex;
     flex-direction: column;
     margin: auto;
-    overflow: hidden;
-    height: 800px;
+    overflow-y:scroll;
+    overflow-x: hidden ;
+    height: 500px;
     width: 800px;
     padding: 5px;;
     border: 1px solid rgba(196, 187, 187, 0.5);
@@ -108,3 +109,14 @@
 .titleBar button:hover {
     color: rgb(255, 255, 255, 1);
 }   
+
+.ButtonApply {
+    display:block;
+    text-align: right;
+    position: sticky;
+    top:25px;    
+    margin: 10px;
+
+
+
+}

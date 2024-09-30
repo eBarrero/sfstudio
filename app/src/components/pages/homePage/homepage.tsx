@@ -11,7 +11,7 @@ import ResultSheet from '../../organisms/resultSheet/resultSheet';
 
 
 
-console.log('*****HomePage');
+
 const HomePage = () => {
     const { currentView } = viewState();
 

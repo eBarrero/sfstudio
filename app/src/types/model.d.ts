@@ -26,7 +26,7 @@ interface OrderBy {
     direction: 'ASC' | 'DESC';
   }
 
-type AggregateFunction = 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX' | 'COUNT_DISTINCT';
+
 
 
 type SelectAllFields = SelectAllFieldsEnum.ALL | SelectAllFieldsEnum.CUSTOM | SelectAllFieldsEnum.STANDARD;
@@ -34,8 +34,8 @@ type SelectAllFields = SelectAllFieldsEnum.ALL | SelectAllFieldsEnum.CUSTOM | Se
 type SelectClauseField = {
     fieldId: FieldId;
     alias?: string;
-    aggregateFunction?: AggregateFunction
-    function?: 'format(%1)'
+    isAggregateFunction: boolean; 
+    soqlFunction: SOQL_FUN_KEYWORDS;  
 }
 
 type SelectClause = {
@@ -92,6 +92,7 @@ interface SOQLFieldSelectionState {
     isWhere: boolean;
     isOrderBy: boolean;
     isSelectNotAlled: boolean;
+    selectFunction: string[]; 
 }
 interface SQLState {        
     sql: string;
@@ -109,7 +110,7 @@ interface ModelState {
         sObjectApiName: SObjectApiName;
         sObjectLocalId: SObjectLocalId;
         currentField?: GetFieldsIndex | null;
-        currentPath?: string;
+        currentPath: string;
     };
     filerSObject?: SObjectsFilter
     queryState: QueryState; // It contains the query elements: main quiery, subqueries and releted objects
@@ -122,7 +123,7 @@ interface ModelState {
     gotoLookup: (field: GetFieldsIndex) => void; 
     gotoChild: (child: GetChildRelationships) => void;
     showByqueryElemntsIndex: (index: number) => void;
-    doFieldAction: (fieldIndex: number, action: string) => void;
+    doFieldAction: (fieldIndex: number, action: string, string = '%1', isAggregateFunction: boolean = false) => void;
     setSelectAllFields: (value: SelectAllFields) => void;
     addWhere: (SimpleCondition: SimpleCondition) => void;
     initializeModel: () => void;

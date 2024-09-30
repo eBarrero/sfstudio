@@ -24,8 +24,8 @@ if ((ENV!=="DEV")) app.use(express.static('../app/dist'));
 
 
 app.get("/api/init", (req: Request, res: Response) => {
-    console.log(`${req.url} ${req.ip}  ${req.headers['user-agent']} ${req.headers['x-forwarded-for']} ${req.headers['x-real-ip']} ${req.headers['x-forwarded-host']}`); 
-    console.log(req.headers);
+    console.log(`${req.url} ${req.ip}  ${req.headers['cf-connecting-ip']} ${req.headers['cf-ipcountry']}`);
+    
     const signInToken = req.cookies.id;
     if (!signInToken) {
         res.json("newsession" ); 
@@ -74,6 +74,7 @@ app.get("/api/callback", async (req: Request, res: Response) => {
 
     try {
         await session.login( req.query.code as string, callbackUrl);
+        console.log(session.getUserName());
         res.redirect(redirectUri);
     } catch (error) {
         console.error('Access Token Error', (error as Error).message);

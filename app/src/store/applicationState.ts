@@ -110,10 +110,13 @@ const applicationState = create<ApplicationState>((set, get) => {
             set(newState);
         },        
         initializeApp: () => {
-            addCommand( { ...APP_CMD.BACK_FROM_ORG,  action: () => { 
+            addCommand( { ...APP_CMD.BACK_FROM_ORG,  action: (params: AcctionParams) => { 
                 // missing implementation
                 // close salesforce connection
+                const { view } = params;
                 get().setContextLevel(CONTEXT_LEVEL.INIT) 
+                view.setCurrentView('INIT');
+                
             }} );
             addCommand( { ...APP_CMD.BACK_FROM_OBJ,  action: (params: AcctionParams ) => { 
                 const { view, model } = params;

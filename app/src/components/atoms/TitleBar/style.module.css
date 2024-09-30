@@ -1,6 +1,7 @@
 .titleBar {
     display: flex;
-    
+    position: sticky;
+    top:0px;
     flex-direction: row;
     justify-content: space-between;
     vertical-align:bottom;

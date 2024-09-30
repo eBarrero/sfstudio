@@ -1,5 +1,5 @@
 import { AccessToken, AuthorizationCode, ModuleOptions } from "simple-oauth2";
-import jsforce, { ListMetadataQuery } from "jsforce";
+import jsforce, { ListMetadataQuery, IdentityInfo  } from "jsforce";
 
 
 export class SessionError extends Error {
@@ -53,9 +53,7 @@ function fromBase64UrlSafe(base64UrlSafe: string): string {
         base64 += '='.repeat(4 - padding);
     }
     const buffer = Buffer.from(base64, 'base64');
-    
-    
-    console.log(buffer.toString('ascii'));
+
     return  buffer.toString('ascii');
 }
 
@@ -68,7 +66,8 @@ export class Connection {
     private sandbox: boolean;
     private client: AuthorizationCode;
     private accessToken?: AccessToken;
-    private conn?: jsforce.Connection;        
+    private conn?: jsforce.Connection;      
+    private userInfo?: IdentityInfo;
 
     constructor(sandbox: boolean, url: string, clientId: string, clientSecret: string) {
         this.sandbox = sandbox;
@@ -91,7 +90,7 @@ export class Connection {
     authorizationUri(url: string): string  { 
         return this.client.authorizeURL({
             redirect_uri: url,
-            scope: "full"
+            scope: "api web id profile email",
         });         
     }
 
@@ -110,6 +109,14 @@ export class Connection {
             accessToken: this.accessToken.token.access_token as string,
             version: "60.0"
         });
+        this.userInfo = await this.conn.identity();
+
+
+    }
+    
+    getUserInfo(): IdentityInfo | undefined {
+        console.log(this.userInfo.username);
+        return this.userInfo;
     }
 
     get name(): string {
@@ -194,8 +201,13 @@ export class Session {
     async login(code: string, url: string): Promise<void> {
         await this.connections[this.currentConnection].login(code, url);
     }
+
+    getUserName() {
+        this.connections[this.currentConnection].getUserInfo()?.username;
+    }
+
+
     async doSOQL(orgSfName:string, query: Base64) : Promise<any>  {
-        console.info("doSOQL");
         const decodedQuery = fromBase64UrlSafe(query);
         console.info("doSQL" + decodedQuery);
         const conn = getConnection(this.connections, orgSfName);
@@ -203,9 +215,7 @@ export class Session {
             return await conn.query(decodedQuery);
         } catch (error) {
             console.error('SOQL Error', (error as Error).message);
-            const sessionError = new SessionError("SOQL Error: " + (error as Error).message);
-            sessionError.stack = "No stack trace available";
-            throw error;
+            throw new SessionError("SOQL Error: " + (error as Error).message);
         }
 
     }    
@@ -245,10 +255,8 @@ export class Session {
         try {
             return await conn.metadata.describe('60');
         } catch (error) {
-            console.error('SOQL Error', (error as Error).message);
-            const sessionError = new SessionError("SOQL Error: " + (error as Error).message);
-            sessionError.stack = "No stack trace available";
-            throw error;
+            console.error('describe Error', (error as Error).message);
+            throw new SessionError("describe Error: " + (error as Error).message);
         }
     }      
     
@@ -259,10 +267,8 @@ export class Session {
         try {
             return await conn.metadata.list(params, '60');
         } catch (error) {
-            console.error('SOQL Error', (error as Error).message);
-            const sessionError = new SessionError("SOQL Error: " + (error as Error).message);
-            sessionError.stack = "No stack trace available";
-            throw error;
+            console.error('ListMetadata Error', (error as Error).message);
+            throw new SessionError("ListMetadata Error: " + (error as Error).message);
         }
     }      
     
@@ -273,10 +279,8 @@ export class Session {
         try {
             return await conn.metadata.read("CustomObject",["Account"] );
         } catch (error) {
-            console.error('SOQL Error', (error as Error).message);
-            const sessionError = new SessionError("SOQL Error: " + (error as Error).message);
-            sessionError.stack = "No stack trace available";
-            throw error;
+            console.error('ObjectMetadata Error', (error as Error).message);
+            throw new SessionError("ObjectMetadata Error: " + (error as Error).message);
         }
     }     
     
@@ -284,17 +288,14 @@ export class Session {
 
     
 const getConnection = ( connections: Connection[], orgSfName:string) : jsforce.Connection => {
-    console.log("getConnection: " + orgSfName);
     let result=0;
     const swExist = connections.find((connection, index) => {
         result=index; 
-        console .log("check INDEX: " + result + " " + connection.name + " " + orgSfName + " " + (connection.name === orgSfName));
         return (connection.name === orgSfName);
     });
     if (!swExist) {
         throw new Error("Connection not found");
     }       
-    console.log("getConnection INDEX: " + result);
     return connections[result].connection;    
 }
 

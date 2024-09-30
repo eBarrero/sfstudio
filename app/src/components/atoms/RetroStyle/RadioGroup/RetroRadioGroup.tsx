@@ -12,9 +12,7 @@ interface RetroCheckboxGroupProps {
 const RetroCheckboxGroup: React.FC<RetroCheckboxGroupProps> = ({label, options, currentCodes = [],  onChange}) => {
     
   const handleChange = (code: string) => () => {
-    if (onChange) {
-      onChange(code);
-    }
+    onChange && onChange(code);
   };
 
   return ( 
@@ -22,8 +20,8 @@ const RetroCheckboxGroup: React.FC<RetroCheckboxGroupProps> = ({label, options, 
       {label && <label className={css.label}>{label}</label>}
       <div  className={css.checkbox_group}>
         {options.map((option, index) => (
-          <div className={css.item}>  
-            <label key={`${index}|${option.code}`} className={css.checkbox_label}>
+          <div key={`${index}|${option.code}`} className={css.item}>  
+            <label className={css.checkbox_label}>
                 <input
                 type="checkBox"
                 value={option.code}
