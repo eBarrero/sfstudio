@@ -115,7 +115,7 @@ export class Connection {
     }
     
     getUserInfo(): IdentityInfo | undefined {
-        console.log(this.userInfo.username);
+        console.log(this.userInfo?.username);
         return this.userInfo;
     }
 
