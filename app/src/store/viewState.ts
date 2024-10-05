@@ -10,19 +10,10 @@ const viewState = create<ViewState>((set, get) => {
         currentView: 'INIT',
         dialogStack: [],
         commandState: 'INIT',
-        command: '',/*
-        setCommand: (newCommand: string | null) => {
-            if (newCommand === null || newCommand === '') {
-                set({commandState: 'INIT'});
-                return;
-            }
-            if (newCommand[0] === '.') {
-                set({commandState: 'COMMAND'});
-            } else {
-                set({commandState: 'FILTER'});
-            }
-            set({command: newCommand});
-        },*/
+        command: '',
+        msgbox : {type: '', title: '', message: ''}, 
+    
+        
         setCurrentView: (newView: string) => {
             set({currentView: newView});
         },
@@ -42,6 +33,9 @@ const viewState = create<ViewState>((set, get) => {
             const dialogArray = get().dialogStack;
             dialogArray.pop();
             set({dialogStack: dialogArray});
+        },
+        setMsgbox(type: string, title: string, message: string) {
+            set({msgbox: {type, title, message}, dialogStack: [...get().dialogStack, Dialog.MSGBOX]});
         },
         initializeView: () => {
             addCommand({ ...VIEW_CMD.FILTER, action: () => { get().setComponentShowed('OBJECT_FILTER')}} );

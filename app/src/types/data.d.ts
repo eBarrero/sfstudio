@@ -12,7 +12,10 @@ type FieldLocalId = number;   // ID from Schema.sobject[x].fields[ID]
 
 type FilterValue = boolean | null;
 
-type SalesforceFieldTypes = SalesforceFieldTypesEnum;
+
+
+
+type SalesforceFieldTypes = string;
 
 
 interface PicklistValue  {

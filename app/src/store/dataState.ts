@@ -2,7 +2,7 @@ import {create} from 'zustand';
 import  Proxy  from '../services/salesforceSchema/proxy';
 import { addCommand,deleteCommand,CONTEXT_LEVEL } from '../core/commandManager';
 import { objectFilterOptions, fieldFilterOptions } from '../core/constants/filters';
-import { SalesforceFieldTypesEnum } from '../core/constants/fields';
+import { SFFieldTypesEnum } from '../core/constants/fields';
 import { Dialog } from '../components/constants'
 
 
@@ -12,7 +12,7 @@ function objectsFilterInit(): SObjectsFilter {
         searchText:'',
         activateable:       null,
         createable:         null,
-        custom:             null,
+        custom:             true,
         customSetting:      null,
         deletable:          null,
         deprecatedAndHidden:null,
@@ -162,7 +162,6 @@ const dataState = create<DataState>((set, get) => {
                 set({childRelationships: structuredClone(data)});            
             }
         },
-
         initializeData: () => {
             // Create the commands for the object filter
             for (const key of objectFilterOptions) {
@@ -185,7 +184,7 @@ const dataState = create<DataState>((set, get) => {
                 });
             }
             // Create the commands for the field filter (field types)
-            for (const key of Object.values(SalesforceFieldTypesEnum)) {
+            for (const key of Object.values(SFFieldTypesEnum)) {
                 const cmdText = '.type.'+key;
                 addCommand({command: cmdText, description: 'field.filter.type.' + key, context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams) => {
@@ -203,7 +202,7 @@ const dataState = create<DataState>((set, get) => {
                     action: (actionParams: AcctionParams) => {
                         const {model, view} = actionParams;
                         model.setField(field);
-                        view.pushDialog(Dialog.DateTime);
+                        view.pushDialog(Dialog.WhereDialog);
                     }
                 });
             }
@@ -212,7 +211,7 @@ const dataState = create<DataState>((set, get) => {
             deleteCommand('.lookup');
             for (const field of data) {
                 const cmdText = '.lookup_'+field.fieldApiName;
-                if (field.type!==SalesforceFieldTypesEnum.Reference) continue;
+                if (field.type!==SFFieldTypesEnum.Reference) continue;
                 addCommand({command: cmdText, description: 'field.go.lookup', context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams) => {
                         const {model} = actionParams;
@@ -229,8 +228,8 @@ const dataState = create<DataState>((set, get) => {
                 addCommand({command: cmdText, description: 'field.go.child', context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams ) => {
                         const {model} = actionParams;
-                        get().loadFieldsFromChild(child);
                         model.gotoChild(child);
+                        get().loadFieldsFromChild(child);
                     }
                 });
             }

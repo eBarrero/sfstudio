@@ -20,7 +20,8 @@ export enum IconCharacter  {
 
 
 export enum Dialog {
-    DateTime = 'DateTime',   // fieldDialog <DateTime>  
-    Help = 'Help'            // helpDoalog <Help>
+    WhereDialog = 'WhereDialog', // whereDialog <WhereDialog>
+    Help = 'Help',            // helpDoalog <Help>
+    MSGBOX = 'MsgBox'        // messageBox <MsgBox>
 }
 

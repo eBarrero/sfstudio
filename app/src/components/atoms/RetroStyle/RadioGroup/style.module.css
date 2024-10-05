@@ -42,6 +42,12 @@
   color: var(--color-data_text);
   text-wrap:nowrap
 }
+.selectNoActive {
+  background-color: transparent;
+  color: rgba(83, 80, 80, 0.5);
+  text-wrap:nowrap
+}
+
 
 .select:focus {
   outline: none;

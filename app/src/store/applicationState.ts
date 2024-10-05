@@ -108,7 +108,8 @@ const applicationState = create<ApplicationState>((set, get) => {
                 newState.errorState = 'CMD.not_Found';
             }             
             set(newState);
-        },        
+        },   
+             
         initializeApp: () => {
             addCommand( { ...APP_CMD.BACK_FROM_ORG,  action: (params: AcctionParams) => { 
                 // missing implementation

@@ -12,7 +12,7 @@ const clientSecret= process.env.CLIENT_SECRET || '';
 const ENV= process.env.ENV || 'NODEV';
 const redirectUri= (ENV==="DEV")? "http://Localhost:5173": process.env.REDIRECT_URI!;
 const callbackUrl= ((ENV==="DEV")? "http://Localhost:3000": redirectUri) + "/api/callback";
-
+const apiSfVersion= process.env.API_SF_VERSION || '58.0';
 
 const sessions = new Sessions();
 
@@ -73,7 +73,7 @@ app.get("/api/callback", async (req: Request, res: Response) => {
     const session = sessions.getSession(signInToken);
 
     try {
-        await session.login( req.query.code as string, callbackUrl);
+        await session.login( req.query.code as string, callbackUrl, apiSfVersion);
         console.log(session.getUserName());
         res.redirect(redirectUri);
     } catch (error) {

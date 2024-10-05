@@ -1,0 +1,32 @@
+.container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+
+    .win {
+        margin: auto;
+        overflow:none;
+        height: 200px;
+        width: 400px;
+        padding: 1px;
+        border: 1px solid rgba(196, 187, 187, 0.5);
+        background-color:rgb(32, 32, 31) ;
+        color: rgb(166, 228, 192);
+        
+        .winInner {
+            padding: 10px;
+            .panel {
+                background-color: rgb(32, 32, 31);
+
+
+            }
+        }    
+    }
+}

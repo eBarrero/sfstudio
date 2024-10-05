@@ -1,10 +1,11 @@
 import css from './style.module.css';
 import constants from '../../constants';
 import { GridTable, GridTableCell, GridTableRow } from "../../atoms/GridTable/gridTable";
-import { SalesforceFieldTypesEnum } from "../../../core/constants/fields";
+
 import dataState  from "../../../store/dataState";
 import modelState  from "../../../store/modelState";
 import applicationState from '../../../store/applicationState';
+import { SFFieldTypesEnum } from '../../../core/constants/fields';
 
 
 
@@ -60,7 +61,7 @@ export default function TableFields() {
 
 
 const parseTypeField = (field: GetFieldsIndex):GridTableCell => {
-    if (field.type===SalesforceFieldTypesEnum.Reference)
+    if (field.type===SFFieldTypesEnum.Reference)
         return {
             iconType : '1to1',
             tooltip : 'go to reference',

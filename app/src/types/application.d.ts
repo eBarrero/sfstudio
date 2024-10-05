@@ -1,17 +1,6 @@
 
 
-interface ViewState {
-    currentView: string;
-    componentShowed?: string;
-    dialogStack: string[];
 
-    setCurrentView: (newView: string) => void;
-    setComponentShowed: (componentName: string) => void;
-    reSetComponentShowed: () => void;
-    pushDialog: (newWindow: string) => void;
-    popDialog: () => void;
-    initializeView: () => void;
-}
 
 
 interface AcctionParams {

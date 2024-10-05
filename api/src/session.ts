@@ -94,7 +94,7 @@ export class Connection {
         });         
     }
 
-    async login(code: string, url: string): Promise<void> {
+    async login(code: string, url: string, apiSfVersion: string ): Promise<void> {
         const tokenParams = {
             code: code,
             redirect_uri: url
@@ -107,7 +107,7 @@ export class Connection {
         this.conn = new jsforce.Connection({
             instanceUrl: this.accessToken.token.instance_url as string,
             accessToken: this.accessToken.token.access_token as string,
-            version: "60.0"
+            version: apiSfVersion
         });
         this.userInfo = await this.conn.identity();
 
@@ -148,6 +148,7 @@ export class Session {
     private currentConnection: number = 0;
     private connectionId: number = 0;
     private connections: Connection[] = new Array<Connection>();
+    private apiSfVesion: string='58.0';
 
     constructor() {
         this.connectionId = Math.floor(Math.random() * 10000);
@@ -198,8 +199,9 @@ export class Session {
     }
 
 
-    async login(code: string, url: string): Promise<void> {
-        await this.connections[this.currentConnection].login(code, url);
+    async login(code: string, url: string, apiSfVesion: string): Promise<void> {
+        this.apiSfVesion = apiSfVesion
+        await this.connections[this.currentConnection].login(code, url, apiSfVesion);
     }
 
     getUserName() {
@@ -253,7 +255,7 @@ export class Session {
         }
         const conn = this.connections[this.currentConnection].connection;
         try {
-            return await conn.metadata.describe('60');
+            return await conn.metadata.describe(this.apiSfVesion);
         } catch (error) {
             console.error('describe Error', (error as Error).message);
             throw new SessionError("describe Error: " + (error as Error).message);
@@ -265,7 +267,7 @@ export class Session {
         const conn = this.connections[this.currentConnection].connection;
         const params: jsforce.ListMetadataQuery[] = [{type: 'CustomObject'}];
         try {
-            return await conn.metadata.list(params, '60');
+            return await conn.metadata.list(params, this.apiSfVesion);
         } catch (error) {
             console.error('ListMetadata Error', (error as Error).message);
             throw new SessionError("ListMetadata Error: " + (error as Error).message);

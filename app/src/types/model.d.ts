@@ -35,6 +35,7 @@ type SelectClauseField = {
     fieldId: FieldId;
     alias?: string;
     isAggregateFunction: boolean; 
+    makeGroupBy: boolean;
     soqlFunction: SOQL_FUN_KEYWORDS;  
 }
 
@@ -112,6 +113,7 @@ interface ModelState {
         currentField?: GetFieldsIndex | null;
         currentPath: string;
     };
+    
     filerSObject?: SObjectsFilter
     queryState: QueryState; // It contains the query elements: main quiery, subqueries and releted objects
     currentSOQLFieldSelection: Map<FieldLocalId, SOQLFieldSelectionState>;  // It contains the fields selected in the current query. filled by createSOQLFieldSelection() fucntion
@@ -123,7 +125,7 @@ interface ModelState {
     gotoLookup: (field: GetFieldsIndex) => void; 
     gotoChild: (child: GetChildRelationships) => void;
     showByqueryElemntsIndex: (index: number) => void;
-    doFieldAction: (fieldIndex: number, action: string, string = '%1', isAggregateFunction: boolean = false) => void;
+    doFieldAction: (fieldIndex: number, action: string, string = '%1', isAggregateFunction: boolean = false, makeGroupBy: boolean = false) => void;
     setSelectAllFields: (value: SelectAllFields) => void;
     addWhere: (SimpleCondition: SimpleCondition) => void;
     initializeModel: () => void;

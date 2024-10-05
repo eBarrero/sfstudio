@@ -94,6 +94,14 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             const {orgSfName, sObjectLocalId, childSObject, relationshipName} = child;
             
             const queryState = structuredClone(get().queryState); 
+
+            if (queryState.queryElemnts[0].selectClause.fields.length>0 &&
+                queryState.queryElemnts[0].selectClause.fields[0].isAggregateFunction ) {
+                  throw new Error('You can not use child relationships in a query with aggregate functions');
+             }            
+
+
+
             const newSubquery: NestedQuery = {
                 sObjectId: {orgSfName, sObjectLocalId, sObjectApiName: childSObject},
                 parent: 0,
@@ -137,15 +145,27 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
                 currentSOQLFieldSelection: createSOQLFieldSelection(query),
             });
         },
-        doFieldAction: (fieldIndex: FieldLocalId, action: string, soqlFunction: string = '%1', isAggregateFunction: boolean = false) => {
+        doFieldAction: (fieldIndex: FieldLocalId, action: string, soqlFunction: string = '%1', isAggregateFunction: boolean = false, makeGroupBy: boolean = false ) => {
             const { orgSfName } = get().state;
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement;
             const query = queryState.queryElemnts[currentElement];  
 
             if (action === constants.SELECTED) {
+                const rootQuery = queryState.queryElemnts[0] as PrimaryQuery;
+
+                if (rootQuery.selectClause.fieldsAll) {
+                    throw new Error('You can not mix all fields and individual fields in the same query');
+                }
+
+                if (rootQuery.selectClause.fields.length>0 &&
+                   rootQuery.selectClause.fields[0].isAggregateFunction !== isAggregateFunction) {
+                    throw new Error('You can not mix aggregate and non-aggregate functions in the same query');
+                }
+
+
                 const fieldId: FieldId = {fieldApiName: modelReader.getFieldApiName(orgSfName, query.sObjectId.sObjectLocalId, fieldIndex), fieldIndex};
-                const SelectClauseField = {fieldId: fieldId, alias: undefined, soqlFunction, isAggregateFunction};
+                const SelectClauseField = {fieldId: fieldId, alias: undefined, soqlFunction, isAggregateFunction, makeGroupBy};
                 query.selectClause!.fields!.push(SelectClauseField);
             }
 
@@ -271,23 +291,29 @@ function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFi
 
 function sqlState( queryState: QueryState  ): SQLState {
 
-    function addLookupSelect(parent: number, currentSelect: string, previousRelatedTo: string): string {
+    function addLookupSelect(parent: number, currentSelect: string, currentGroupBy: string, previousRelatedTo: string): string[] {
         let select = currentSelect;
+        let sqlGroupBy = currentGroupBy;
         query.forEach((queryElemnt, index) => {
             if (queryElemnt.type === 'RELETED' && queryElemnt.parent === parent) {
                 
                 const reletedObject = queryElemnt as ReletedObject;
                 const newRelatedTo = previousRelatedTo + reletedObject.relatedTo + '.';
-                select = addLookupSelect(index, select, newRelatedTo);
+                [select, sqlGroupBy]  = addLookupSelect(index, select, currentGroupBy, newRelatedTo);
                 
                 reletedObject.selectClause?.fields?.forEach((field) => {
                     if  (select !== '')  select += ', ';
-                    select += field.soqlFunction.replace('%1', `${newRelatedTo}${field.fieldId.fieldApiName} `);
+                    const newKeyword = field.soqlFunction.replace('%1', `${newRelatedTo}${field.fieldId.fieldApiName} `);
+                    select += newKeyword;
+                    if (field.makeGroupBy) {
+                        if (sqlGroupBy !== '')  sqlGroupBy += ', ';
+                        sqlGroupBy += newKeyword;
+                    }   
                 });            
             }
         });
 
-        return select;
+        return [select, sqlGroupBy];
     }
 
 
@@ -296,7 +322,7 @@ function sqlState( queryState: QueryState  ): SQLState {
 
 
     const query = queryState.queryElemnts;
-    let sqlSelect = '';
+    let sqlSelect = 'SELECT ';
     let sqlFrom = 'FROM ';
     let sqlWhere = '';
     let sqlOrderBy = '';
@@ -311,14 +337,14 @@ function sqlState( queryState: QueryState  ): SQLState {
             const rootQuery = queryElemnt as PrimaryQuery;
             if (rootQuery.selectClause?.fieldsAll!==undefined) sqlSelect += `SELECT ${rootQuery.selectClause?.fieldsAll} `;
             rootQuery.selectClause!.fields!.forEach((field) => {
-                if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
+                if  (sqlSelect !== 'SELECT ')  sqlSelect += ', ';
                 sqlSelect += field.soqlFunction.replace('%1',`${field.fieldId.fieldApiName}`);
-                if (field.isAggregateFunction) {
+                if (field.makeGroupBy) {
                     if (sqlGroupBy === '') sqlGroupBy = 'GROUP BY '; else sqlGroupBy += ', ';
                     sqlGroupBy += field.soqlFunction.replace('%1',`${field.fieldId.fieldApiName}`);
                 }
             });
-            sqlSelect = addLookupSelect(0, sqlSelect, '');
+            [sqlSelect, sqlGroupBy] = addLookupSelect(0, sqlSelect, sqlGroupBy,  '');
             sqlFrom += `${rootQuery.sObjectId.sObjectApiName} `;
             rootQuery.where?.forEach((where) => {
                 if  (sqlWhere === '')  sqlWhere='WHERE '; else sqlWhere += ' AND ';
@@ -327,26 +353,23 @@ function sqlState( queryState: QueryState  ): SQLState {
 
 
         } else if (queryElemnt.type === 'SUBQUERY') {
-            let subQueryGroupBy = '';
+
             let subQueryWhere = ''
             const subQuery = queryElemnt as NestedQuery;
             let subQuerySelect = '';
             subQuery.selectClause?.fields?.forEach((field) => {
                 if (subQuerySelect === '')  subQuerySelect='SELECT '; else subQuerySelect += ', ';
                 subQuerySelect += field.soqlFunction.replace('%1',`${field.fieldId.fieldApiName}`);
-                if (field.isAggregateFunction) {
-                    if (subQueryGroupBy === '') subQueryGroupBy = 'GROUP BY '; else sqlGroupBy += ', ';
-                    subQueryGroupBy += field.soqlFunction.replace('%1',`${field.fieldId.fieldApiName}`);
-                }                
+           
             });
-            subQuerySelect = addLookupSelect(index, subQuerySelect, '');
+            [subQuerySelect] = addLookupSelect(index, subQuerySelect, '', '');
             subQuerySelect+= ` FROM ${subQuery.relationshipName} `;
             subQuery.where?.forEach((where) => {
                 if  (subQueryWhere === '')  subQueryWhere='WHERE '; else subQueryWhere += ' AND ';
                 subQueryWhere += `${where.sqlString} `;
             });            
             if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
-            sqlSelect += `(${subQuerySelect} ${subQueryWhere} ${subQueryGroupBy}) `;
+            sqlSelect += `(${subQuerySelect} ${subQueryWhere} ) `;
 
         } 
     });

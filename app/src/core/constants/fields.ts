@@ -8,13 +8,20 @@ export enum IconCharacter  {
   EXE = '&#128498',     // 🗲  U+1F5F2
 }
 
-export const enum SelectAllFieldsEnum {
+export enum SelectAllFieldsEnum {
   ALL = 'FIELDS(ALL)',
   CUSTOM = 'FIELDS(CUSTOM)',
   STANDARD = 'FIELDS(STANDARD)',
 } 
 
-export enum SalesforceFieldTypesEnum  {
+interface SalesforceFieldTypesDefinition {
+  type: SFFieldTypesEnum;
+  description: string;
+  icon?: string;
+}
+
+
+export enum SFFieldTypesEnum   {
   Id = "id",
   Address = "address",
   AutoNumber = "autoNumber",
@@ -45,6 +52,40 @@ export enum SalesforceFieldTypesEnum  {
   IndirectLookup = "indirectLookup",
   MetadataRelationship = "metadataRelationship"
 } 
+
+export const SF_FIELD_TYPES: { [key: string]: SalesforceFieldTypesDefinition } = {
+  Id:             { type: SFFieldTypesEnum.Id,            description: "Unique identifier for each record" } as const,
+  Address:        { type: SFFieldTypesEnum.Address,       description: "Geographical address data" },
+  AutoNumber:     { type: SFFieldTypesEnum.AutoNumber,    description: "Automatically generated number" },
+  RollUpSummary:  { type: SFFieldTypesEnum.RollUpSummary, description: "Summarizes child records" },
+  Lookup:         { type: SFFieldTypesEnum.Lookup,        description: "Lookup relationship field" },
+  MasterDetail:   { type: SFFieldTypesEnum.MasterDetail,  description: "Master-Detail relationship field" },
+  Checkbox:       { type: SFFieldTypesEnum.Checkbox,      description: "Boolean field type" },
+  Currency:       { type: SFFieldTypesEnum.Currency,      description: "Currency values with precision" },
+  Date:           { type: SFFieldTypesEnum.Date,          description: "Date field without time" },
+  DateTime:       { type: SFFieldTypesEnum.DateTime,      description: "Date and time field" },
+  Double:         { type: SFFieldTypesEnum.Double,        description: "Double-precision number" },
+  Email:          { type: SFFieldTypesEnum.Email,         description: "Email address field" },
+  Geolocation:    { type: SFFieldTypesEnum.Geolocation,   description: "Latitude and longitude coordinates" },
+  Number:         { type: SFFieldTypesEnum.Number,        description: "Number field" },
+  Percent:        { type: SFFieldTypesEnum.Percent,       description: "Percentage field" },
+  Phone:          { type: SFFieldTypesEnum.Phone,         description: "Phone number field" },
+  Picklist:       { type: SFFieldTypesEnum.Picklist,      description: "Single picklist selection" },
+  Text:           { type: SFFieldTypesEnum.Text,          description: "String or text field" },
+  TextArea:       { type: SFFieldTypesEnum.TextArea,      description: "Text area with multi-line support" },
+  LongTextArea:   { type: SFFieldTypesEnum.LongTextArea,  description: "Long text area field" },
+  Reference:      { type: SFFieldTypesEnum.Reference,     description: "Reference to another object" },
+  RichTextArea:   { type: SFFieldTypesEnum.RichTextArea,  description: "Rich text area with formatting" },
+  URL:            { type: SFFieldTypesEnum.URL,           description: "URL field" },
+  Time:           { type: SFFieldTypesEnum.Time,          description: "Time field without date" },
+  EncryptedText:  { type: SFFieldTypesEnum.EncryptedText, description: "Encrypted text field" },
+  ExternalLookup: { type: SFFieldTypesEnum.ExternalLookup,description: "External lookup relationship" },
+  IndirectLookup: { type: SFFieldTypesEnum.IndirectLookup,description: "Indirect lookup relationship" },
+  MultiselectPicklist:  { type: SFFieldTypesEnum.MultiselectPicklist,  description: "Multiple picklist selection" },
+  MetadataRelationship: { type: SFFieldTypesEnum.MetadataRelationship, description: "Relationship to metadata" }
+};
+
+
 
 export enum Operator  {
   Equals =  "=",
@@ -114,14 +155,14 @@ export const SelectClauseKeywords: { [key: string]: SelectClauseKeywords } = {
 /**
  * @description: this Map relates the field type with the corresponding Select Clause Keywords available for that field type
  */
-export const SQLClauseAllowedByTypeField: Map<SalesforceFieldTypesEnum, SelectClauseKeywords[]> = new Map<SalesforceFieldTypesEnum, SelectClauseKeywords[]>([
-  [SalesforceFieldTypesEnum.Id, [
+export const SQLClauseAllowedByTypeField: Map<SFFieldTypesEnum, SelectClauseKeywords[]> = new Map<SFFieldTypesEnum, SelectClauseKeywords[]>([
+  [SFFieldTypesEnum.Id, [
     SelectClauseKeywords.SQL_ID,
     SelectClauseKeywords.SQL_COUNT0,  
     SelectClauseKeywords.SQL_COUNT1,  
     SelectClauseKeywords.SQL_COUNT2
   ]],
-  [SalesforceFieldTypesEnum.Date, [
+  [SFFieldTypesEnum.Date, [
     SelectClauseKeywords.SQL_DATE,
     SelectClauseKeywords.SQL_FORMAT,
     SelectClauseKeywords.SQL_MIN,
@@ -135,7 +176,7 @@ export const SQLClauseAllowedByTypeField: Map<SalesforceFieldTypesEnum, SelectCl
     SelectClauseKeywords.SQL_FQUARTER,
     SelectClauseKeywords.SQL_FYEAR,
   ]],
-  [SalesforceFieldTypesEnum.DateTime, [
+  [SFFieldTypesEnum.DateTime, [
     SelectClauseKeywords.SQL_DATETIME,
     SelectClauseKeywords.SQL_FORMAT,
     SelectClauseKeywords.SQL_MIN,
@@ -151,55 +192,55 @@ export const SQLClauseAllowedByTypeField: Map<SalesforceFieldTypesEnum, SelectCl
     SelectClauseKeywords.SQL_HOUR,    
     SelectClauseKeywords.SQL_CONV,
   ]],
-  [SalesforceFieldTypesEnum.Currency, [
+  [SFFieldTypesEnum.Currency, [
     SelectClauseKeywords.SQL_CURRENCY,
     SelectClauseKeywords.SQL_SUM,
     SelectClauseKeywords.SQL_AVG,
     SelectClauseKeywords.SQL_MIN,
     SelectClauseKeywords.SQL_MAX,
   ]],
-  [SalesforceFieldTypesEnum.Number, [
+  [SFFieldTypesEnum.Number, [
     SelectClauseKeywords.SQL_NUMBER,
     SelectClauseKeywords.SQL_SUM,
     SelectClauseKeywords.SQL_AVG,
     SelectClauseKeywords.SQL_MIN,
     SelectClauseKeywords.SQL_MAX,
   ]],
-  [SalesforceFieldTypesEnum.Percent, [
+  [SFFieldTypesEnum.Percent, [
     SelectClauseKeywords.SQL_PERCENT,
     SelectClauseKeywords.SQL_SUM,
     SelectClauseKeywords.SQL_AVG,
     SelectClauseKeywords.SQL_MIN,
     SelectClauseKeywords.SQL_MAX,
   ]],
-  [SalesforceFieldTypesEnum.Text, [
+  [SFFieldTypesEnum.Text, [
     SelectClauseKeywords.SQL_TEXT
   ]],
-  [SalesforceFieldTypesEnum.TextArea, [
+  [SFFieldTypesEnum.TextArea, [
     SelectClauseKeywords.SQL_TEXT
   ]],
-  [SalesforceFieldTypesEnum.LongTextArea, [
+  [SFFieldTypesEnum.LongTextArea, [
     SelectClauseKeywords.SQL_TEXT
   ]],
-  [SalesforceFieldTypesEnum.Email, [
+  [SFFieldTypesEnum.Email, [
     SelectClauseKeywords.SQL_TEXT
   ]],
-  [SalesforceFieldTypesEnum.Phone, [
+  [SFFieldTypesEnum.Phone, [
     SelectClauseKeywords.SQL_TEXT
   ]],
-  [SalesforceFieldTypesEnum.URL, [
+  [SFFieldTypesEnum.URL, [
     SelectClauseKeywords.SQL_TEXT
   ]],
-  [SalesforceFieldTypesEnum.Checkbox, [
+  [SFFieldTypesEnum.Checkbox, [
     SelectClauseKeywords.SQL_BOOLEAN
   ]],
-  [SalesforceFieldTypesEnum.Picklist, [
+  [SFFieldTypesEnum.Picklist, [
     SelectClauseKeywords.SQL_PICKLIST
   ]],
-  [SalesforceFieldTypesEnum.MultiselectPicklist, [
+  [SFFieldTypesEnum.MultiselectPicklist, [
     SelectClauseKeywords.SQL_PICKLIST
   ]],
-  [SalesforceFieldTypesEnum.Lookup, [
+  [SFFieldTypesEnum.Lookup, [
     SelectClauseKeywords.SQL_ID,
     SelectClauseKeywords.SQL_COUNT0,  
     SelectClauseKeywords.SQL_COUNT1,  
