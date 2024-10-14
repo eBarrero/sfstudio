@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import css from '../style.module.css'
 import { t, LITERAL } from '../../../../utils/utils';
 import DataTime, {CUSTOM_DATE, CUSTOM_RANGE_DATE } from '../../../../core/constants/dataTime';
-import { RetroDateInput, RetroDateRangeInput }  from '../../../atoms/RetroStyle/DateTimeInput/RetroDateTime';
+import { RetroInput, RetroRangeInput }  from '../../../atoms/RetroStyle/Input/RetroInput';
 import RetroQuantitySelector                    from '../../../atoms/RetroStyle/QuantitySelector/RetroQuantitySelector';
 import OptionList from '../../optionList/optionList';
 
@@ -26,28 +26,27 @@ interface WhereProps {
 const WhereDataTime = (props:WhereProps) => {
     const { field, path, applyNewCondition} = props;
     const { fieldApiName, fieldLocalId, type: typeField } = field;
-    //const [typeDataTime, setTypeDataTime] = useState(0);
     const [dateTimeLiteral , setDateTimeLiteral] = useState<DateTimeLiteral>();
     const [condition, setCondition] = useState<string>('');
     const [periods, setPeriods] = useState(1);
     const [sqlChunck, setSqlChunck] = useState<(SimpleCondition | pairCondition)>();
-    const [dateTimes, setDateTimes] = useState<{type: string, from: string, to: string}>();
+    const [param, setParam] = useState<{typeHTML: string, from: string, to: string}>();
     
     useEffect(() => {
         if (!dateTimeLiteral) return
 
         const sqlKeyWord = dateTimeLiteral.sqlKeyWord + (dateTimeLiteral.paramRequired ? `:${periods}` : '');
 
-        const dateTimesValue: DateTimeValues|undefined  = (dateTimes)? {type: dateTimes.type, from: dateTimes.from, to: dateTimes.to, typeField}:undefined;
+        const whereParamValues: WhereParamValues|undefined  = (param)? {typeHTML: param.typeHTML, from: param.from, to: param.to, typeField}:undefined;
 
-        setSqlChunck(DataTime.getSQLChunck ({fieldApiName: path + fieldApiName ,  fieldIndex:fieldLocalId, condition, sqlKeyWord, dateTimes: dateTimesValue}));
+        setSqlChunck(DataTime.getSQLChunck ({fieldApiName: path + fieldApiName ,  fieldIndex:fieldLocalId, condition, sqlKeyWord, whereParamValues}));
         
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    },[condition,periods,dateTimeLiteral, dateTimes]);
+    },[condition,periods,dateTimeLiteral, param]);
 
     const handelDataTime = (type: string) =>  {
-        setDateTimeLiteral({sqlKeyWord:type, description:t(type+".doc"), paramRequired:type.includes("N_")});        
+        setDateTimeLiteral({sqlKeyWord:type, description:t('#' + type+".doc"), paramRequired:type.includes("N_")});        
     }   
 
     const handelButton = () => () => {
@@ -68,7 +67,11 @@ const WhereDataTime = (props:WhereProps) => {
                 onSelect={handelDataTime}
                 secondLevel={{
                     title: t(LITERAL.DataTimeLiteral_Periods),
-                    load2ndLevel: (type: string) => { return DataTime.getDateTimeLiteral(parseInt(type)).map( (dateTimeLiteral) => { return  {id: dateTimeLiteral.sqlKeyWord, label:t(dateTimeLiteral.description)}}) }
+                    load2ndLevel: (type: string) => { 
+                        return DataTime.getDateTimeLiteral(parseInt(type)).map( (dateTimeLiteral) => { 
+                            return  {id: dateTimeLiteral.sqlKeyWord, label:t(dateTimeLiteral.description)}
+                        }) 
+                    }
                 }}
                 />
             </div>
@@ -79,26 +82,26 @@ const WhereDataTime = (props:WhereProps) => {
                     {dateTimeLiteral.paramRequired &&   <RetroQuantitySelector value={periods} min={1} max={30} label="Periods" onChange={setPeriods}/>}
                 </>}
                 {dateTimeLiteral?.sqlKeyWord.includes(CUSTOM_DATE)   &&  
-                    <RetroDateInput 
+                    <RetroInput 
                         type={DataTime.figureOutInputType(dateTimeLiteral.sqlKeyWord, typeField )} 
-                        onChangeDateValue={setDateTimes}/>
+                        onChangeValue={setParam}/>
                 }
                 {dateTimeLiteral?.sqlKeyWord.includes(CUSTOM_RANGE_DATE)   &&  
-                    <RetroDateRangeInput 
+                    <RetroRangeInput 
                         type={DataTime.figureOutInputType(dateTimeLiteral.sqlKeyWord, typeField )} 
                         labelFrom="From" 
                         labelTo='To'  
-                        onChangeDateValue={setDateTimes}/>
+                        onChangeRangeValue={setParam}/>
                 }                
             </div>            
 
-                 
+            {dateTimeLiteral &&
             <div className={css.panel}>
-                <OptionList options={DataTime.getDateTimeCondition().map( (dateTimeLiteral) => { return  {id: dateTimeLiteral.sqlKeyWord, label:t(dateTimeLiteral.description)}})}  
+                <OptionList options={DataTime.getDateTimeCondition(dateTimeLiteral!.sqlKeyWord).map( (dateTimeLiteral) => { return  {id: dateTimeLiteral.sqlKeyWord, label:t(dateTimeLiteral.description)}})}  
                 title={t("Condition")} 
                 onSelect={setCondition}/>
             </div>            
-            
+            }
 
         </div>
         <section className={css.card}>

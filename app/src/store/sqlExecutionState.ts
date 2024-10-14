@@ -26,7 +26,7 @@ const sqlExecutionState = create<SqlExecutionState>((set, get) => {
             addCommand({...SOQL_CMD.RUN_SOQL, 
                 action: (actionParams: AcctionParams) => {
                     const {model, view, application} = actionParams;
-                    if (!model.sqlState.isValid) throw new Error("Error.SQL_NOT_VALID");
+                    if (!model.sqlState.isValid) throw new Error("#Error.SQL_NOT_VALID");
                           
                     get().executeSql(model.state.orgSfName , model.sqlState.sql);
                     view.setCurrentView('SQL_RESULT');                

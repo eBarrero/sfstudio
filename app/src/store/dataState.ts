@@ -2,9 +2,8 @@ import {create} from 'zustand';
 import  Proxy  from '../services/salesforceSchema/proxy';
 import { addCommand,deleteCommand,CONTEXT_LEVEL } from '../core/commandManager';
 import { objectFilterOptions, fieldFilterOptions } from '../core/constants/filters';
-import { SFFieldTypesEnum } from '../core/constants/fields';
 import { Dialog } from '../components/constants'
-
+import { SFFieldTypesEnum } from '../core/constants/fields';
 
 
 function objectsFilterInit(): SObjectsFilter {
@@ -69,7 +68,7 @@ const dataState = create<DataState>((set, get) => {
         loadSchema: (orgSfName: SchemaName) => {
             const f = get().sObjectsFilter;
             Proxy.getSObjectsAdapter(orgSfName, f).then((data) => {
-                if (data!==null) set({sobjects: structuredClone(data), dataLastErrorMessage: data.length>0?'':"CMD.NO_OBJECTS"});
+                if (data!==null) set({sobjects: structuredClone(data), dataLastErrorMessage: data.length>0?'':"#CMD.NO_OBJECTS"});
             });
         },
         setObjectFilterText: (orgSfName: SchemaName, searchText: string) => {
@@ -95,15 +94,21 @@ const dataState = create<DataState>((set, get) => {
                          dataLastErrorMessage: '' 
                     });
                 } else {
-                    console.log('CMD.Object_not_found', sObjectIndex);
-                    set({dataLastErrorMessage: `CMD.Object_not_found|${sObjectIndex}`});
+                    console.log('#CMD.Object_not_found', sObjectIndex);
+                    set({dataLastErrorMessage: `#CMD.Object_not_found|${sObjectIndex}`});
                 }
             });       
+        },
+        loadMetadataFields: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
+            console.log('loadMetadataFields', orgSfName, sObjectIndex);
+            Proxy.getFieldsMetadata(orgSfName,  sObjectIndex);
+            get().loadFields(orgSfName, sObjectIndex);
+            
         },
         loadFieldsByName: (orgSfName: SchemaName, sObjectName: string, callBack: (sObjectLocalId: SObjectLocalId) => void)  => {
             const id = Proxy.getSobjectIdByName(orgSfName, sObjectName);
             if (id===null) { 
-                set({dataLastErrorMessage: `CMD.Object_not_found|${sObjectName}`});
+                set({dataLastErrorMessage: `#CMD.Object_not_found|${sObjectName}`});
                 return;
             }
 
@@ -114,10 +119,10 @@ const dataState = create<DataState>((set, get) => {
                     get().createLookuoCommands(data);
                     get().createFieldsCommands(data);
                 } else {
-                    console.log('CMD.Object_not_found', sObjectName);
-                    set({dataLastErrorMessage: `CMD.Object_not_found|${sObjectName}`}); 
+                    console.log('#CMD.Object_not_found', sObjectName);
+                    set({dataLastErrorMessage: `#CMD.Object_not_found|${sObjectName}`}); 
                 }
-            }).catch((e) => { set({dataLastErrorMessage: `CMD.generalError|${(e as Error).message}`}) }); 
+            }).catch((e) => { set({dataLastErrorMessage: `#CMD.generalError|${(e as Error).message}`}) }); 
         },
         setFieldFilterText: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchText: string) => {
             console.log('setFieldFilterText', searchText);
@@ -166,7 +171,7 @@ const dataState = create<DataState>((set, get) => {
             // Create the commands for the object filter
             for (const key of objectFilterOptions) {
                 const cmdText = '.'+key.name;
-                addCommand({command: cmdText, description: 'sObject.filter.' + key.name, context:CONTEXT_LEVEL.ORG, 
+                addCommand({command: cmdText, description: '#sObject.filter.' + key.name, context:CONTEXT_LEVEL.ORG, 
                         action: (actionParams: AcctionParams) => {
                             const {model,  application} = actionParams;
                             get().setObjectFilter(model.state.orgSfName, key.name,  extractValue(application.currentCommand));
@@ -176,7 +181,7 @@ const dataState = create<DataState>((set, get) => {
             // Create the commands for the field filter
             for (const key of fieldFilterOptions) {
                 const cmdText = '.'+key.name;
-                addCommand({command: cmdText, description: 'field.filter.' + key.name, context:CONTEXT_LEVEL.OBJECT, 
+                addCommand({menuItem:'Select', menuOption:'Field type', command: cmdText, menuCaption: key.name, description: '#field.filter.' + key.name, context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams) => {
                         const {model,  application} = actionParams;
                         get().setFieldFilter(model.state.orgSfName, model.state.sObjectLocalId , key.name,  extractValue(application.currentCommand));
@@ -186,10 +191,10 @@ const dataState = create<DataState>((set, get) => {
             // Create the commands for the field filter (field types)
             for (const key of Object.values(SFFieldTypesEnum)) {
                 const cmdText = '.type.'+key;
-                addCommand({command: cmdText, description: 'field.filter.type.' + key, context:CONTEXT_LEVEL.OBJECT, 
+                addCommand({ menuItem:'Select', menuOption:'Value type', command: cmdText, menuCaption: key,  description: '#field.filter.type.' + key, context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams) => {
                         const {model} = actionParams;
-                        get().setFieldFilterType(model.state.orgSfName, model.state.sObjectLocalId,  key);
+                        get().setFieldFilterType(model.state.orgSfName, model.state.sObjectLocalId, key);
                     }
                 });
             }
@@ -212,7 +217,7 @@ const dataState = create<DataState>((set, get) => {
             for (const field of data) {
                 const cmdText = '.lookup_'+field.fieldApiName;
                 if (field.type!==SFFieldTypesEnum.Reference) continue;
-                addCommand({command: cmdText, description: 'field.go.lookup', context:CONTEXT_LEVEL.OBJECT, 
+                addCommand({menuItem:'Goto', menuOption:'Related object', command: cmdText, menuCaption: field.fieldApiName,  description: 'field.go.lookup', context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams) => {
                         const {model} = actionParams;
                         get().loadFieldsFromLookup(field);
@@ -225,7 +230,7 @@ const dataState = create<DataState>((set, get) => {
             deleteCommand('.child_');
             for (const child of childs) {
                 const cmdText = '.child_'+ child.childSObject;
-                addCommand({command: cmdText, description: 'field.go.child', context:CONTEXT_LEVEL.OBJECT, 
+                addCommand({menuItem:'Goto', menuOption:'Child objects',command: cmdText, menuCaption: child.childSObject, description: 'field.go.child', context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams ) => {
                         const {model} = actionParams;
                         model.gotoChild(child);
@@ -243,12 +248,12 @@ const dataState = create<DataState>((set, get) => {
 
 function extractValue(commandText: string): boolean|null {
     console.log('extractValue', commandText);
-    if (commandText===null) throw Error("Error.Command_is_null");
+    if (commandText===null) throw Error("#Error.Command_is_null");
     const [, valueString] = commandText.split(' ');
     if (valueString===undefined || valueString==='on') return true; 
     if (valueString==='off')  return false;
     if (valueString==='rm')   return null;
-    throw Error(`Error.WrongParam|${valueString}`);
+    throw Error(`#Error.WrongParam|${valueString}`);
     }
 
 export default dataState;

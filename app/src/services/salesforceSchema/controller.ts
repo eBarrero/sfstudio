@@ -8,7 +8,7 @@ async function request(url: string): Promise<any | null>  {
     try {
         const res = await fetch(url);
         if (!res.ok) {
-         console.log('error' + res.statusText);   
+         console.log('#Error' + res.statusText);   
           throw new RequestError(res, res.statusText);
         }
         const json = await res.json();
@@ -33,7 +33,7 @@ async function requestWithOutCache(url: string): Promise<any | null>  {
     try {
         const res = await fetch(url);
         if (!res.ok) {
-         console.log('error' + res.statusText);   
+         console.log('#Error' + res.statusText);   
           throw new RequestError(res, res.statusText);
         }
         const json = await res.json();
@@ -75,6 +75,26 @@ export async function getDescribeObject(orgSfName: string, sObject: string): Pro
     }
     
 }
+
+
+// get Metadata
+export async function getMetadataObject(orgSfName: string, sObject: string): Promise<any | null> {
+    const url = `/api/getObjectmetadata/${orgSfName}/${sObject}`;
+    const result = window.localStorage.getItem(url);
+    if (result) {
+        console.log('SI CACHE');
+        return JSON.parse(result);
+    }
+    console.log('NO CACHE');
+    try {
+        const newResult = await request(url);
+        return newResult;
+    } catch (error) {
+        console.error(`Unexpected error: ${(error as Error).message}`);
+        throw error;
+    }
+}
+
 
 export async function sendQuery(orgSfName: string,  query: string): Promise<any | null> {    
     const url = `/api/soql/${orgSfName}/${toBase64UrlSafe(query)}`;

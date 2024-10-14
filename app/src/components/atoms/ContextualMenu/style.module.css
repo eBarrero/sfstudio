@@ -1,0 +1,93 @@
+/* ContextualMenu.module.css */
+
+/* Base styles for the contextual menu container */
+.contextualMenuContainer {
+    position: relative;
+    display: inline-block;
+  }
+  
+  /* Style for menu list (horizontal menu layout) */
+  .menuList {
+    display: flex;
+    flex-direction: row;
+    background-color: #2e2e2e;
+    border: 1px solid #444;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    color: #f1f1f1;
+  }
+  
+  /* Style for main menu items (dark mode) */
+  .menuItem {
+    padding: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    color: #f1f1f1;
+    margin-right: 10px;
+  }
+  
+  .menuItem:hover, .menuItem.active {
+    background-color: #3a3a3a;
+  }
+  
+  /* Style for options (grow downwards directly below the menu) */
+  .optionList {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #3a3a3a;
+    border: 1px solid #555;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: block;
+    min-width: 150px;
+  }
+  
+  .optionItem {
+    padding: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+    color: #f1f1f1;
+    position: relative;
+  }
+  
+  .optionItem:hover, .optionItem.active {
+    background-color: #4a4a4a;
+  }
+  
+  /* Style for active indicator (dark mode) */
+  .activeIndicator {
+    margin-left: 8px;
+    color: #4caf50;
+    font-weight: bold;
+  }
+  
+  /* Style for suboptions (grow downwards next to option) */
+  .subOptionList {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    background-color: #3a3a3a;
+    border: 1px solid #555;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    color: #f1f1f1;
+    display: block;
+    min-width: 150px;
+  }
+  
+  .subOptionItem {
+    padding: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    color: #f1f1f1;
+  }
+  
+  .subOptionItem:hover {
+    background-color: #4a4a4a;
+  }

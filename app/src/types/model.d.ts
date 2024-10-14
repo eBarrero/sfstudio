@@ -101,6 +101,21 @@ interface SQLState {
 }
 
 
+type SFDateFormat = string
+
+// controles
+interface WhereParamValues {
+    typeHTML: string
+    typeField: SalesforceFieldTypes
+    from: string;
+    to: string;
+    list?: string;
+    startDate?: SFDateFormat;
+    endDate?: SFDateFormat;
+  }
+
+
+
 
 type RankQueryElements =  [string,  number];
 

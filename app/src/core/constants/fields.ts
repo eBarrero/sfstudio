@@ -1,3 +1,6 @@
+const I18TEXT   = '#TextLiteral' as const;
+//const I18NUMBER = '#NumberLiteral' as const;
+
 //depricated
 export enum IconCharacter  {
   UNDO = '&#8634;',      // ↺ U+21BA
@@ -14,8 +17,27 @@ export enum SelectAllFieldsEnum {
   STANDARD = 'FIELDS(STANDARD)',
 } 
 
+export const NumberFieldLiteralTypeEnum = {
+  NULL: 'Null',
+  SINGLE: 'Single',
+  RANGE: 'Range',
+} as const;
+
+
+
+export const TextFieldLiteralTypeEnum = {
+  NULL: 'Null',
+  SINGLE: 'Single',
+  RANGE: 'Range',
+  LIST: 'List',  
+} as const;
+
+
+export type TypeHTML = 'text' | 'date' | 'datetime-local' | 'number' | 'geo' | 'picklist' | 'big-text' | 'Multi' | 'time';
+export type SelectComponent= 'TEXT' | 'DATATIME' | 'ID' | 'NUMBER' |'PICKLIST' |'MULTI_PICKLIST' | 'NOT_ALLOWED';
 interface SalesforceFieldTypesDefinition {
-  type: SFFieldTypesEnum;
+  typeHTML: TypeHTML;
+  selectComponent: SelectComponent;
   description: string;
   icon?: string;
 }
@@ -35,13 +57,12 @@ export enum SFFieldTypesEnum   {
   Double = "double",
   Email = "email",
   Geolocation = "Geolocation",
-  Number = "number",
   Percent = "percent",
   Phone = "phone",
   Picklist = "picklist",
   MultiselectPicklist = "multiselectPicklist",
   Text = "string",
-  TextArea = "textArea",
+  TextArea = "textarea",
   LongTextArea = "longTextArea",
   Reference = "reference",
   RichTextArea = "richTextArea",
@@ -53,38 +74,41 @@ export enum SFFieldTypesEnum   {
   MetadataRelationship = "metadataRelationship"
 } 
 
-export const SF_FIELD_TYPES: { [key: string]: SalesforceFieldTypesDefinition } = {
-  Id:             { type: SFFieldTypesEnum.Id,            description: "Unique identifier for each record" } as const,
-  Address:        { type: SFFieldTypesEnum.Address,       description: "Geographical address data" },
-  AutoNumber:     { type: SFFieldTypesEnum.AutoNumber,    description: "Automatically generated number" },
-  RollUpSummary:  { type: SFFieldTypesEnum.RollUpSummary, description: "Summarizes child records" },
-  Lookup:         { type: SFFieldTypesEnum.Lookup,        description: "Lookup relationship field" },
-  MasterDetail:   { type: SFFieldTypesEnum.MasterDetail,  description: "Master-Detail relationship field" },
-  Checkbox:       { type: SFFieldTypesEnum.Checkbox,      description: "Boolean field type" },
-  Currency:       { type: SFFieldTypesEnum.Currency,      description: "Currency values with precision" },
-  Date:           { type: SFFieldTypesEnum.Date,          description: "Date field without time" },
-  DateTime:       { type: SFFieldTypesEnum.DateTime,      description: "Date and time field" },
-  Double:         { type: SFFieldTypesEnum.Double,        description: "Double-precision number" },
-  Email:          { type: SFFieldTypesEnum.Email,         description: "Email address field" },
-  Geolocation:    { type: SFFieldTypesEnum.Geolocation,   description: "Latitude and longitude coordinates" },
-  Number:         { type: SFFieldTypesEnum.Number,        description: "Number field" },
-  Percent:        { type: SFFieldTypesEnum.Percent,       description: "Percentage field" },
-  Phone:          { type: SFFieldTypesEnum.Phone,         description: "Phone number field" },
-  Picklist:       { type: SFFieldTypesEnum.Picklist,      description: "Single picklist selection" },
-  Text:           { type: SFFieldTypesEnum.Text,          description: "String or text field" },
-  TextArea:       { type: SFFieldTypesEnum.TextArea,      description: "Text area with multi-line support" },
-  LongTextArea:   { type: SFFieldTypesEnum.LongTextArea,  description: "Long text area field" },
-  Reference:      { type: SFFieldTypesEnum.Reference,     description: "Reference to another object" },
-  RichTextArea:   { type: SFFieldTypesEnum.RichTextArea,  description: "Rich text area with formatting" },
-  URL:            { type: SFFieldTypesEnum.URL,           description: "URL field" },
-  Time:           { type: SFFieldTypesEnum.Time,          description: "Time field without date" },
-  EncryptedText:  { type: SFFieldTypesEnum.EncryptedText, description: "Encrypted text field" },
-  ExternalLookup: { type: SFFieldTypesEnum.ExternalLookup,description: "External lookup relationship" },
-  IndirectLookup: { type: SFFieldTypesEnum.IndirectLookup,description: "Indirect lookup relationship" },
-  MultiselectPicklist:  { type: SFFieldTypesEnum.MultiselectPicklist,  description: "Multiple picklist selection" },
-  MetadataRelationship: { type: SFFieldTypesEnum.MetadataRelationship, description: "Relationship to metadata" }
-};
 
+
+
+
+
+export const salesforceFieldTypesDefinition: Map<SFFieldTypesEnum, SalesforceFieldTypesDefinition> = new Map<SFFieldTypesEnum, SalesforceFieldTypesDefinition>([
+  [SFFieldTypesEnum.Id,            { typeHTML: 'text',            selectComponent: 'TEXT',  description: "Unique identifier for each record" }],
+  [SFFieldTypesEnum.Address,       { typeHTML: 'text',            selectComponent: 'TEXT' , description: "Geographical address data" }],
+  [SFFieldTypesEnum.AutoNumber,    { typeHTML: 'text' ,           selectComponent: 'TEXT' , description: "Automatically generated number" }],
+  [SFFieldTypesEnum.RollUpSummary, { typeHTML: 'number',          selectComponent: 'NUMBER' ,description: "Summarizes child records" }],
+  [SFFieldTypesEnum.Lookup,        { typeHTML: 'number',          selectComponent: 'NUMBER' ,description: "Lookup relationship field" }],
+  [SFFieldTypesEnum.MasterDetail,  { typeHTML: 'number',          selectComponent: 'NUMBER' ,description: "Master-Detail relationship field" }],
+  [SFFieldTypesEnum.Checkbox,      { typeHTML: 'text',            selectComponent: 'TEXT' ,description: "Boolean field type" }],
+  [SFFieldTypesEnum.Currency,      { typeHTML: 'number',          selectComponent: 'NUMBER' ,description: "Currency values with precision" }],
+  [SFFieldTypesEnum.Date,          { typeHTML: 'date' ,           selectComponent: 'DATATIME' ,description: "Date field without time" }],
+  [SFFieldTypesEnum.DateTime,      { typeHTML: 'datetime-local' , selectComponent: 'DATATIME' ,description: "Date and time field" }],
+  [SFFieldTypesEnum.Double,        { typeHTML: 'number' ,         selectComponent: 'NUMBER' ,description: "Double-precision number" }],
+  [SFFieldTypesEnum.Email,         { typeHTML: 'text' ,           selectComponent: 'TEXT' ,description: "Email address field" }],
+  [SFFieldTypesEnum.Geolocation,   { typeHTML: 'geo' , selectComponent: 'TEXT' ,description: "Latitude and longitude coordinates" }],
+  [SFFieldTypesEnum.Percent,       { typeHTML: 'number' , selectComponent: 'TEXT' ,description: "Percentage field" }],
+  [SFFieldTypesEnum.Phone,         { typeHTML: 'text' , selectComponent: 'TEXT' ,description: "Phone number field" }],
+  [SFFieldTypesEnum.Picklist,      { typeHTML: 'picklist' , selectComponent: 'TEXT' ,description: "Single picklist selection" }],
+  [SFFieldTypesEnum.Text,          { typeHTML: 'text' , selectComponent: 'TEXT' ,description: "String or text field" }],
+  [SFFieldTypesEnum.TextArea,      { typeHTML: 'text' , selectComponent: 'NOT_ALLOWED' ,description: "Text area with multi-line support" }],
+  [SFFieldTypesEnum.LongTextArea,  { typeHTML: 'text' , selectComponent: 'NOT_ALLOWED' ,description: "Long text area field" }],
+  [SFFieldTypesEnum.Reference,     { typeHTML: 'text' , selectComponent: 'TEXT' ,description: "Reference to another object" }],
+  [SFFieldTypesEnum.RichTextArea,  { typeHTML: 'text' , selectComponent: 'NOT_ALLOWED' ,description: "Rich text area with formatting" }],
+  [SFFieldTypesEnum.URL,           { typeHTML: 'text' , selectComponent: 'TEXT' ,description: "URL field" }],
+  [SFFieldTypesEnum.Time,          { typeHTML: 'time' , selectComponent: 'TEXT' ,description: "Time field without date" }],
+  [SFFieldTypesEnum.EncryptedText, { typeHTML: 'text' , selectComponent: 'NOT_ALLOWED' ,description: "Encrypted text field" }],
+  [SFFieldTypesEnum.ExternalLookup,{ typeHTML: 'text' , selectComponent: 'TEXT' ,description: "External lookup relationship" }],
+  [SFFieldTypesEnum.IndirectLookup,{ typeHTML: 'text' , selectComponent: 'TEXT' ,description: "Indirect lookup relationship" }],
+  [SFFieldTypesEnum.MultiselectPicklist,  { typeHTML: 'Multi' , selectComponent: 'TEXT' ,description: "Multiple picklist selection" }],
+  [SFFieldTypesEnum.MetadataRelationship, { typeHTML: 'text' , selectComponent: 'TEXT' ,description: "Relationship to metadata" }],
+]);
 
 
 export enum Operator  {
@@ -98,8 +122,11 @@ export enum Operator  {
   In = "IN",
   NotIn = "NOT IN",
   Includes=  "INCLUDES",
-  Excludes= "EXCLUDES"
+  Excludes= "EXCLUDES",
+  NotNull= "!= Null",
+  IsNull= "= Null",
 }
+
 
 type SOQL_FUN_KEYWORDS = string;
 
@@ -199,7 +226,7 @@ export const SQLClauseAllowedByTypeField: Map<SFFieldTypesEnum, SelectClauseKeyw
     SelectClauseKeywords.SQL_MIN,
     SelectClauseKeywords.SQL_MAX,
   ]],
-  [SFFieldTypesEnum.Number, [
+  [SFFieldTypesEnum.Double, [
     SelectClauseKeywords.SQL_NUMBER,
     SelectClauseKeywords.SQL_SUM,
     SelectClauseKeywords.SQL_AVG,
@@ -249,3 +276,199 @@ export const SQLClauseAllowedByTypeField: Map<SFFieldTypesEnum, SelectClauseKeyw
 ]);
 
 
+const TextLiteralCondition:  [Operator, {typeCondition: string, description:string}][] = [
+  [Operator.Equals,               {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"EQUAL"}],
+  [Operator.NotEquals,            {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"NOT_EQUAL"}],
+  [Operator.GreaterThan,          {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"GREATER_THAN"}],
+  [Operator.LessThan,             {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"LESS_THAN"}],
+  [Operator.GreaterThanOrEquals,  {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"GREATER_THAN_OR_EQUAL"}],
+  [Operator.LessThanOrEquals,     {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"LESS_THAN_OR_EQUAL"}],
+  [Operator.Like,                 {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"LIKE"}],
+
+  [Operator.Equals,               {typeCondition: TextFieldLiteralTypeEnum.RANGE, description:"EQUAL"}],
+  [Operator.NotEquals,            {typeCondition: TextFieldLiteralTypeEnum.RANGE, description:"NOT_EQUAL"}],
+  [Operator.GreaterThan,          {typeCondition: TextFieldLiteralTypeEnum.RANGE, description:"GREATER_THAN"}],
+  [Operator.LessThan,             {typeCondition: TextFieldLiteralTypeEnum.RANGE, description:"LESS_THAN"}],
+  [Operator.GreaterThanOrEquals,  {typeCondition: TextFieldLiteralTypeEnum.RANGE, description:"GREATER_THAN_OR_EQUAL"}],
+  [Operator.LessThanOrEquals,     {typeCondition: TextFieldLiteralTypeEnum.RANGE, description:"LESS_THAN_OR_EQUAL"}],
+
+  [Operator.In,                   {typeCondition: TextFieldLiteralTypeEnum.LIST,  description:"IN"}],
+  [Operator.NotIn,                {typeCondition: TextFieldLiteralTypeEnum.LIST,  description:"NOT_IN"}],
+
+  [Operator.Equals,               {typeCondition: TextFieldLiteralTypeEnum.NULL,  description:"EQUAL"}],
+  [Operator.NotEquals,            {typeCondition: TextFieldLiteralTypeEnum.NULL,  description:"NOT_EQUAL"}],
+];  
+
+
+const NumberLiteralCondition:  [Operator, {typeCondition: string, description:string}][] = [
+  [Operator.Equals,               {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"EQUAL"}],
+  [Operator.NotEquals,            {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"NOT_EQUAL"}],
+  [Operator.GreaterThan,          {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"GREATER_THAN"}],
+  [Operator.LessThan,             {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"LESS_THAN"}],
+  [Operator.GreaterThanOrEquals,  {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"GREATER_THAN_OR_EQUAL"}],
+  [Operator.LessThanOrEquals,     {typeCondition: TextFieldLiteralTypeEnum.SINGLE, description:"LESS_THAN_OR_EQUAL"}],
+
+  [Operator.Equals,               {typeCondition: TextFieldLiteralTypeEnum.RANGE, description:"EQUAL"}],
+  [Operator.NotEquals,            {typeCondition: TextFieldLiteralTypeEnum.RANGE, description:"NOT_EQUAL"}],
+  [Operator.GreaterThan,          {typeCondition: TextFieldLiteralTypeEnum.RANGE, description:"GREATER_THAN"}],
+  [Operator.LessThan,             {typeCondition: TextFieldLiteralTypeEnum.RANGE, description:"LESS_THAN"}],
+  [Operator.GreaterThanOrEquals,  {typeCondition: TextFieldLiteralTypeEnum.RANGE, description:"GREATER_THAN_OR_EQUAL"}],
+  [Operator.LessThanOrEquals,     {typeCondition: TextFieldLiteralTypeEnum.RANGE, description:"LESS_THAN_OR_EQUAL"}],
+
+  [Operator.Equals,               {typeCondition: TextFieldLiteralTypeEnum.NULL,  description:"EQUAL"}],
+  [Operator.NotEquals,            {typeCondition: TextFieldLiteralTypeEnum.NULL,  description:"NOT_EQUAL"}],
+];  
+
+
+
+
+interface TextConditionLiteralType {
+  type: string;
+  description: string;
+}
+
+interface TextConditionLiteral {
+  sqlKeyWord: string;
+  description: string;
+}
+
+
+export class TextFieldCtrl {
+    /**
+     * @description get an array of TypeLiteral and description
+     */
+    static getType = (): TextConditionLiteralType[] => {
+      return  Object.entries(TextFieldLiteralTypeEnum).
+              map(([key, value]):TextConditionLiteralType => ({type: value, description: `${I18TEXT}.Type.${key}` }));
+    }
+
+    /**
+     * @description get an array of conditions and description
+     */
+    static getTextCondition = (typeCondition: string ): TextConditionLiteral[] => {
+      return TextLiteralCondition
+        .filter(([, value]) => value.typeCondition === typeCondition)
+        .map(([key, value]):TextConditionLiteral => (
+          {
+              sqlKeyWord: key, 
+              description: `${I18TEXT}.${value.typeCondition}.${value.description}`
+          }
+      ));
+    }
+
+
+      
+    static getSQLChunck = (params: {fieldApiName: string, fieldIndex: number, condition: string, keyWordWhere: string, whereParamValues: WhereParamValues | undefined}): SimpleCondition | pairCondition => {
+      const {fieldApiName, fieldIndex, condition, keyWordWhere, whereParamValues} = params;
+      const field: FieldId = { fieldApiName, fieldIndex }
+
+    if (whereParamValues) {
+        const from = `'${whereParamValues.from}'`;
+        const to = `'${whereParamValues.to}'`;
+        
+      
+        if (keyWordWhere===TextFieldLiteralTypeEnum.NULL.toString()) {
+              return {field, operator: condition, value: 'null', 
+                sqlString: `${fieldApiName} ${condition} null` };
+        }            
+
+        if (keyWordWhere===TextFieldLiteralTypeEnum.SINGLE.toString()) {
+            return {field, operator: condition, value: from, 
+              sqlString: `${fieldApiName} ${condition} ${from}` };          
+        }
+
+
+        if (keyWordWhere===TextFieldLiteralTypeEnum.LIST.toString()) {
+            const list = (whereParamValues.list)? whereParamValues.list!.split('\n').map((item) => `'${item}'`).join(',') : '?'
+            return {field, operator: condition, value: whereParamValues.list, 
+              sqlString: `${fieldApiName} ${condition}  (${list})` };
+
+        }
+
+
+        if (condition === '=') {
+            return {field, operator: '>=', value: from, logicalOperator: 'AND' , operatorTo: '<=', valueTo: to,
+                sqlString: `(${fieldApiName} >= ${from} AND ${fieldApiName} <= ${to})`};
+                    
+        }
+        if (condition === '!=') {
+            return {field, operator: '<', value: from, logicalOperator: 'AND' , operatorTo: '>', valueTo: to,
+                    sqlString: `(${fieldApiName} < ${from} AND ${fieldApiName} > ${to})`};
+        }
+
+        if (condition === '>' || condition === '>=') {
+            return {field, operator: condition, value: to, sqlString: `${fieldApiName} ${condition} ${to}` };
+        }
+
+        if (condition === '<' || condition === '<=') {
+            return {field, operator: condition, value: from, sqlString: `${fieldApiName} ${condition} ${from}` };
+        }
+    }
+    return {field, operator: condition, value: keyWordWhere, sqlString: `${fieldApiName} ${condition} ${keyWordWhere}` }; 
+  }
+}
+
+export class NumberFieldCtrl {
+  /**
+   * @description get an array of TypeLiteral and description
+   */
+  static getType = (): TextConditionLiteralType[] => {
+    return  Object.entries(NumberFieldLiteralTypeEnum).
+            map(([key, value]):TextConditionLiteralType => ({type: value, description: `${I18TEXT}.Type.${key}` }));
+  }
+
+  /**
+   * @description get an array of conditions and description
+   */
+  static getTextCondition = (typeCondition: string ): TextConditionLiteral[] => {
+    return NumberLiteralCondition
+      .filter(([, value]) => value.typeCondition === typeCondition)
+      .map(([key, value]):TextConditionLiteral => (
+        {
+            sqlKeyWord: key, 
+            description: `${I18TEXT}.${value.typeCondition}.${value.description}`
+        }
+    ));
+  }
+
+
+    
+  static getSQLChunck = (params: {fieldApiName: string, fieldIndex: number, condition: string, keyWordWhere: string, whereParamValues: WhereParamValues | undefined}): SimpleCondition | pairCondition => {
+    const {fieldApiName, fieldIndex, condition, keyWordWhere, whereParamValues} = params;
+    const field: FieldId = { fieldApiName, fieldIndex }
+
+  if (whereParamValues) {
+      const {from, to} = whereParamValues; 
+    
+      if (keyWordWhere===TextFieldLiteralTypeEnum.NULL.toString()) {
+            return {field, operator: condition, value: 'null', 
+              sqlString: `${fieldApiName} ${condition} null` };
+      }            
+
+      if (keyWordWhere===TextFieldLiteralTypeEnum.SINGLE.toString()) {
+          return {field, operator: condition, value: from, 
+            sqlString: `${fieldApiName} ${condition} ${from}` };          
+      }
+
+
+      if (condition === '=') {
+          return {field, operator: '>=', value: from, logicalOperator: 'AND' , operatorTo: '<=', valueTo: to,
+              sqlString: `(${fieldApiName} >= ${from} AND ${fieldApiName} <= ${to})`};
+                  
+      }
+      if (condition === '!=') {
+          return {field, operator: '<', value: from, logicalOperator: 'AND' , operatorTo: '>', valueTo: to,
+                  sqlString: `(${fieldApiName} < ${from} AND ${fieldApiName} > ${to})`};
+      }
+
+      if (condition === '>' || condition === '>=') {
+          return {field, operator: condition, value: to, sqlString: `${fieldApiName} ${condition} ${to}` };
+      }
+
+      if (condition === '<' || condition === '<=') {
+          return {field, operator: condition, value: from, sqlString: `${fieldApiName} ${condition} ${from}` };
+      }
+  }
+  return {field, operator: condition, value: keyWordWhere, sqlString: `${fieldApiName} ${condition} ${keyWordWhere}` }; 
+}
+}

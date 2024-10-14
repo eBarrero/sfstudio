@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { SQLClauseAllowedByTypeField, SFFieldTypesEnum } from '../../../core/constants/fields';
+import { SQLClauseAllowedByTypeField, SFFieldTypesEnum} from '../../../core/constants/fields';
 import { t  } from '../../../utils/utils';
 import viewState from '../../../store/viewState';
 
@@ -38,7 +38,7 @@ const Select = (props: SelectProps) => {
                 .map( (selectClause) =>  selectClause.keyWord )
             );
         } catch (error) {
-            setMsgbox('Error', 'General Error', (error as Error).message);
+            setMsgbox('#Error', 'General Error', (error as Error).message);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     },[]);
@@ -52,7 +52,7 @@ const Select = (props: SelectProps) => {
             if (checked)  doFieldAction(constants.SELECTED, newCode, isAggregateFunction, mirrors.includes(newCode));
             else  doFieldAction(constants.UNSELECTED, newCode, false, false);
         } catch (error) {
-            setMsgbox('Error', 'SOQL Salsforce rules', (error as Error).message);
+            setMsgbox('#Error', 'SOQL Salsforce rules', (error as Error).message);
             return;
         }
 

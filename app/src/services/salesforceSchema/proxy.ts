@@ -1,4 +1,4 @@
-import { getDescribe, getDescribeObject, sendQuery } from './controller'
+import { getDescribe, getDescribeObject, sendQuery, getMetadataObject  } from './controller'
 import { ModelReader } from './modelReader'
 
 
@@ -88,8 +88,9 @@ export default class Proxy {
         }
         try {
             const sobject =  cache.get(orgSfName)!.sobjects[objectIndex];
-
+            
             if (sobject.fields===undefined) {
+                console.log("no leido");
                 const name = cache.get(orgSfName)?.sobjects[objectIndex]?.name;
                 const data: SObject = await getDescribeObject(orgSfName, name!);
                 
@@ -117,6 +118,8 @@ export default class Proxy {
                     });
                     sobject.childRelationships = structuredClone(data.childRelationships);
                     sobject.fields =  structuredClone(data.fields);
+                    sobject.mapFields = structuredClone(data.mapFields);
+                    
                 }
                 
                 
@@ -140,9 +143,10 @@ export default class Proxy {
                     type: field.type, 
                     referenceTo: field.referenceTo[0],
                     relationshipName: field.relationshipName,
-                    referenceToLocalId: field.referenceToLocalId
+                    referenceToLocalId: field.referenceToLocalId,
+                    description: field.description
                 }));
-            console.log("leido:" + result.length);    
+                
             return new Promise((resolve) => resolve(result));
         } catch (error) {
             console.error(`******Unexpected error: ${(error as Error).stack}`);
@@ -245,6 +249,56 @@ export default class Proxy {
         
     }
 */
+
+    /**
+     * @description get metadata of the fields' object and update the object cache
+     * @param orgSfName 
+     * @param object - The object with the fields to be retrieved
+     */
+    public static async getFieldsMetadata(orgSfName: string, objectIndex: SObjectLocalId) {
+        console.log(`getFieldsMetadata orgSfName: "${orgSfName}" objectIndex: "${objectIndex}"`);
+        if (!cache.has(orgSfName)) {
+            throw new Error(`Invalid orgSfName: "${orgSfName}"`);
+        }
+        const sobject = cache.get(orgSfName)?.sobjects[objectIndex];
+        if (!sobject) {
+            throw new Error(`Invalid sObjectId "${objectIndex}"`);
+        }
+
+        // Check if the fields are already updated
+        if (sobject.metadataFieldDownloaded ===  'DOWNLOADED'  ) return;
+        sobject.metadataFieldDownloaded= 'DOWNLOADING'
+
+//        try {
+            if (sobject.fields===undefined || sobject.fields===null || sobject.fields.length===0) {
+                throw new Error(`Missing fileds: "${sobject.name}"`);
+            }
+            const fields = sobject.fields
+            const data: [{name: FieldApiName, description: string}]   = await getMetadataObject(orgSfName, sobject.name!);
+            if (data===null) {
+                throw new Error(`Missing metadata: "${sobject.name}"`);
+            } else {
+                data.forEach((item) => {
+                    const {name, description} = item;
+                    const fieldLocalId = sobject.mapFields.get(name);
+                    if (fieldLocalId===undefined) {
+                        console.error(`Invalid field name: "${name}"`);
+                    } else {
+                        fields[fieldLocalId].description =description;
+                    }
+                });
+                sobject.metadataFieldDownloaded= 'DOWNLOADED';
+            }
+  /*      } catch (error) {
+            console.error(`******Unexpected error: ${(error as Error).stack}`);
+            sobject.metadataFieldDownloaded= 'ERROR';
+            throw new Error((error as Error).message);
+        }*/
+        return;
+
+    }
+
+
     public static async sendSoqlAdapter(orgSfName: string, query: string): Promise<string> {
         console.log(`soqlAdapter orgSfName: "${orgSfName}" query: "${query}"`);
         return await sendQuery(orgSfName, query);   

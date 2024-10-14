@@ -1,6 +1,15 @@
 import { AccessToken, AuthorizationCode, ModuleOptions } from "simple-oauth2";
 import jsforce, { ListMetadataQuery, IdentityInfo  } from "jsforce";
 
+interface MetadataField {
+    fullName: string,
+    description: string
+}
+
+interface MetadataInfo extends jsforce.MetadataInfo {
+    fields: MetadataField[];
+}
+    
 
 export class SessionError extends Error {
     errorNumber: number = 500;
@@ -274,12 +283,16 @@ export class Session {
         }
     }      
     
-    async getObjectmetadata() : Promise<any>  {
+    async getObjectmetadata(orgSfName:string, sobject:string) : Promise<any>  {
         console.info("getListmetadata");
-        const conn = this.connections[this.currentConnection].connection;
+        const conn = getConnection(this.connections, orgSfName);
 
         try {
-            return await conn.metadata.read("CustomObject",["Account"] );
+            const metadata:  MetadataInfo  = await conn.metadata.read("CustomObject",[sobject] ) as MetadataInfo ;
+            return metadata.fields
+                .map((field: any) => { return {name: field.fullName, description: field.description}; })
+                .filter((field: any) => field.description !== undefined);
+            
         } catch (error) {
             console.error('ObjectMetadata Error', (error as Error).message);
             throw new SessionError("ObjectMetadata Error: " + (error as Error).message);

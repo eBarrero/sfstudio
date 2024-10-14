@@ -31,7 +31,7 @@ app.get("/api/init", (req: Request, res: Response) => {
         res.json("newsession" ); 
         return;
     } 
-
+    
     try {
         const session = sessions.getSession(signInToken);
         res.json(session.sessionStatus); 
@@ -181,7 +181,7 @@ app.get("/api/listmetadata", (req: Request, res: Response) => {
 
 });
 
-app.get("/api/getObjectmetadata", (req: Request, res: Response) => {
+app.get("/api/getObjectmetadata/:orgSfName/:sobject", (req: Request, res: Response) => {
     console.log(req.url);
     let signInToken = req.cookies.id;
     if (!signInToken) {
@@ -191,7 +191,7 @@ app.get("/api/getObjectmetadata", (req: Request, res: Response) => {
 
     try {
         const session = sessions.getSession(signInToken);
-        session.getObjectmetadata().then((result: any) => res.json(result)).catch((error: any) => res.status(404).json(error.message));
+        session.getObjectmetadata(req.params.orgSfName,req.params.sobject).then((result: any) => res.json(result)).catch((error: any) => res.status(404).json(error.message));
     } catch (error) {   
         console.error('Error', (error as Error).message);
         res.status(500).json(Error);

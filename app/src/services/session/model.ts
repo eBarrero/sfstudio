@@ -9,7 +9,7 @@ import { request,  URL_PATH } from './controller';
     if (s==='newsession') {
       return { currentConnection: 0, connections: [] };
     }
-    if (s==='error') {
+    if (s==='#Error') {
       return { currentConnection: 0, connections: [] };
     }
     if (s==='reseted') {

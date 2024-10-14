@@ -1,5 +1,5 @@
 /**
- * Component that renders a hierarchical path of SOQL query elements and allows choose the sObject involve in the SOQL by NODEL_CMD.SET_QUERY command.
+ * Component that renders a hierarchical path of SOQL query elements and allows choose the sObject involve in the SOQL by NODEL_#CMD.SET_QUERY command.
  * 
  * @example
  * <SOQLPath />

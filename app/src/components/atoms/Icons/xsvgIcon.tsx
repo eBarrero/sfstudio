@@ -3,7 +3,7 @@ import css from './style.module.css';
 
 /* SVG library */
 
-type SVGIcons = string | 'NOTFOUND' | 'search' | 'reference' | '1toN' | '1to1' | 'add' | 'save' | 'cancel' | 'close' | 'menu' | 'more' | 'filter' | 'sort' | 'download' | 'upload' | 'print' | 'refresh' | 'settings' | 'help' | 'info' | 'warning' | 'error' | 'success' | 'notification' | 'notification-off' | 'notification-on' | 'notification-error' | 'notification-success' | 'notification-warning' | 'notification-info' | 'notification-question' | 'notification-alert'
+type SVGIcons = string | 'NOTFOUND' | 'search' | 'reference' | '1toN' | '1to1' | 'add' | 'save' | 'cancel' | 'close' | 'menu' | 'more' | 'filter' | 'sort' | 'download' | 'upload' | 'print' | 'refresh' | 'settings' | 'help' | 'info' | 'warning' | '#Error' | 'success' | 'notification' | 'notification-off' | 'notification-on' | 'notification-error' | 'notification-success' | 'notification-warning' | 'notification-info' | 'notification-question' | 'notification-alert'
 
 
 

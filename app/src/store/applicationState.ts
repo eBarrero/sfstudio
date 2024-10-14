@@ -71,7 +71,7 @@ const applicationState = create<ApplicationState>((set, get) => {
             const secondWord = newCommand.split(' ')[1] ?? '';
             const {commandNameList, commandImplementation} = searchCommand(firstWord, newState.context_level);
             if (commandNameList.length === 0) {
-                newState.errorState = 'CMD.not_Found';
+                newState.errorState = '#CMD.not_Found';
             } else if (commandNameList.length === 1) {
                 const command = commandImplementation!;
                 newState.helpOnLine = command.description;
@@ -92,7 +92,7 @@ const applicationState = create<ApplicationState>((set, get) => {
             if (get().command !== undefined) {
                 newState.commandConfirmed = get().command;
             } else {
-                newState.errorState = 'CMD.not_Found';
+                newState.errorState = '#CMD.not_Found';
             }
             set(newState);              
         },
@@ -105,7 +105,7 @@ const applicationState = create<ApplicationState>((set, get) => {
             if (command !== undefined) {
                 newState.commandConfirmed = command;
             } else {
-                newState.errorState = 'CMD.not_Found';
+                newState.errorState = '#CMD.not_Found';
             }             
             set(newState);
         },   
@@ -128,7 +128,12 @@ const applicationState = create<ApplicationState>((set, get) => {
             addCommand( { ...APP_CMD.BACK_FROM_SQL,  action: (params: AcctionParams) => { 
                 const { view } = params;
                 view.setCurrentView('sobject');
-                get().setContextLevel(CONTEXT_LEVEL.OBJECT) 
+                get().setContextLevel(CONTEXT_LEVEL.OBJECT);
+            }} );
+            addCommand( { ...APP_CMD.OBJEXT,  action: (params: AcctionParams) => {
+                const { view, data, model } = params;
+                data.loadMetadataFields(model.state.orgSfName, model.state.sObjectLocalId);
+                view.setCurrentView('OBJECT_EXTEND');
             }} );
         }        
     }   

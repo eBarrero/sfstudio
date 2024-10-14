@@ -20,7 +20,6 @@ const sessionState = create<SessionState>((set, get) => {
             });
         },
         loginSFDC: () => {
-            console.log('loginSFDC');
             loginSFDC();
         },
         loginSandBox: () => {

@@ -1,4 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
+
+
+type SFFieldTypesEnum  = 
+    id       | address  | autoNumber     | rollUpSummary  | summary        | masterDetail  | boolean   | currency  | 
+    date     | datetime | double         | email          | Geolocation    | percent       | phone     | 
+    picklist | multiselectPicklist       | string         | textArea       | longTextArea  | reference | richTextArea  | 
+    url      | time     | encryptedText  | externalLookup | indirectLookup | metadataRelationship;
+
+
+
+
 
 
 
@@ -15,7 +26,7 @@ type FilterValue = boolean | null;
 
 
 
-type SalesforceFieldTypes = string;
+type SalesforceFieldTypes = SFFieldTypesEnum
 
 
 interface PicklistValue  {
@@ -38,7 +49,7 @@ interface Salesforce_Fields  {
     controllerName: string | null;
     createable: boolean;
     custom: boolean;
-    defaultValue: any;
+    defaultValue: string | null;
     defaultValueFormula: string | null;
     defaultedOnCreate: boolean;
     dependentPicklist: boolean;
@@ -82,6 +93,8 @@ interface Salesforce_Fields  {
     unique: boolean;
     updateable: boolean;
     writeRequiresMasterRead: boolean;
+    // Metadata
+    description: string | null;
 }
 
 interface Fields extends Salesforce_Fields { 
@@ -132,10 +145,14 @@ interface Salesforce_SObject  {
     updateable: boolean;
 }
 
+
+type MetadataFieldDownloaded = 'DOWNLOADING' | 'DOWNLOADED' | 'ERROR';
+
 interface SObject extends Salesforce_SObject  {
     orgSfName: SchemaName;
     sObjectLocalId: SObjectLocalId;  
     mapFields: Map<FieldApiName, FieldLocalId>; // This a index of fields by name
+    metadataFieldDownloaded: MetadataFieldDownloaded | null;
 }
 
 interface Schema  {
@@ -223,6 +240,7 @@ interface GetFieldsIndex {
     referenceTo: SObjectApiName,
     relationshipName: RelationshipName | null
     referenceToLocalId: SObjectLocalId[] | null;
+    description: string | null;
 }
 
 interface GetChildRelationships {
@@ -272,6 +290,7 @@ interface DataState {
    
     loadFields: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void;              // It retrieves the fields of a Salesforce object based on the provided index. 
     loadFieldsByName: (orgSfName: SchemaName, sObjectName: string, callBack: (sObjectLocalId: SObjectLocalId) => void) => void; // It retrieves the fields of a Salesforce object based on the provided name.
+    loadMetadataFields: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void;      // update the metadata of the fields of a Salesforce object based on the provided index.
     setFieldFilterText: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchText: string) => void; // set the filter value
     setFieldFilterType: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchType: SalesforceFieldTypes) => void; // set the filter value
     setFieldFilter: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, attrib: string, value: boolean|null) => void; // set the filter value

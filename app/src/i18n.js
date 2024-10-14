@@ -27,7 +27,6 @@ i18n
       escapeValue: false, // not needed for react as it escapes by default
     },
     returnNull: false, // No devolver null, devolver la clave misma
-    saveMissing: true, // Opción para habilitar el guardado de claves faltantes    
   });
 
 

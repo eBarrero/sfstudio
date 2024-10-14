@@ -31,6 +31,7 @@ const HomePage = () => {
                         {currentView==='INIT' && <AppIntro/> }
                         {currentView==='org' && <SchemaPanel/> }
                         {currentView==='sobject' && <SObjectPanel/> }     
+                        {currentView==='OBJECT_EXTEND' && <SObjectPanel/> }
                         {currentView==='SQL_RESULT' && <ResultSheet/> }                   
                     </section>
                 </section>    
@@ -52,10 +53,10 @@ const AppIntro = () => {
             </header>
             <section className={css.AppBody}>
                 <p className={css.AppBody__subtitle}>
-                    {t('APP.Welcome')}
+                    {t('#APP.Welcome')}
                 </p>
                 <aside className={css.AppBody__disclaimer}>
-                    {parse(t('APP.Disclaimer'))}
+                    {parse(t('#APP.Disclaimer'))}
                 </aside>
             </section>    
         </article>

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { t } from '../../../utils/utils';
 import applicationState from '../../../store/applicationState';
 import useApplication from '../../../store/applicationHook';
-import {getCommands} from '../../../core/commandManager';
+import {getCommands, getMenus} from '../../../core/commandManager';
 import { MiniButton } from '../../atoms/buttons/buttons';
+import ContextualMenu from '../../atoms/ContextualMenu/ContextualMenu';
 import css from './style.module.css';
 
 
@@ -46,9 +47,17 @@ const Console = () => {
         }
         setSwKeyDown(false);
     }
+
+    function menuActionHandle(command: string) {
+        exeCommandFromUI(command);
+    }
     
     return (
         <section role={"textbox"} aria-multiline={true} aria-label={"Command Console"} className={css.console} id={"console"}  >
+            <div>
+                <ContextualMenu menus={getMenus(context_level)} action={menuActionHandle} />            
+            </div>
+            <br/>
             <div className={css.toolBar} aria-label={"tool Bar"} id="toolbar"> 
                 {getCommands(context_level).map((command, index) => (
                     <div key={index}>

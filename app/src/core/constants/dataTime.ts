@@ -1,5 +1,5 @@
 import { Operator } from './fields';
-const translationName= 'DataTimeLiteral' as const;
+const translationName= '#DateTimeLiteral' as const;
 
 
 const DateTimeLiteralTypeEnum = {
@@ -9,13 +9,17 @@ const DateTimeLiteralTypeEnum = {
     QUARTER: 4,
     YEAR: 5,
     FISCAL_QUARTER:6,
-    FISCAL_YEAR: 7
+    FISCAL_YEAR: 7,
+    NULL_VALUE: 8
 } as const;
 
 export const CUSTOM_DATE = 'ACUSTOM';
 export const CUSTOM_RANGE_DATE = 'CUSTOM_RANGE';  
+       const NULL_VALUES = 'NULL_VALUES';
 
 const DateTimeLiteralKeyWord: [string, number][] = [
+    [`${NULL_VALUES}`, DateTimeLiteralTypeEnum.NULL_VALUE],
+
     ['YESTERDAY', DateTimeLiteralTypeEnum.DAY],
     ['TODAY', DateTimeLiteralTypeEnum.DAY],
     ['TOMORROW', DateTimeLiteralTypeEnum.DAY],
@@ -93,7 +97,9 @@ const DateTimeLiteralCondition:  [Operator, string][] = [
     [Operator.GreaterThan, `${translationName}.GREATER_THAN`],
     [Operator.LessThan, `${translationName}.LESS_THAN`],
     [Operator.GreaterThanOrEquals, `${translationName}.GREATER_THAN_OR_EQUAL`],
-    [Operator.LessThanOrEquals, `${translationName}.LESS_THAN_OR_EQUAL`]
+    [Operator.LessThanOrEquals, `${translationName}.LESS_THAN_OR_EQUAL`],
+    [Operator.NotNull, `${translationName}.NOT_NULL`],
+    [Operator.IsNull, `${translationName}.IS_NULL`]
 ];
 
 interface DateTimeLiteralType {
@@ -113,7 +119,7 @@ interface getSQLChunckParams {
     fieldIndex: FieldLocalId;
     condition: string;
     sqlKeyWord: string;
-    dateTimes: DateTimeValues | undefined;
+    whereParamValues: WhereParamValues | undefined;
     
 }
 
@@ -143,8 +149,13 @@ class DataTime {
     /**
      * @description get an array of conditions and description
      */
-    static getDateTimeCondition = (): DateTimeLiteral[] => {
-        return DateTimeLiteralCondition.map(([key, value]):DateTimeLiteral => (
+    static getDateTimeCondition = (dateTimeLiteral: string): DateTimeLiteral[] => {
+        console.log('dateTimeLiteral', dateTimeLiteral);
+        return DateTimeLiteralCondition
+            .filter(([key]):boolean =>  ( dateTimeLiteral===NULL_VALUES  && ( key === Operator.IsNull || key === Operator.NotNull)) ||
+                                        ( dateTimeLiteral!==NULL_VALUES  &&   key !== Operator.IsNull && key !== Operator.NotNull)  
+        )
+            .map(([key, value]):DateTimeLiteral => (
             {
                 sqlKeyWord: key, 
                 description: value
@@ -161,47 +172,47 @@ class DataTime {
     }        
 
     static getSQLChunck = (params: getSQLChunckParams): (SimpleCondition | pairCondition ) => {
-        const {fieldApiName, fieldIndex,  condition, sqlKeyWord, dateTimes} = params;
+        const {fieldApiName, fieldIndex,  condition, sqlKeyWord, whereParamValues} = params;
 
         const field: FieldId = { fieldApiName, fieldIndex }
         
 
-        if (dateTimes !== undefined) {
-            console.log('dateTimes', dateTimes);
-            if (dateTimes.type === 'week') {
-                ({startDate: dateTimes.startDate, endDate: dateTimes.endDate} = DataTime.getWeekStartAndEnd(dateTimes));
-            } else if (dateTimes.type === 'month') {
-                ({startDate: dateTimes.startDate, endDate: dateTimes.endDate} = DataTime.getMonthStartAndEnd(dateTimes));
-            } else if (dateTimes.type === 'year') {
-                dateTimes.startDate = 'toDO'; dateTimes.endDate= 'toDO';
+        if (whereParamValues !== undefined) {
+            console.log('dateTimes', whereParamValues);
+            if (whereParamValues.typeHTML === 'week') {
+                ({startDate: whereParamValues.startDate, endDate: whereParamValues.endDate} = DataTime.getWeekStartAndEnd(whereParamValues));
+            } else if (whereParamValues.typeHTML === 'month') {
+                ({startDate: whereParamValues.startDate, endDate: whereParamValues.endDate} = DataTime.getMonthStartAndEnd(whereParamValues));
+            } else if (whereParamValues.typeHTML === 'year') {
+                whereParamValues.startDate = 'toDO'; whereParamValues.endDate= 'toDO';
             } else {
 
-                const seconds = (dateTimes.typeField === 'datetime')? ':00Z':'';
-                dateTimes.startDate = dateTimes.from + seconds;
-                dateTimes.endDate = dateTimes.to + seconds;
+                const seconds = (whereParamValues.typeField === 'datetime')? ':00Z':'';
+                whereParamValues.startDate = whereParamValues.from + seconds;
+                whereParamValues.endDate = whereParamValues.to + seconds;
             }
 
             if (sqlKeyWord.includes('ACUSTOM')) {
-                if (dateTimes.type === 'datetime-local' || dateTimes.type === 'date') 
-                    return {field, operator: condition, value: dateTimes.startDate, sqlString: `${fieldApiName} ${condition} ${dateTimes.startDate}` };
+                if (whereParamValues.typeHTML === 'datetime-local' || whereParamValues.typeHTML === 'date') 
+                    return {field, operator: condition, value: whereParamValues.startDate, sqlString: `${fieldApiName} ${condition} ${whereParamValues.startDate}` };
             }            
 
             if (condition === '=') {
-                return {field, operator: '>=', value: dateTimes.startDate, logicalOperator: 'AND' , operatorTo: '<=', valueTo: dateTimes.endDate,
-                    sqlString: `(${fieldApiName} >= ${dateTimes.startDate} AND ${fieldApiName} <= ${dateTimes.endDate})`};
+                return {field, operator: '>=', value: whereParamValues.startDate, logicalOperator: 'AND' , operatorTo: '<=', valueTo: whereParamValues.endDate,
+                    sqlString: `(${fieldApiName} >= ${whereParamValues.startDate} AND ${fieldApiName} <= ${whereParamValues.endDate})`};
                         
             }
             if (condition === '!=') {
-                return {field, operator: '<', value: dateTimes.startDate, logicalOperator: 'OR' , operatorTo: '>', valueTo: dateTimes.endDate,
-                        sqlString: `(${fieldApiName} < ${dateTimes.startDate} OR ${fieldApiName} > ${dateTimes.endDate})`};
+                return {field, operator: '<', value: whereParamValues.startDate, logicalOperator: 'OR' , operatorTo: '>', valueTo: whereParamValues.endDate,
+                        sqlString: `(${fieldApiName} < ${whereParamValues.startDate} OR ${fieldApiName} > ${whereParamValues.endDate})`};
             }
 
             if (condition === '>' || condition === '>=') {
-                return {field, operator: condition, value: dateTimes.endDate, sqlString: `${fieldApiName} ${condition} ${dateTimes.endDate}` };
+                return {field, operator: condition, value: whereParamValues.endDate, sqlString: `${fieldApiName} ${condition} ${whereParamValues.endDate}` };
             }
 
             if (condition === '<' || condition === '<=') {
-                return {field, operator: condition, value: dateTimes.startDate, sqlString: `${fieldApiName} ${condition} ${dateTimes.startDate}` };
+                return {field, operator: condition, value: whereParamValues.startDate, sqlString: `${fieldApiName} ${condition} ${whereParamValues.startDate}` };
             }
         }
         return {field, operator: condition, value: sqlKeyWord, 
@@ -210,7 +221,7 @@ class DataTime {
         
     }
 
-    static getWeekStartAndEnd = (newValue: DateTimeValues):DateTimeValues => {
+    static getWeekStartAndEnd = (newValue: WhereParamValues):WhereParamValues => {
         const {startDate, endDate} = getWeekStartAndEnd(newValue.from);
         const r = { startDate: formatDateToSalesforce(startDate), endDate: formatDateToSalesforce(endDate), ...newValue};
         if (r.to) {
@@ -219,7 +230,7 @@ class DataTime {
         return r;
     }    
 
-    static getMonthStartAndEnd = (newValue: DateTimeValues):DateTimeValues => {
+    static getMonthStartAndEnd = (newValue: WhereParamValues):WhereParamValues => {
         const {startDate, endDate} = getMonthStartAndEnd(newValue.from);
         const r = { startDate: formatDateToSalesforce(startDate), endDate: formatDateToSalesforce(endDate), ...newValue};
         if (r.to) {

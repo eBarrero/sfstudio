@@ -11,6 +11,9 @@ interface AcctionParams {
 }
 
 interface CommandDefinition  {
+    menuItem?: string;
+    menuOption?: string;
+    menuCaption?: string;
     command: string;
     description: string;
     examples?: string[];
@@ -27,14 +30,3 @@ interface CommandImplementation extends CommandDefinition {
 
 
 
-type SFDateFormat = string
-
-// controles
-interface DateTimeValues {
-    type: string
-    typeField: SalesforceFieldTypes
-    from: string;
-    to: string;
-    startDate?: SFDateFormat;
-    endDate?: SFDateFormat;
-  }
