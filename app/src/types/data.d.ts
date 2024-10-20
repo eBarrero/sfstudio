@@ -241,6 +241,7 @@ interface GetFieldsIndex {
     relationshipName: RelationshipName | null
     referenceToLocalId: SObjectLocalId[] | null;
     description: string | null;
+    picklistValues: PicklistValue[] | [];
 }
 
 interface GetChildRelationships {

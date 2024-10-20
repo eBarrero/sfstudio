@@ -6,13 +6,13 @@ import applicationState      from '../../../store/applicationState';
 import ObjectFilter             from '../objectFilter/objectFilter';
 
 export default function SObjectsPanel() {
-    const {exeCommand} = applicationState();
+    const {setObjectName} = applicationState();
 
     const {componentShowed} = viewState();
     const {sobjects } = dataState();
  
     function setObject(sObjectApiNameobject: SObjectApiName) {
-        exeCommand(sObjectApiNameobject)
+        setObjectName(sObjectApiNameobject)
         
     }
 

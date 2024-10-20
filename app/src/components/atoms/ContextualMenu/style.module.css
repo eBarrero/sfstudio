@@ -12,15 +12,15 @@
     flex-direction: row;
     background-color: #2e2e2e;
     border: 1px solid #444;
-    padding: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    padding: 2px;
+    box-shadow: 0 4px 8px rgb(32, 189, 42, 0.5); 
+        z-index: 1000;
     color: #f1f1f1;
   }
   
   /* Style for main menu items (dark mode) */
   .menuItem {
-    padding: 8px;
+    padding: 4px;
     cursor: pointer;
     transition: background-color 0.3s;
     color: #f1f1f1;

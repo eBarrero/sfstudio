@@ -113,8 +113,6 @@
 .ButtonApply {
     display:block;
     text-align: right;
-    position: sticky;
-    top:25px;    
     margin: 10px;
 
 

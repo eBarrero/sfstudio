@@ -170,7 +170,7 @@ const dataState = create<DataState>((set, get) => {
         initializeData: () => {
             // Create the commands for the object filter
             for (const key of objectFilterOptions) {
-                const cmdText = '.'+key.name;
+                const cmdText = key.name;
                 addCommand({command: cmdText, description: '#sObject.filter.' + key.name, context:CONTEXT_LEVEL.ORG, 
                         action: (actionParams: AcctionParams) => {
                             const {model,  application} = actionParams;
@@ -180,7 +180,7 @@ const dataState = create<DataState>((set, get) => {
             }
             // Create the commands for the field filter
             for (const key of fieldFilterOptions) {
-                const cmdText = '.'+key.name;
+                const cmdText = key.name;
                 addCommand({menuItem:'Select', menuOption:'Field type', command: cmdText, menuCaption: key.name, description: '#field.filter.' + key.name, context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams) => {
                         const {model,  application} = actionParams;
@@ -190,7 +190,7 @@ const dataState = create<DataState>((set, get) => {
             }
             // Create the commands for the field filter (field types)
             for (const key of Object.values(SFFieldTypesEnum)) {
-                const cmdText = '.type.'+key;
+                const cmdText = 'type.'+key;
                 addCommand({ menuItem:'Select', menuOption:'Value type', command: cmdText, menuCaption: key,  description: '#field.filter.type.' + key, context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams) => {
                         const {model} = actionParams;
@@ -202,7 +202,7 @@ const dataState = create<DataState>((set, get) => {
         createFieldsCommands: (data: GetFieldsIndex[]): void => {
             deleteCommand('._');
             for (const field of data) {
-                const cmdText = '._'+field.fieldApiName;
+                const cmdText = field.fieldApiName;
                 addCommand({command: cmdText, description: 'field.config', context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams) => {
                         const {model, view} = actionParams;
@@ -215,7 +215,7 @@ const dataState = create<DataState>((set, get) => {
         createLookuoCommands: (data: GetFieldsIndex[]): void => {
             deleteCommand('.lookup');
             for (const field of data) {
-                const cmdText = '.lookup_'+field.fieldApiName;
+                const cmdText = 'lookup_'+field.fieldApiName;
                 if (field.type!==SFFieldTypesEnum.Reference) continue;
                 addCommand({menuItem:'Goto', menuOption:'Related object', command: cmdText, menuCaption: field.fieldApiName,  description: 'field.go.lookup', context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams) => {
@@ -229,7 +229,7 @@ const dataState = create<DataState>((set, get) => {
         createChildRelationshipsCommands: (childs: GetChildRelationships[]): void => {
             deleteCommand('.child_');
             for (const child of childs) {
-                const cmdText = '.child_'+ child.childSObject;
+                const cmdText = 'child_'+ child.childSObject;
                 addCommand({menuItem:'Goto', menuOption:'Child objects',command: cmdText, menuCaption: child.childSObject, description: 'field.go.child', context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams ) => {
                         const {model} = actionParams;

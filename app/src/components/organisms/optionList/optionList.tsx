@@ -25,13 +25,15 @@ const OptionList = (props:OptionListProps) => {
     const [currentTitle, setCurrentTitle] = useState<string>('');
 
 
+
     useEffect(()=>{
         if (level===1)  { 
             setCurrentOptions(options);
             setCurrentTitle(title);
         }
-        
     }, [level,options,title]);
+
+       
 
     const handleSelect = (id: string) => () => {
         console.log('OptionList: ' + id + ':' + level);
@@ -41,6 +43,7 @@ const OptionList = (props:OptionListProps) => {
             setCurrentTitle(secondLevel.title);
             return;
         }
+
         onSelect && onSelect(id);
     }
 

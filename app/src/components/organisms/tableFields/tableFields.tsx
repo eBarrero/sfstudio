@@ -25,11 +25,11 @@ export default function TableFields() {
         const fieldLocalId = parseInt(rowId.split('|')[0]);
         const index = parseInt(rowId.split('|')[1]);
         if (action===constants.GOTO_REFERENCE) { 
-            exeCommandFromUI('.lookup_' + sObjectFields[index].fieldApiName);
+            exeCommandFromUI('lookup_' + sObjectFields[index].fieldApiName);
             return;
         }  
         if (action===constants.ONCLICK) {
-            exeCommandFromUI('._' + sObjectFields[index].fieldApiName);
+            exeCommandFromUI(sObjectFields[index].fieldApiName);
         }      
         doFieldAction(fieldLocalId, action); 
     }

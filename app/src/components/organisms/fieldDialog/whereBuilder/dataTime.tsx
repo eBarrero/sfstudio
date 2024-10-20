@@ -53,13 +53,9 @@ const WhereDataTime = (props:WhereProps) => {
         sqlChunck && applyNewCondition(sqlChunck) ;
     }
 
-// {DataTime.getType().map( (typeDataTime) =>  (<button onClick={handelTypeDataTime(typeDataTime.type)} >{typeDataTime.description}</button>))}   
+
     return (
     <div>
-            <div className={css.ButtonApply}>
-                <button type="button" onClick={handelButton()} >Apply</button>
-            </div>
-
         <div className={css.wherePanel}>
             <div className={css.panel}>
                 <OptionList options={DataTime.getType().map( (typeDataTime) => { return  {id: typeDataTime.type.toString(), label:t(typeDataTime.description)}})}  
@@ -104,12 +100,15 @@ const WhereDataTime = (props:WhereProps) => {
             }
 
         </div>
-        <section className={css.card}>
-            <span className={css.cardTitle}>Predicate</span>
-                <div>
-                    <span className={css.sql}>{sqlChunck?.sqlString}</span>
-                </div>
-        </section>        
+        {condition &&    
+            <section className={css.card}>
+                    <span className={css.cardTitle}>Predicate</span>
+                    <div>
+                        <span className={css.sql}>{sqlChunck?.sqlString}</span>
+                    </div>
+                    <button type="button" onClick={handelButton()} >Apply</button>
+            </section>        
+        }
 
     </div>        
     );

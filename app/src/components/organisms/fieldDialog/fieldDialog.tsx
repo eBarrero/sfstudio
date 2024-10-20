@@ -15,6 +15,7 @@ import Tabs     from '../../atoms/Tabs/tabs';
 import Select from './selectBuilder';
 import WhereDataTime from './whereBuilder/dataTime';
 import WhereTextField from './whereBuilder/textFields';
+import WherePickListField from './whereBuilder/pickListField';
 import WhereNumberField from './whereBuilder/numberFields';
 import Orderby from './orderByBuilder';
 
@@ -47,9 +48,7 @@ const FieldDialog = () => {
     
     useEffect(() => {
             if (!currentField) return;
-            console.log('currentField.type', currentField.type);
             const typeDefinition = salesforceFieldTypesDefinition.get(currentField.type);
-            console.log('typeDefinition', typeDefinition);
             setWhereDialog(typeDefinition!.selectComponent);
             
 
@@ -78,6 +77,11 @@ const FieldDialog = () => {
                                                 applyNewCondition={addWhere}     
                                                 field={currentField} 
                                                 path={ (currentPath===undefined) ?'':currentPath } />}
+                    {currentTab === 'W' && whereDialog === 'PICKLIST' &&
+                                                <WherePickListField 
+                                                applyNewCondition={addWhere}     
+                                                field={currentField} 
+                                                path={ (currentPath===undefined) ?'':currentPath } />}                                                
                     {currentTab === 'W' && whereDialog === 'NUMBER' &&
                                                 <WhereNumberField 
                                                 applyNewCondition={addWhere}     

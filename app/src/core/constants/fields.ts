@@ -95,7 +95,7 @@ export const salesforceFieldTypesDefinition: Map<SFFieldTypesEnum, SalesforceFie
   [SFFieldTypesEnum.Geolocation,   { typeHTML: 'geo' , selectComponent: 'TEXT' ,description: "Latitude and longitude coordinates" }],
   [SFFieldTypesEnum.Percent,       { typeHTML: 'number' , selectComponent: 'TEXT' ,description: "Percentage field" }],
   [SFFieldTypesEnum.Phone,         { typeHTML: 'text' , selectComponent: 'TEXT' ,description: "Phone number field" }],
-  [SFFieldTypesEnum.Picklist,      { typeHTML: 'picklist' , selectComponent: 'TEXT' ,description: "Single picklist selection" }],
+  [SFFieldTypesEnum.Picklist,      { typeHTML: 'picklist' , selectComponent: 'PICKLIST' ,description: "Single picklist selection" }],
   [SFFieldTypesEnum.Text,          { typeHTML: 'text' , selectComponent: 'TEXT' ,description: "String or text field" }],
   [SFFieldTypesEnum.TextArea,      { typeHTML: 'text' , selectComponent: 'NOT_ALLOWED' ,description: "Text area with multi-line support" }],
   [SFFieldTypesEnum.LongTextArea,  { typeHTML: 'text' , selectComponent: 'NOT_ALLOWED' ,description: "Long text area field" }],
@@ -145,35 +145,36 @@ interface SelectClauseKeywords {
 
 export const SelectClauseKeywords: { [key: string]: SelectClauseKeywords } = {
   // default formats
-  SQL_DATETIME: { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: 'SOQL.Fun.DATETIME' } as const,
-  SQL_DATE:     { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: 'SOQL.Fun.DATE' } as const,
-  SQL_ID:       { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: 'SOQL.Fun.ID' } as const,
-  SQL_CURRENCY: { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: 'SOQL.Fun.CURRENCY' } as const,
-  SQL_NUMBER:   { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: 'SOQL.Fun.NUMBER' } as const,
-  SQL_PERCENT:  { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: 'SOQL.Fun.PERCENT' } as const,
-  SQL_TEXT:     { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: 'SOQL.Fun.TEXT' } as const,
-  SQL_BOOLEAN:  { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: true,  help: 'SOQL.Fun.BOOLEAN' } as const,
-  SQL_PICKLIST: { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: true,  help: 'SOQL.Fun.PICKLIST' } as const,
+  SQL_DATETIME: { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL.Fun.DATETIME' } as const,
+  SQL_DATE:     { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL.Fun.DATE' } as const,
+  SQL_ID:       { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_ID' } as const,
+  SQL_CURRENCY: { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_CURRENCY' } as const,
+  SQL_NUMBER:   { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_NUMBER' } as const,
+  SQL_PERCENT:  { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_PERCENT' } as const,
+  SQL_TEXT:     { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_TEXT' } as const,
+  SQL_BOOLEAN:  { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: true,  help: '#SOQL_BOOLEAN' } as const,
+  SQL_PICKLIST: { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_PICKLIST' } as const,
   // agregate functions
-  SQL_COUNT0:   { keyWord: 'COUNT()',               description: 'Count records',     makeGroupBy: false,  unGroupable: false, groupable: true,  help: 'SOQL.Fun.COUNT()'} as const,
-  SQL_COUNT1:   { keyWord: 'COUNT(%1)',             description: 'Count fields',      makeGroupBy: false,  unGroupable: false, groupable: true,  help: 'SOQL.Fun.COUNT(%1)' } as const,
-  SQL_COUNT2:   { keyWord: 'COUNT_DISTINCT(%1)',    description: 'Count Distinct',    makeGroupBy: false,  unGroupable: false, groupable: true,  help: 'SOQL.Fun.COUNT_DISTINCT(%1)' } as const,
-  SQL_SUM:      { keyWord: 'SUM(%1)',               description: 'Sum',               makeGroupBy: false,  unGroupable: false, groupable: true,  help: 'SOQL.Fun.SUM(%1)' } as const,
-  SQL_AVG:      { keyWord: 'AVG(%1)',               description: 'Average',           makeGroupBy: false,  unGroupable: false, groupable: true,  help: 'SOQL.Fun.AVG(%1)' } as const,
-  SQL_MIN:      { keyWord: 'MIN(%1)',               description: 'Minimum',           makeGroupBy: false,  unGroupable: false, groupable: true,  help: 'SOQL.Fun.MIN(%1)' } as const,
-  SQL_MAX:      { keyWord: 'MAX(%1)',               description: 'Maximum',           makeGroupBy: false,  unGroupable: false, groupable: true,  help: 'SOQL.Fun.MAX(%1)' } as const,
-  SQL_TYPEOF:   { keyWord: 'TYPEOF',                description: 'Type Of',           makeGroupBy: false,  unGroupable: false, groupable: true,  help: 'SOQL.Fun.TYPEOF' } as const,
-  SQL_FORMAT:   { keyWord: 'FORMAT(%1)',            description: 'Format',            makeGroupBy: false,  unGroupable: true,  groupable: false, help: 'SOQL.Fun.FORMAT(%1)' } as const,
-  SQL_CMONTH:   { keyWord: 'CALENDAR_MONTH(%1)',    description: 'Calendar Month',    makeGroupBy: true,   unGroupable: false, groupable: true,  help: 'SOQL.Fun.CALENDAR_MONTH(%1)' } as const,
-  SQL_CQUARTER: { keyWord: 'CALENDAR_QUARTER(%1)',  description: 'Calendar Quarter',  makeGroupBy: true,   unGroupable: false, groupable: true,  help: 'SOQL.Fun.CALENDAR_QUARTER(%1)' } as const,
-  SQL_CYEAR:    { keyWord: 'CALENDAR_YEAR(%1)',     description: 'Calendar Year',     makeGroupBy: true,   unGroupable: false, groupable: true,  help: 'SOQL.Fun.CALENDAR_YEAR(%1)' } as const,
-  SQL_DAYONLY:  { keyWord: 'DAY_ONLY(%1)',          description: 'Day Only',          makeGroupBy: true,   unGroupable: false, groupable: true,  help: 'SOQL.Fun.DAY_ONLY(%1)' } as const,
-  SQL_FMONTH:   { keyWord: 'FISCAL_MONTH(%1)',      description: 'Fiscal Month',      makeGroupBy: true,   unGroupable: false, groupable: true,  help: 'SOQL.Fun.FISCAL_MONTH(%1)' } as const,
-  SQL_FQUARTER: { keyWord: 'FISCAL_QUARTER(%1)',    description: 'Fiscal Quarter',    makeGroupBy: true,   unGroupable: false, groupable: true,  help: 'SOQL.Fun.FISCAL_QUARTER(%1)' } as const,
-  SQL_FYEAR:    { keyWord: 'FISCAL_YEAR(%1)',       description: 'Fiscal Year',       makeGroupBy: true,   unGroupable: false, groupable: true,  help: 'SOQL.Fun.FISCAL_YEAR(%1)' } as const,
-  SQL_HOUR:     { keyWord: 'HOUR_IN_DAY(%1)',       description: 'Hour In Day',       makeGroupBy: true,   unGroupable: false, groupable: true,  help: 'SOQL.Fun.HOUR_IN_DAY(%1)' } as const,
-  SQL_WEEK:     { keyWord: 'WEEK_IN_YEAR(%1)',      description: 'Week In Year',      makeGroupBy: true,   unGroupable: false, groupable: true,  help: 'SOQL.Fun.WEEK_IN_YEAR(%1)' } as const,
-  SQL_CONV:     { keyWord: 'convertTimezone(%1)',   description: 'Convert Time',      makeGroupBy: false,  unGroupable: false, groupable: true,  help: 'SOQL.Fun.convertTimezone(%1)' } as const,
+  SQL_PICKLISTA:{ keyWord: '%1 ',                   description: 'Group by',          makeGroupBy: true,   unGroupable: false,  groupable: true, help: '#SOQL.Fun.PICKLIST_GROUPBY' } as const,
+  SQL_COUNT0:   { keyWord: 'COUNT()',               description: 'Count records',     makeGroupBy: false,  unGroupable: false, groupable: true,  help: '#SOQL.Fun.COUNT()'} as const,
+  SQL_COUNT1:   { keyWord: 'COUNT(%1)',             description: 'Count fields',      makeGroupBy: false,  unGroupable: false, groupable: true,  help: '#SOQL.Fun.COUNT(%1)' } as const,
+  SQL_COUNT2:   { keyWord: 'COUNT_DISTINCT(%1)',    description: 'Count Distinct',    makeGroupBy: false,  unGroupable: false, groupable: true,  help: '#SOQL.Fun.COUNT_DISTINCT(%1)' } as const,
+  SQL_SUM:      { keyWord: 'SUM(%1)',               description: 'Sum',               makeGroupBy: false,  unGroupable: false, groupable: true,  help: '#SOQL.Fun.SUM(%1)' } as const,
+  SQL_AVG:      { keyWord: 'AVG(%1)',               description: 'Average',           makeGroupBy: false,  unGroupable: false, groupable: true,  help: '#SOQL.Fun.AVG(%1)' } as const,
+  SQL_MIN:      { keyWord: 'MIN(%1)',               description: 'Minimum',           makeGroupBy: false,  unGroupable: false, groupable: true,  help: '#SOQL.Fun.MIN(%1)' } as const,
+  SQL_MAX:      { keyWord: 'MAX(%1)',               description: 'Maximum',           makeGroupBy: false,  unGroupable: false, groupable: true,  help: '#SOQL.Fun.MAX(%1)' } as const,
+  SQL_TYPEOF:   { keyWord: 'TYPEOF',                description: 'Type Of',           makeGroupBy: false,  unGroupable: false, groupable: true,  help: '#SOQL.Fun.TYPEOF' } as const,
+  SQL_FORMAT:   { keyWord: 'FORMAT(%1)',            description: 'Format',            makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL.Fun.FORMAT(%1)' } as const,
+  SQL_CMONTH:   { keyWord: 'CALENDAR_MONTH(%1)',    description: 'Calendar Month',    makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.CALENDAR_MONTH(%1)' } as const,
+  SQL_CQUARTER: { keyWord: 'CALENDAR_QUARTER(%1)',  description: 'Calendar Quarter',  makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.CALENDAR_QUARTER(%1)' } as const,
+  SQL_CYEAR:    { keyWord: 'CALENDAR_YEAR(%1)',     description: 'Calendar Year',     makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.CALENDAR_YEAR(%1)' } as const,
+  SQL_DAYONLY:  { keyWord: 'DAY_ONLY(%1)',          description: 'Day Only',          makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.DAY_ONLY(%1)' } as const,
+  SQL_FMONTH:   { keyWord: 'FISCAL_MONTH(%1)',      description: 'Fiscal Month',      makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.FISCAL_MONTH(%1)' } as const,
+  SQL_FQUARTER: { keyWord: 'FISCAL_QUARTER(%1)',    description: 'Fiscal Quarter',    makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.FISCAL_QUARTER(%1)' } as const,
+  SQL_FYEAR:    { keyWord: 'FISCAL_YEAR(%1)',       description: 'Fiscal Year',       makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.FISCAL_YEAR(%1)' } as const,
+  SQL_HOUR:     { keyWord: 'HOUR_IN_DAY(%1)',       description: 'Hour In Day',       makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.HOUR_IN_DAY(%1)' } as const,
+  SQL_WEEK:     { keyWord: 'WEEK_IN_YEAR(%1)',      description: 'Week In Year',      makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.WEEK_IN_YEAR(%1)' } as const,
+  SQL_CONV:     { keyWord: 'convertTimezone(%1)',   description: 'Convert Time',      makeGroupBy: false,  unGroupable: false, groupable: true,  help: '#SOQL.Fun.convertTimezone(%1)' } as const,
 };
 
  export type SelectClauseKeywordsEnum = typeof SelectClauseKeywords[keyof typeof SelectClauseKeywords];
@@ -262,7 +263,8 @@ export const SQLClauseAllowedByTypeField: Map<SFFieldTypesEnum, SelectClauseKeyw
     SelectClauseKeywords.SQL_BOOLEAN
   ]],
   [SFFieldTypesEnum.Picklist, [
-    SelectClauseKeywords.SQL_PICKLIST
+    SelectClauseKeywords.SQL_PICKLIST,
+    SelectClauseKeywords.SQL_PICKLISTA
   ]],
   [SFFieldTypesEnum.MultiselectPicklist, [
     SelectClauseKeywords.SQL_PICKLIST
@@ -379,7 +381,12 @@ export class TextFieldCtrl {
 
 
         if (keyWordWhere===TextFieldLiteralTypeEnum.LIST.toString()) {
-            const list = (whereParamValues.list)? whereParamValues.list!.split('\n').map((item) => `'${item}'`).join(',') : '?'
+            
+
+            const list = (whereParamValues.list)? whereParamValues.list!
+              .replaceAll(',','') 
+              .split('\n')
+              .map((item) => `'${item}'`).join(',') : '?'
             return {field, operator: condition, value: whereParamValues.list, 
               sqlString: `${fieldApiName} ${condition}  (${list})` };
 

@@ -35,20 +35,19 @@ const WhereTextField = (props:WhereProps) => {
 
     return (
         <div>
-            <div className={css.ButtonApply}>
-                <button type="button" onClick={handelButton()} >Apply</button>
-            </div>            
+        
             <div className={css.wherePanel}>
                 <div className={css.panel}>
                     <OptionList options={TextFieldCtrl.getType().map( (textTypeCondition) => { return  {id: textTypeCondition.type, label:t(textTypeCondition.description)}})}  
                     title={t(LITERAL.TextLiteral_Type)} 
-                    onSelect={setTypeCondition}
+                    onSelect={(valor) => { setCondition('');  setTypeCondition(valor)}}
                     />
                 </div>
 
                 <div className={css.panel}>
                     {typeCondition==TextFieldLiteralTypeEnum.SINGLE.toString()    &&  
                         <RetroInput 
+                            label='Value'
                             type={salesforceFieldTypesDefinition.get(typeField)!.typeHTML} 
                             onChangeValue={setParam}/>
                     }
@@ -65,19 +64,23 @@ const WhereTextField = (props:WhereProps) => {
                     }                    
                 </div>    
 
-
+                {typeCondition &&        
                 <div className={css.panel}>
                     <OptionList options={TextFieldCtrl.getTextCondition(typeCondition).map( (textLiteral) => { return  {id: textLiteral.sqlKeyWord, label:t(textLiteral.description)}})}  
                     title={t(LITERAL.Condition)} 
                     onSelect={setCondition}/>
                 </div>  
+                }   
             </div>
+            {condition &&    
             <section className={css.card}>
-            <span className={css.cardTitle}>Predicate</span>
-                <div>
-                    <span className={css.sql}>{sqlChunck?.sqlString}</span>
-                </div>
-        </section>                  
+                    <span className={css.cardTitle}>Predicate</span>
+                    <div>
+                        <span className={css.sql}>{sqlChunck?.sqlString}</span>
+                    </div>
+                    <button type="button" onClick={handelButton()} >Apply</button>
+            </section>        
+        }            
         </div>
     )
 }

@@ -144,7 +144,8 @@ export default class Proxy {
                     referenceTo: field.referenceTo[0],
                     relationshipName: field.relationshipName,
                     referenceToLocalId: field.referenceToLocalId,
-                    description: field.description
+                    description: field.description,
+                    picklistValues: field.picklistValues,
                 }));
                 
             return new Promise((resolve) => resolve(result));

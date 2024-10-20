@@ -9,7 +9,6 @@ import viewState from '../../../store/viewState';
 
 export default function SObjectPanel () {
 const { currentView } = viewState();
-console.log('*****SObjectPanel', currentView);    
     return (
         <>
         {currentView === 'sobject' && (

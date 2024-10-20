@@ -21,8 +21,19 @@
     padding-bottom: 1pt;
   }
   .console_input {
-    margin: 0;
+    background-color: #000;
+    color: #0f0;
+    border: 1px solid #0f0;
+    padding: 8px;
+    margin-bottom: 15px;
+  
+    box-sizing: border-box;
   }
+  .console_input:focus {
+    outline: none;
+    border-color: #0ff;
+  }
+
   .warningOrError {
     color: var(--color-error-text)
   }
@@ -40,3 +51,4 @@
 
   }
 }
+

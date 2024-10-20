@@ -1,10 +1,11 @@
-import { useState } from 'react';
+
 import { t } from '../../../utils/utils';
 import applicationState from '../../../store/applicationState';
 import useApplication from '../../../store/applicationHook';
 import {getCommands, getMenus} from '../../../core/commandManager';
 import { MiniButton } from '../../atoms/buttons/buttons';
 import ContextualMenu from '../../atoms/ContextualMenu/ContextualMenu';
+import { CONTEXT_LEVEL}  from "../../../core/commandManager";
 import css from './style.module.css';
 
 
@@ -14,43 +15,26 @@ import css from './style.module.css';
  Goal: This component allows the user to interact to other components by typing commands, for exemple, to filter the data in the table.
 */
 const Console = () => {
-    const [swKeyDown, setSwKeyDown] = useState(false);
-    const { setCommand, exeCommand, lastError,  currentCommand, helpOnLine, history, context_level, suggestions } = useApplication();
+    const { setCommand, sendFilter, exeCommand, filter, lastError,  currentCommand, helpOnLine, history, context_level, suggestions } = useApplication();
     const { exeCommandFromUI } = applicationState();
 
     const handleCommandChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const inputValue = e.target.value;
-        console.log('*****handleCommandChange', inputValue, swKeyDown);
-        if (!swKeyDown) setCommand(inputValue==='' ? null : inputValue);        
+        setCommand(inputValue);        
     }    
 
-    const handleCommandKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        let inputValue = e.currentTarget.value;
-        console.log('####handleCommandKeyDown', e.key, inputValue, swKeyDown);
-        if (e.key === 'Enter' && inputValue !== '') {
-            setSwKeyDown(true);
-            console.log('handleCommandKeyDown', e.key, inputValue);
-            exeCommand(inputValue);
-            return
-        }
-        if (e.key === 'Backspace' && inputValue !== '' ) {
-            setSwKeyDown(true);
-            setCommand('.' + e.key); 
-            return;
-        }
 
-        if (e.key.length==1) {
-            setSwKeyDown(true);
-            inputValue = inputValue + e.key;
-            setCommand(inputValue==='' ? null : inputValue);  
-            return;      
-        }
-        setSwKeyDown(false);
-    }
 
     function menuActionHandle(command: string) {
         exeCommandFromUI(command);
     }
+
+
+    const handleFilter = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const inputValue = e.target.value;
+        sendFilter(inputValue);
+    }
+
     
     return (
         <section role={"textbox"} aria-multiline={true} aria-label={"Command Console"} className={css.console} id={"console"}  >
@@ -66,12 +50,19 @@ const Console = () => {
                     )
                 )}
             </div>
+
+            {(context_level === CONTEXT_LEVEL.ORG || context_level === CONTEXT_LEVEL.OBJECT) &&
+            <input className={css.console_input} id="filterInput" aria-label="Filter Input" placeholder="Enter filter..." list="valores"
+                type="text"
+                value={filter}
+                onChange={handleFilter}
+            />            
+        }
             <input className={css.console_input} id="consoleInput" aria-label="Command Input" placeholder="Enter command..." list="valores"
                 type="text"
                 value={currentCommand}
                 onChange={handleCommandChange}
-                onKeyDown={handleCommandKeyDown}      
-                       
+                onKeyDown={(e) => {if (e.key === 'Enter') exeCommand(currentCommand)}}
             />
             
             <datalist id="valores">

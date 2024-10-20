@@ -17,7 +17,7 @@ const ObjectFilter = () => {
     const { t } = useTranslation();
 
     function onActionRowHandle(rowId: string, action: string) {
-        exeCommandFromUI(`.${rowId} ${ (action==='TRUE')?'on':(action==='FALSE')?'off':'rm' }`) ;
+        exeCommandFromUI(`${rowId} ${ (action==='TRUE')?'on':(action==='FALSE')?'off':'rm' }`) ;
         
         
     }

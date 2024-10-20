@@ -30,25 +30,24 @@ const WhereNumberField = (props:WhereProps) => {
 
 
     const handelButton = () => () => {
+        setCondition('');
         sqlChunck && applyNewCondition(sqlChunck) ;
     }
 
     return (
         <div>
-            <div className={css.ButtonApply}>
-                <button type="button" onClick={handelButton()} >Apply</button>
-            </div>            
             <div className={css.wherePanel}>
                 <div className={css.panel}>
                     <OptionList options={NumberFieldCtrl.getType().map( (textTypeCondition) => { return  {id: textTypeCondition.type, label:t(textTypeCondition.description)}})}  
                     title={t(LITERAL.TextLiteral_Type)} 
-                    onSelect={setTypeCondition}
+                    onSelect={(valor) => { setCondition('');  setTypeCondition(valor)}}
                     />
                 </div>
 
                 <div className={css.panel}>
                     {typeCondition==TextFieldLiteralTypeEnum.SINGLE.toString()    &&  
                         <RetroInput 
+                            label='Value'
                             type={salesforceFieldTypesDefinition.get(typeField)!.typeHTML} 
                             onChangeValue={setParam}/>
                     }
@@ -61,18 +60,23 @@ const WhereNumberField = (props:WhereProps) => {
                     }                
                 </div>    
 
-                <div className={css.panel}>
-                    <OptionList options={NumberFieldCtrl.getTextCondition(typeCondition).map( (textLiteral) => { return  {id: textLiteral.sqlKeyWord, label:t(textLiteral.description)}})}  
-                    title={t(LITERAL.Condition)} 
-                    onSelect={setCondition}/>
-                </div>  
+                {typeCondition &&    
+                    <div className={css.panel}>
+                        <OptionList options={NumberFieldCtrl.getTextCondition(typeCondition).map( (textLiteral) => { return  {id: textLiteral.sqlKeyWord, label:t(textLiteral.description)}})}  
+                        title={t(LITERAL.Condition)} 
+                        onSelect={setCondition}/>
+                    </div>  
+                }
             </div>
-            <section className={css.card}>
-            <span className={css.cardTitle}>Predicate</span>
-                <div>
-                    <span className={css.sql}>{sqlChunck?.sqlString}</span>
-                </div>
-        </section>                  
+            {condition &&    
+                <section className={css.card}>
+                        <span className={css.cardTitle}>Predicate</span>
+                        <div>
+                            <span className={css.sql}>{sqlChunck?.sqlString}</span>
+                        </div>
+                        <button type="button" onClick={handelButton()} >Apply</button>
+                </section>        
+            }            
         </div>
     )
 }

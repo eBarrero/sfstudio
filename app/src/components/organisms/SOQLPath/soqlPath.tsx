@@ -39,7 +39,8 @@ const SOQLPath = () => {
                                 label={`${element.sObjectId.sObjectApiName}`} 
                                 active={(queryState.indexCurrentElement !== elementIndex)}
                                 action={`${elementIndex}`} 
-                                onActionHandler={handleCommandExecution} optionalTags={{ subLabel: (queryState.indexCurrentElement === elementIndex)?IconCharacter.ARROW1:''}}/>
+                                onActionHandler={handleCommandExecution} 
+                                optionalTags={{ subLabel: (queryState.indexCurrentElement === elementIndex)?IconCharacter.ARROW1:''}}/>
                 </div>
             )
             })}        

@@ -9,34 +9,34 @@ export enum CONTEXT_LEVEL  {
 } 
 
 export const VIEW_CMD : { [key: string]: CommandDefinition } = {
-    FILTER: { command: '.Filter', description: '#CMD.filterObjects',  iconSymbol: '🔍', context: CONTEXT_LEVEL.ORG } as const,
-    HELP0:  { command: '.Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.INIT } as const,
-    HELP1:  { command: '.Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.ORG } as const,
-    HELP2:  { command: '.Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.OBJECT } as const,
-    HELP3:  { command: '.Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.SQL_EXECUTION } as const
+    FILTER: { command: 'Filter', description: '#CMD.filterObjects',  iconSymbol: '🔍', context: CONTEXT_LEVEL.ORG } as const,
+    HELP0:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.INIT } as const,
+    HELP1:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.ORG } as const,
+    HELP2:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.OBJECT } as const,
+    HELP3:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.SQL_EXECUTION } as const
   };
   
 export const SESSION_CMD : { [key: string]: CommandDefinition } = {
-    PROD:                   { command: '.Login_to_Prod',          description: '#CMD.init.production',       context: CONTEXT_LEVEL.INIT,  menuItem:'Login',        menuCaption:'Production',           } as const,
-    SANDBOX:                { command: '.Login_to_Sandbox',       description: '#CMD.init.sandbox',          context: CONTEXT_LEVEL.INIT,  menuItem:'Login',        menuCaption:'Sandbox',              } as const
+    PROD:                   { command: 'Login_to_Prod',          description: '#CMD.init.production',       context: CONTEXT_LEVEL.INIT,  menuItem:'Login',        menuCaption:'Production',           } as const,
+    SANDBOX:                { command: 'Login_to_Sandbox',       description: '#CMD.init.sandbox',          context: CONTEXT_LEVEL.INIT,  menuItem:'Login',        menuCaption:'Sandbox',              } as const
   };
 
 export const APP_CMD : { [key: string]: CommandDefinition } = {
-    BACK_FROM_ORG:          { command: '.Back',                   description: '#CMD.back', iconSymbol: '⇦', context: CONTEXT_LEVEL.ORG   } as const,
-    BACK_FROM_OBJ:          { command: '.Back',                   description: '#CMD.back', iconSymbol: '⇦', context: CONTEXT_LEVEL.OBJECT } as const,
-    BACK_FROM_SQL:          { command: '.Back',                   description: '#CMD.back', iconSymbol: '⇦', context: CONTEXT_LEVEL.SQL_EXECUTION } as const,
-    OBJEXT:                 { command: '.Extend',                 description: '#CMD.Extend', iconSymbol: '📁', context: CONTEXT_LEVEL.OBJECT,  menuItem: 'view', menuCaption: 'View extended'  } as const,    
+    BACK_FROM_ORG:          { command: 'Back',                   description: '#CMD.back', iconSymbol: '⇦', context: CONTEXT_LEVEL.ORG   } as const,
+    BACK_FROM_OBJ:          { command: 'Back',                   description: '#CMD.back', iconSymbol: '⇦', context: CONTEXT_LEVEL.OBJECT } as const,
+    BACK_FROM_SQL:          { command: 'Back',                   description: '#CMD.back', iconSymbol: '⇦', context: CONTEXT_LEVEL.SQL_EXECUTION } as const,
+    OBJEXT:                 { command: 'Extend',                 description: '#CMD.Extend', iconSymbol: '', context: CONTEXT_LEVEL.OBJECT,  menuItem: 'view', menuCaption: 'View extended'  } as const,    
   }; 
 
 export const NODEL_CMD : { [key: string]: CommandDefinition } = {
-    SELECT_ALL_FIELDS:      { command: '.Select_all_fields',      description: '#field.filter.ALL_FIELDS',       context: CONTEXT_LEVEL.OBJECT, menuItem:'Select',    menuCaption:'All fields',          } as const,
-    SELECT_STANDARD_FIELDS: { command: '.Select_standard_fields', description: '#field.filter.STANDARD_FIELDS',  context: CONTEXT_LEVEL.OBJECT, menuItem:'Select',    menuCaption:'All standard fields'  } as const,
-    SELECT_CUSTOM_FIELDS:   { command: '.Select_custom_fields',   description: '#field.filter.CUSTOM_FIELDS',    context: CONTEXT_LEVEL.OBJECT, menuItem:'Select',    menuCaption:'All custom fields'    } as const,
-    SET_QUERY:              { command: '.sql',                    description: '#CMD.set_query',                 context: CONTEXT_LEVEL.OBJECT, menuItem:'Goto',      menuCaption:'Root query' } as const    
+    SELECT_ALL_FIELDS:      { command: 'Select_all_fields',      description: '#field.filter.ALL_FIELDS',       context: CONTEXT_LEVEL.OBJECT, menuItem:'Select',    menuCaption:'All fields',          } as const,
+    SELECT_STANDARD_FIELDS: { command: 'Select_standard_fields', description: '#field.filter.STANDARD_FIELDS',  context: CONTEXT_LEVEL.OBJECT, menuItem:'Select',    menuCaption:'All standard fields'  } as const,
+    SELECT_CUSTOM_FIELDS:   { command: 'Select_custom_fields',   description: '#field.filter.CUSTOM_FIELDS',    context: CONTEXT_LEVEL.OBJECT, menuItem:'Select',    menuCaption:'All custom fields'    } as const,
+    SET_QUERY:              { command: 'sql',                    description: '#CMD.set_query',                 context: CONTEXT_LEVEL.OBJECT, menuItem:'Goto',      menuCaption:'Root query' } as const    
   };
 
 export const SOQL_CMD : { [key: string]: CommandDefinition } = {
-    RUN_SOQL:               { command: '.Run_SQOL',               description: '#CMD.soql', iconSymbol: '🗲',    context: CONTEXT_LEVEL.OBJECT, menuItem:'SOQL',      menuCaption:'Run SOQL',             } as const
+    RUN_SOQL:               { command: 'Run_SQOL',               description: '#CMD.soql', iconSymbol: '🗲',    context: CONTEXT_LEVEL.OBJECT, menuItem:'SOQL',      menuCaption:'Run SOQL',             } as const
   };
 
 
