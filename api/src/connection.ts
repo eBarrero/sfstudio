@@ -1,9 +1,11 @@
 import { AccessToken, AuthorizationCode, ModuleOptions } from "simple-oauth2";
-import jsforce, { IdentityInfo  } from "jsforce";
+import jsforce,  { IdentityInfo, Connection, QueryResult, DescribeGlobalResult, DescribeSObjectResult   } from "jsforce";
+import { DescribeMetadataResult,FileProperties, ListMetadataQuery, Metadata, MetadataType } from "jsforce/api/metadata";
 import { Session } from "./session";    
 import { SessionError } from "./sessionError";
 import { CLIENT_ID, CLIENTE_SECRET, CALLBACK_URL,  API_SF_VERSION } from './environment';
 import { IsfUserEntity } from "./db/services/userEntity";
+
 
 
 
@@ -25,24 +27,24 @@ export type PublicSesionDefinition = {
 }
 
 
-export class Connection {
+export class SfConnection {
     private alias: string = "";
     private _name: string = "";
     private sandbox: boolean = false;
     private client: AuthorizationCode;
     private accessToken?: AccessToken;
-    private conn?: jsforce.Connection;      
+    private conn?: Connection;      
     private userInfo?: IdentityInfo;
     private mySession: Session;
     private instanceUrl: string = "";
     private isConnected: boolean = false;
     private isError: boolean = false;
     
-    static createConnection(org: IsfUserEntity, session: Session): Connection {
+    static createConnection(org: IsfUserEntity, session: Session): SfConnection {
         const organization = org.organizationEntity!.getRecord();
         console.log("Connection.createConnection: " + organization.orgName + " " + organization.instanceUrl);
         console.log(organization);
-        const newConnection =  new Connection(organization.orgName, organization.instanceUrl, session);
+        const newConnection =  new SfConnection(organization.orgName, organization.instanceUrl, session);
         return newConnection;
     }
 
@@ -121,7 +123,7 @@ export class Connection {
             isError: this.isError
         };
     }
-    get connection(): jsforce.Connection {
+    get connection(): Connection {
         if (!this.conn) {
             throw new Error("Not connected");
         }
@@ -133,11 +135,7 @@ export class Connection {
      * @returns void
      */
     close(): void {
-        this.conn!.logout((error) => {
-            if (error) {
-                console.error("Error: " + error);
-            }
-        });
+        this.conn!.logout();
     }
 
 
@@ -149,7 +147,7 @@ export class Connection {
      * @returns A promise that resolves with the query result.
      * @throws {SessionError} If there is an error executing the SOQL query.
      */
-    async doSOQL(decodedQuery: string): Promise<jsforce.QueryResult<Record<string, unknown>>> {
+    async doSOQL(decodedQuery: string): Promise<QueryResult<Record<string, unknown>>> {
         try {
             return await this.conn!.query(decodedQuery);
         } catch (error) {
@@ -158,7 +156,7 @@ export class Connection {
 
     }       
 
-    async describeGlobal() : Promise<jsforce.DescribeGlobalResult>  {
+    async describeGlobal() : Promise<DescribeGlobalResult>  {
         try {
             return await this.conn!.describeGlobal();
         } catch (error) {
@@ -168,7 +166,7 @@ export class Connection {
     }      
     
 
-    async describe() : Promise<jsforce.DescribeMetadataResult>  {
+    async describe() : Promise<DescribeMetadataResult>  {
         try {
             return await this.conn!.metadata.describe(API_SF_VERSION);
         } catch (error) {
@@ -177,7 +175,7 @@ export class Connection {
         }
     }   
     
-    async describeSObject(sobject: string): Promise<jsforce.DescribeSObjectResult>  {
+    async describeSObject(sobject: string): Promise<DescribeSObjectResult>  {
         try {
             return await this.conn!.describe(sobject);
         } catch (error) {
@@ -187,8 +185,8 @@ export class Connection {
     }        
 
     
-    async getListmetadata(type: string): Promise<jsforce.FileProperties[]>  {
-        const params: jsforce.ListMetadataQuery[] = [{type}];
+    async getListmetadata(type: string): Promise<FileProperties[]>  {
+        const params: ListMetadataQuery[] = [{type}];
         try {
             return await this.conn!.metadata.list(params, API_SF_VERSION);
         } catch (error) {
@@ -197,9 +195,9 @@ export class Connection {
         }
     }    
 
-    async getObjectmetadata(type: string, sobject:string) : Promise<jsforce.MetadataInfo | jsforce.MetadataInfo[]>  {
+        async getObjectmetadata(type: string, sobject:string) : Promise<Metadata  | Metadata[]>  {
         try {
-            const metadata  = await this.conn!.metadata.read(type,[sobject] );
+            const metadata  = await this.conn!.metadata.read(type as MetadataType, sobject);
             /*if (Array.isArray(metadata)) {
                 return (metadata as jsforce.MetadataInfo[])
                     .map((field) => { return {name: field.fullName, description: field.description}; })
@@ -212,6 +210,7 @@ export class Connection {
             throw sessionError;
         }
     }  
+
 
 
 

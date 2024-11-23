@@ -1,13 +1,13 @@
 // types/express.d.ts
 
 import { Session } from './session'; 
-import { Connection } from './connection'; 
+import { SfConnection } from './connection'; 
 
 declare global {
   namespace Express {
     interface Request {
       appSession?: Session; 
-      appConnection?: Connection;
+      appConnection?: SfConnection;
     }
   }
   

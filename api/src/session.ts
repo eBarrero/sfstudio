@@ -1,4 +1,4 @@
-import { Connection, PublicSesionDefinition } from './connection';
+import { SfConnection, PublicSesionDefinition } from './connection';
 import { SessionError } from './sessionError';
 import userFactory from "./db/services/userFactory";
 import UserEntity  from "./db/services/userEntity";
@@ -15,7 +15,7 @@ import { IdentityInfo  } from "jsforce";
 export class Session { 
     private tokenId: number = 0;
     private userId: string = ''; // db id of the user
-    private connections: Connection[] = new Array<Connection>();
+    private connections: SfConnection[] = new Array<SfConnection>();
     private userEntity?: UserEntity | null;
     private currentOrgSfName: string | null = null;
 
@@ -43,7 +43,7 @@ export class Session {
     private reloadConnections() {
         this.connections = [];
         this.userEntity!.getRecord().sfUsers.forEach((sfUser) => {
-            this.connections.push(Connection.createConnection(sfUser, this));
+            this.connections.push(SfConnection.createConnection(sfUser, this));
         });
     }
 
@@ -63,7 +63,7 @@ export class Session {
         return token;
     }
 
-    public getConnection(orgSfName:string) : Connection {
+    public getConnection(orgSfName:string) : SfConnection {
         if (orgSfName === undefined) {
             return this.connections.at(-1)!;
         }
@@ -108,7 +108,7 @@ export class Session {
             return foundConnection!.authorization();
         }
 
-        const newConnection = new Connection(orgSfName, (orgSfName === 'test') ? 'https://test.salesforce.com' : 'https://login.salesforce.com', this);
+        const newConnection = new SfConnection(orgSfName, (orgSfName === 'test') ? 'https://test.salesforce.com' : 'https://login.salesforce.com', this);
         this.connections.push(newConnection);
         
         return newConnection.authorization();
