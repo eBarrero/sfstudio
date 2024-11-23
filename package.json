@@ -5,7 +5,8 @@
   "description": "",
   "main": "index.js",
   "workspaces": [
-    "api","app"
+    "api",
+    "app"
   ],
   "scripts": {
     "start": "npm --workspace api run start",
@@ -14,5 +15,11 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@vitejs/plugin-react": "^4.3.3",
+    "globals": "^15.11.0",
+    "typescript-eslint": "^8.12.2"
+  }
 }

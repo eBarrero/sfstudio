@@ -5,10 +5,12 @@ type PublicConnectionDefinition = {
     alias: string;
     name: string;
     sandbox: boolean;
+    isConnected: boolean;
+    isError: boolean;
   }
 
 
 type PublicSesionDefinition = {
-    currentConnection: number;
     connections: PublicConnectionDefinition[];
+    currentConnection: number | null;
 } 

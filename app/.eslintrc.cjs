@@ -1,4 +1,4 @@
-module.exports = {
+export default  {
   root: true,
   env: { browser: true, es2020: true },
   extends: [
@@ -8,8 +8,10 @@ module.exports = {
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs'],
   parser: '@typescript-eslint/parser',
-  plugins: ['react-refresh'],
+  plugins: ['react-refresh',"react","react-hooks"],
   rules: {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
     'react-refresh/only-export-components': [
       'warn',
       { allowConstantExport: true },

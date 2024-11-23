@@ -1,344 +1,242 @@
-import { AccessToken, AuthorizationCode, ModuleOptions } from "simple-oauth2";
-import jsforce, { ListMetadataQuery, IdentityInfo  } from "jsforce";
+import { Connection, PublicSesionDefinition } from './connection';
+import { SessionError } from './sessionError';
+import userFactory from "./db/services/userFactory";
+import UserEntity  from "./db/services/userEntity";
+import OrgEntity from './db/services/orgEntity';
 
-interface MetadataField {
-    fullName: string,
-    description: string
-}
-
-interface MetadataInfo extends jsforce.MetadataInfo {
-    fields: MetadataField[];
-}
-    
-
-export class SessionError extends Error {
-    errorNumber: number = 500;
-    constructor(message: string) {
-        super(message);
-        this.name = "SessionError";
-        if (message.includes("Session expired or invalid")) this.errorNumber = 401;
-        console.error(`[${this.name}]: [${this.message}]`);
-    }
-    getErrorNumber(): number {  return this.errorNumber; }  
-}
-
-type ConnectionDefinition = {
-    alias: string;
-    name: string;
-    sandbox: boolean;
-    client: AuthorizationCode;
-    accessToken?: AccessToken;
-    conn?: jsforce.Connection;
-}
-
-type PublicConnectionDefinition = {
-    alias: string;
-    name: string;
-    sandbox: boolean;
-}
-
-type PublicSesionDefinition = {
-    currentConnection: number;
-    connections: PublicConnectionDefinition[];
-}
-
-type SignInToken = {
-    id: string;
-    }
-
-/**
- * @description Convert Base64 URL Safe to standard Base64
- * @param base64UrlSafe String Base64 URL Safe
- * @returns string Base64
- */
-function fromBase64UrlSafe(base64UrlSafe: string): string {
-    let base64 = base64UrlSafe
-        .replace(/-/g, '+') // Replace - con +
-        .replace(/_/g, '/'); // Rreplace _ con /
-    
-    // add padding with '='
-    const padding = base64.length % 4;
-    if (padding > 0) {
-        base64 += '='.repeat(4 - padding);
-    }
-    const buffer = Buffer.from(base64, 'base64');
-
-    return  buffer.toString('ascii');
-}
+import { IdentityInfo  } from "jsforce";
 
 
 
 
-export class Connection {
-    private alias: string = "";
-    private _name: string = "";
-    private sandbox: boolean;
-    private client: AuthorizationCode;
-    private accessToken?: AccessToken;
-    private conn?: jsforce.Connection;      
-    private userInfo?: IdentityInfo;
-
-    constructor(sandbox: boolean, url: string, clientId: string, clientSecret: string) {
-        this.sandbox = sandbox;
-         const authConfig: ModuleOptions = {
-            client: {
-                id: clientId,
-                secret: clientSecret
-            },
-            auth: {
-                tokenHost:  (sandbox) ? "https://test.salesforce.com" : "https://login.salesforce.com",
-                tokenPath:  "/services/oauth2/token",
-                authorizePath: "/services/oauth2/authorize"
-            }
-        };
-        
-        this.client = new AuthorizationCode(authConfig);
-        this.conn = undefined; // Initialize conn property as undefined
-    }
-
-    authorizationUri(url: string): string  { 
-        return this.client.authorizeURL({
-            redirect_uri: url,
-            scope: "api web id profile email",
-        });         
-    }
-
-    async login(code: string, url: string, apiSfVersion: string ): Promise<void> {
-        const tokenParams = {
-            code: code,
-            redirect_uri: url
-        };
-
-        this.accessToken= await this.client.getToken(tokenParams);
-        this.alias = (this.sandbox) ? "sandbox" : "PROD";
-        const regexp = /(?<=\/\/).*?(?=\.my|\.sandbox)/
-        this.name = (this.accessToken.token.instance_url as string).match(regexp)![0];
-        this.conn = new jsforce.Connection({
-            instanceUrl: this.accessToken.token.instance_url as string,
-            accessToken: this.accessToken.token.access_token as string,
-            version: apiSfVersion
-        });
-        this.userInfo = await this.conn.identity();
-
-
-    }
-    
-    getUserInfo(): IdentityInfo | undefined {
-        console.log(this.userInfo?.username);
-        return this.userInfo;
-    }
-
-    get name(): string {
-        return this._name;
-    }
-    set name(value: string) {
-        this._name = value;
-    }
-
-    getPublicDefinition(): PublicConnectionDefinition {
-        return {
-            alias: this.alias,
-            name: this.name,
-            sandbox: this.sandbox
-        };
-    }
-    get connection(): jsforce.Connection {
-        if (!this.conn) {
-            throw new Error("Not connected");
-        }
-        return  this.conn;
-    }
-    
-}
 
 
 
 export class Session { 
-    private currentConnection: number = 0;
-    private connectionId: number = 0;
+    private tokenId: number = 0;
+    private userId: string = ''; // db id of the user
     private connections: Connection[] = new Array<Connection>();
-    private apiSfVesion: string='58.0';
+    private userEntity?: UserEntity | null;
+    private currentOrgSfName: string | null = null;
 
-    constructor() {
-        this.connectionId = Math.floor(Math.random() * 10000);
+    constructor(tokenId: number | null) {
+        if (!tokenId) {
+            this.tokenId = this.tokenId = Math.floor(Math.random() * 1000000);
+        } else {
+            this.tokenId = tokenId;
+        }
+    }
+
+    static async createSessionFromDB(tokenId: number): Promise<Session> {
+        console.info("Get Session from DB: " + tokenId);
+        const user = await userFactory.findUserByTokenId(tokenId);
+        if (user) {
+            const session = new Session(tokenId);
+            session.userEntity = user;
+            session.reloadConnections();
+            return session;
+        } else {
+            throw new SessionError(`User not found with token ${tokenId}`);
+        }
+    }    
+
+    private reloadConnections() {
+        this.connections = [];
+        this.userEntity!.getRecord().sfUsers.forEach((sfUser) => {
+            this.connections.push(Connection.createConnection(sfUser, this));
+        });
     }
 
     get id(): number {
-        return this.connectionId;
+        if (this.tokenId === 0) {
+            throw new SessionError(`Token not value`);
+        }
+        return this.tokenId;
     }
-
     /**
      * Gets the sign-in token.
      * @returns The sign-in token.
      */
     get signInToken(): string {
-        console.info("signInToken Session: " + this.connectionId); // Log out 
-        const token = Buffer.from(JSON.stringify({id: this.connectionId.toString()})).toString('base64'); 
+        console.info("signInToken Session: " + this.tokenId); // Log out 
+        const token = Buffer.from(JSON.stringify({id: this.tokenId.toString()})).toString('base64'); 
         return token;
     }
-    static decode(token: string): number {
-        const id =  JSON.parse(Buffer.from(token, "base64").toString("ascii")).id;   
-        return id
+
+    public getConnection(orgSfName:string) : Connection {
+        if (orgSfName === undefined) {
+            return this.connections.at(-1)!;
+        }
+
+        const foundConnection = this.connections.find(connection => connection.name === orgSfName);
+        if (!foundConnection) {
+            throw new SessionError(`Connection with name "${orgSfName}" not found`);
+        }
+        return foundConnection;
     }
+
 
     /**
      * Gets the session status as a base64 encoded string.
      * @returns The session status as a base64 encoded string.
      */
-    get sessionStatus(): string {
+    public getSessionStatus(): string {
         const result: PublicSesionDefinition = {
-            currentConnection: this.currentConnection,
-            connections: []
+            connections: [],
+            currentConnection: null
         };
 
-        if (this.connections.length !== 0) {
+        if (this.connections && this.connections.length !== 0) {
             this.connections.forEach((connection)=> {  
-                result.connections.push({...connection.getPublicDefinition()});
+                const index = result.connections.push({...connection.getPublicDefinition()});
+                if (this.currentOrgSfName && connection.name === this.currentOrgSfName) {
+                    result.currentConnection = index;
+                }
             });
         }
         return Buffer.from(JSON.stringify(result)).toString('base64');
     }
 
+    /**
+     * Requests Reuse or create a new connection to authorization for a Salesforce organization.
+     * @param orgSfName - The Salesforce organization name.
+     * @returns The URL to redirect to for authorization.
+     */
+    public requestAuthorization(orgSfName: string): string {
+        const foundConnection = this.connections.find(connection => connection.name === orgSfName);
+        if (foundConnection) {
+            return foundConnection!.authorization();
+        }
 
-    requestAuthorization(sandbox: boolean, url: string, clientId: string, clientSecret: string ): string {
-        const newConnection = new Connection(sandbox, url, clientId, clientSecret);
-        this.connections[0]=newConnection;
-        //this.currentConnection = this.connections.length - 1;
-        return newConnection.authorizationUri(url);
+        const newConnection = new Connection(orgSfName, (orgSfName === 'test') ? 'https://test.salesforce.com' : 'https://login.salesforce.com', this);
+        this.connections.push(newConnection);
+        
+        return newConnection.authorization();
     }
 
-
-    async login(code: string, url: string, apiSfVesion: string): Promise<void> {
-        this.apiSfVesion = apiSfVesion
-        await this.connections[this.currentConnection].login(code, url, apiSfVesion);
-    }
-
-    getUserName() {
-        this.connections[this.currentConnection].getUserInfo()?.username;
-    }
-
-
-    async doSOQL(orgSfName:string, query: Base64) : Promise<any>  {
-        const decodedQuery = fromBase64UrlSafe(query);
-        console.info("doSQL" + decodedQuery);
-        const conn = getConnection(this.connections, orgSfName);
-        try {
-            return await conn.query(decodedQuery);
-        } catch (error) {
-            console.error('SOQL Error', (error as Error).message);
-            throw new SessionError("SOQL Error: " + (error as Error).message);
+    /**
+     * @description Search the org inside of user 
+     * @param userInfo
+     * @param url
+     * @param orgSfName
+     */
+    private findOrgInUser(userInfo: IdentityInfo , url: string, orgSfName: string): void {
+        if (!this.userEntity) {
+            throw new SessionError(`User not loaded`);
         }
-
-    }    
-
-
-    async describeGlobal(orgSfName:string) : Promise<any>  {
-        console.info(`describe ${orgSfName}`);
-        const conn = getConnection(this.connections, orgSfName);
-        try {
-            return await conn.describeGlobal();
-        } catch (error) {
-            console.error('SOQL Error', (error as Error).message);
-            const sessionError = new SessionError("SOQL Error: " + (error as Error).message);
-            sessionError.stack = "No stack trace available";
-            throw error;
+        console.log('findOrgInUser');
+        const index =  this.userEntity.getRecord().sfUsers.findIndex( (sfuser) => sfuser.sfUserId);
+        if (this.tokenId!==this.userEntity.getRecord().tokenId) {
+            this.tokenId = this.userEntity.getRecord().tokenId;            
         }
-    }  
-    async describeSObject(orgSfName:string, sobject:string) : Promise<any>  {
-        console.info(`describe ${orgSfName} ${sobject} `);
-        const conn = getConnection(this.connections, orgSfName);;
-        try {
-            return await conn.describe(sobject);
-        } catch (error) {
-            const sessionError = new SessionError((error as Error).message);
-            sessionError.stack = "No stack trace available";
-            throw error;
-        }
-    }      
-    
-    async describe(orgSfName:string) : Promise<any>  {
-        console.info("describe");
-        const swExist = this.connections.find((connection, index) => {connection.name === orgSfName; this.currentConnection = index;   return true;});
-        if (!swExist) {
-            throw new Error("Connection not found");
-        }
-        const conn = this.connections[this.currentConnection].connection;
-        try {
-            return await conn.metadata.describe(this.apiSfVesion);
-        } catch (error) {
-            console.error('describe Error', (error as Error).message);
-            throw new SessionError("describe Error: " + (error as Error).message);
-        }
-    }      
-    
-    async getListmetadata() : Promise<any>  {
-        console.info("getListmetadata");
-        const conn = this.connections[this.currentConnection].connection;
-        const params: jsforce.ListMetadataQuery[] = [{type: 'CustomObject'}];
-        try {
-            return await conn.metadata.list(params, this.apiSfVesion);
-        } catch (error) {
-            console.error('ListMetadata Error', (error as Error).message);
-            throw new SessionError("ListMetadata Error: " + (error as Error).message);
-        }
-    }      
-    
-    async getObjectmetadata(orgSfName:string, sobject:string) : Promise<any>  {
-        console.info("getListmetadata");
-        const conn = getConnection(this.connections, orgSfName);
-
-        try {
-            const metadata:  MetadataInfo  = await conn.metadata.read("CustomObject",[sobject] ) as MetadataInfo ;
-            return metadata.fields
-                .map((field: any) => { return {name: field.fullName, description: field.description}; })
-                .filter((field: any) => field.description !== undefined);
+        if (index===-1) {
+            const newOrg = {
+                sfUserId: userInfo.user_id,
+                sfUserName: userInfo.username,
+                email: userInfo.email,
+                accessToken: '',
+                expiresIn: 3600,
+                organizationId: userInfo.organization_id,
+                organizationEntity: new OrgEntity({organizationId: userInfo.organization_id, orgName: orgSfName, instanceUrl: url, connectedOrgsName: 'New connected Org\'s'}),
+                refreshToken: ''
+                
+            }
+            this.userEntity.addSfUser(newOrg);
             
-        } catch (error) {
-            console.error('ObjectMetadata Error', (error as Error).message);
-            throw new SessionError("ObjectMetadata Error: " + (error as Error).message);
         }
-    }     
-    
-}
-
-    
-const getConnection = ( connections: Connection[], orgSfName:string) : jsforce.Connection => {
-    let result=0;
-    const swExist = connections.find((connection, index) => {
-        result=index; 
-        return (connection.name === orgSfName);
-    });
-    if (!swExist) {
-        throw new Error("Connection not found");
-    }       
-    return connections[result].connection;    
-}
-
-
-
-
-export class Sessions {
-    private sessions: Map<number, Session> = new Map<number, Session>();
-
-    signIn() {
-        const newSesion = new Session();
-        this.sessions.set(newSesion.id, newSesion);
-        console.info("New Session: " + newSesion.id); // Log out
-        return newSesion.signInToken;
     }
 
-    getSession(signInToken:string ): Session  {
-        const id = Session.decode(signInToken)*1;
-        if (!this.sessions.has(id)) {
-            throw new SessionError("Session not found");
+
+
+
+
+    /**
+     * @description Create or update the user in the database with the information from the Salesforce user
+     *              - check if the user exists in the database (use case: user logs in other device)
+     * @param userInfo 
+     * @param url 
+     * @param orgSfName 
+     */
+    public async upsetUser(userInfo: IdentityInfo , url: string, orgSfName: string) {
+        console.log('upsetUser');
+        this.currentOrgSfName = orgSfName;
+        if (this.userEntity) {
+            this.findOrgInUser(userInfo, url, orgSfName);
+        } else {
+            this.userEntity = await userFactory.findUserBySfUserNameOreMail(userInfo.username, userInfo.email);   // or email 
+            if (this.userEntity) {
+                console.log(`tokenid: ${this.tokenId}`);
+                console.log(`userEntity: ${this.userEntity.getRecord().tokenId}`);
+                this.tokenId = this.userEntity.getRecord().tokenId;              // update tokenid from existing user
+                this.findOrgInUser(userInfo, url, orgSfName);
+            } else {      
+                this.userEntity = userFactory.createUserFromConnection(userInfo, this.tokenId, orgSfName, url);
+            }      
+            return this.userEntity;
         }
         
-        return this.sessions.get(id)!;
+
     }
-    setConexion(id: number, conexion: any) {
-        this.sessions.set(id, conexion);
-    }
-    deleteConexion(id: number) {
-        this.sessions.delete(id);
-    }
-} 
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+        if (!this.user) {
+           
+            if (this.user) {
+                this.tokenId = this.user.getRecord().token;  // update tokenid from existing user
+            } else {
+                const org = await orgFactory.upsetOrg({
+                    organizationId: userInfo.organization_id,
+                    orgName: orgSfName,
+                    instanceUrl: url
+                });
+                
+                const newUser: IUser  = {
+                    token: this.tokenId,
+                    name:  userInfo.display_name,
+                    sfUsers: [{ 
+                        sfUserId: userInfo.user_id,
+                        sfUserName: userInfo.username,
+                        email: userInfo.email,
+                        accessToken: this.tokenId.toString(),
+                        expiresIn: 3600,
+                        organization: new OrgEntity({name: orgSfName, url: url}).getRecord()._id,
+                        refreshToken: ''
+                    }]
+                }    
+                this.user = await userFactory.createUser(newUser);
+            } 
+        }
+
+        const sfUser = this.user.getRecord().sfUser.find(sfUser => sfUser.userName === userInfo.username);
+
+        sfUsers: [{ userId: userInfo.user_id, 
+            userName: userInfo.username, 
+            email: userInfo.email, 
+            accessToken: this.tokenId.toString(), 
+            expiresIn: 3600, 
+            refreshToken: '', 
+            createdAt: new Date() }], 
+
+
+    }*/
+}
+
+    
+
+
+
+
+
+
+

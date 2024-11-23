@@ -1,6 +1,6 @@
 import {create} from 'zustand';
-import { addCommand, SESSION_CMD } from '../core/commandManager';
-import { createSession, loginSFDC, loginSandBox } from '../services/session/model';
+import { addCommand, SESSION_CMD, CONTEXT_LEVEL } from '../core/commandManager';
+import { createSession, loginSFDC, loginSandBox, loginOrganization, disconnect } from '../services/session/model';
 
 
 interface SessionState {
@@ -8,7 +8,9 @@ interface SessionState {
     createSession: () => void;
     loginSFDC: () => void;
     loginSandBox: () => void;
+    loginOrganization: (orgName: string) => void;
     initializeSession: () => void;
+    disconnect: (orgName: string) => void;
 }
 
 const sessionState = create<SessionState>((set, get) => {
@@ -16,6 +18,15 @@ const sessionState = create<SessionState>((set, get) => {
         publicSession: { currentConnection: 0, connections: [] },
         createSession: () => {
             createSession().then((s) => {
+                s.connections.forEach(conn => {
+                    if (conn.isConnected) {
+                        addCommand({menuItem:'Login', menuOption:`${conn.name}`,command: `login_${conn.name}`,                      description: `${conn.name}`, context: CONTEXT_LEVEL.INIT,
+                            action: () => { get().disconnect(conn.name);}});
+                    } else {
+                        addCommand({menuItem:'Login', menuOption:`${conn.name}`,command: `login_${conn.name}`,                      description: `${conn.name}`, context: CONTEXT_LEVEL.INIT,
+                            action: () => { get().loginOrganization(conn.name);}});
+                    }
+                });
                 set({publicSession: s});
             });
         },
@@ -24,6 +35,12 @@ const sessionState = create<SessionState>((set, get) => {
         },
         loginSandBox: () => {
             loginSandBox();
+        },
+        loginOrganization: (orgName: string) => {
+            loginOrganization(orgName);
+        },
+        disconnect: (orgName: string) => {
+            disconnect(orgName);
         },
         initializeSession: () => {
             addCommand({...SESSION_CMD.PROD, action: () => { get().loginSFDC();}});

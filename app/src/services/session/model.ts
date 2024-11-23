@@ -7,13 +7,13 @@ import { request,  URL_PATH } from './controller';
     const s = await request('init');
     console.log('createSession:' + s);
     if (s==='newsession') {
-      return { currentConnection: 0, connections: [] };
+      return { connections: [], currentConnection: null };
     }
     if (s==='#Error') {
-      return { currentConnection: 0, connections: [] };
+      return { connections: [], currentConnection: null };
     }
     if (s==='reseted') {
-      return { currentConnection: 0, connections: [] };
+      return { connections: [], currentConnection: null };
     }
     
     const token = JSON.parse(atob(s ));
@@ -28,5 +28,12 @@ import { request,  URL_PATH } from './controller';
     window.location.href=`${URL_PATH}auth/test`;
   }
 
+  export function loginOrganization(orgName: string): void {
+    window.location.href=`${URL_PATH}/auth/${orgName}`;
+  }
+
+  export function disconnect(orgName: string): void {
+    window.location.href=`${URL_PATH}/auth/logout/${orgName}`;
+  }
 
   

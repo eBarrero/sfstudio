@@ -25,14 +25,20 @@ const useApplication = () => {
     const filter = application.filter;
 
     useEffect(() => { 
-        if (session.publicSession.connections.length === 0) {
-            application.setContextLevel(CONTEXT_LEVEL.INIT);
-            return;
+        try {
+            if (session.publicSession.currentConnection===null) {
+                application.setContextLevel(CONTEXT_LEVEL.INIT);
+                return;
+            }
+            console.log(`currentConnection: ${session.publicSession.currentConnection}`);
+            model.setOrg(session.publicSession.connections[0].name);
+            data.loadSchema(session.publicSession.connections[0].name);
+            view.setCurrentView(CONTEXT_LEVEL.ORG);
+            application.setContextLevel(CONTEXT_LEVEL.ORG);
+        } catch (e) {
+            console.log((e as Error).message);
+            setLastError((e as Error).message);
         }
-        model.setOrg(session.publicSession.connections[0].name);
-        data.loadSchema(session.publicSession.connections[0].name);
-        view.setCurrentView(CONTEXT_LEVEL.ORG);
-        application.setContextLevel(CONTEXT_LEVEL.ORG);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [session.publicSession]);
 
