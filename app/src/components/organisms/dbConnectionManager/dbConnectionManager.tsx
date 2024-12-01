@@ -1,6 +1,6 @@
 
 import sessionState from "../../../store/sessionState";
-
+import { IconCharacter } from "../../constants";
 
 const DBConnectionManager = () => {
 
@@ -9,9 +9,11 @@ const DBConnectionManager = () => {
     return (
         <div>
             {publicSession.connections && publicSession.connections.map((c, i) => {
-                return (
-                    <span key={i}>-{c.isConnected}-&nbsp;{c.name}</span>
-                )
+                if (c.isConnected) {
+                    return (
+                        <span key={i}>{(i===publicSession.currentConnection)?IconCharacter.CHECK:''}{c.name}<br/></span>
+                    )
+                }
             })}
         </div>
     );

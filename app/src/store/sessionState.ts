@@ -20,7 +20,7 @@ const sessionState = create<SessionState>((set, get) => {
             createSession().then((s) => {
                 s.connections.forEach(conn => {
                     if (conn.isConnected) {
-                        addCommand({menuItem:'Login', menuOption:`${conn.name}`,command: `login_${conn.name}`,                      description: `${conn.name}`, context: CONTEXT_LEVEL.INIT,
+                        addCommand({menuItem:'Login', menuOption:`close ${conn.name}`,command: `close_${conn.name}`,                      description: `close ${conn.name}`, context: CONTEXT_LEVEL.INIT,
                             action: () => { get().disconnect(conn.name);}});
                     } else {
                         addCommand({menuItem:'Login', menuOption:`${conn.name}`,command: `login_${conn.name}`,                      description: `${conn.name}`, context: CONTEXT_LEVEL.INIT,

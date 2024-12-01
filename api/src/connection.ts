@@ -74,16 +74,22 @@ export class SfConnection {
     }
 
     authorization(): string  { 
-        return this.client.authorizeURL({
+        let  url =  this.client.authorizeURL({
             redirect_uri: CALLBACK_URL,
             scope: "api web id profile email",
-        });         
+            state: this.name,
+        });   
+        if (this.name === "test") { url+= "&prompt=login"; }
+        console.log(`URL: ${url}`);
+        return url;      
     }
 
     async login(code: string, url: string): Promise<void> {
         const tokenParams = {
+            audience: this.instanceUrl,
             code: code,
-            redirect_uri: url
+            redirect_uri: url,
+            state: this.name
         };
 
         this.accessToken= await this.client.getToken(tokenParams);
@@ -98,6 +104,8 @@ export class SfConnection {
         this.isConnected = true;
         this.userInfo = await this.conn.identity();
         
+        console.log(`${this.name} `);
+
         await this.mySession.upsetUser(this.userInfo, this.accessToken.token.instance_url as string, this.name);
     }
     
@@ -135,7 +143,11 @@ export class SfConnection {
      * @returns void
      */
     close(): void {
-        this.conn!.logout();
+        if (!this.conn) {
+            throw new Error("Not connected");
+        }    
+        this.conn!.logout(true);
+
     }
 
 

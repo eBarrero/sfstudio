@@ -5,6 +5,7 @@ import UserEntity  from "./db/services/userEntity";
 import OrgEntity from './db/services/orgEntity';
 
 import { IdentityInfo  } from "jsforce";
+import userController from './db/services/userController';
 
 
 
@@ -17,7 +18,7 @@ export class Session {
     private userId: string = ''; // db id of the user
     private connections: SfConnection[] = new Array<SfConnection>();
     private userEntity?: UserEntity | null;
-    private currentOrgSfName: string | null = null;
+    private lastOrgSfNameConnected: string | null = null;
 
     constructor(tokenId: number | null) {
         if (!tokenId) {
@@ -64,6 +65,7 @@ export class Session {
     }
 
     public getConnection(orgSfName:string) : SfConnection {
+        console.log('getConnection:['+ orgSfName + ']');
         if (orgSfName === undefined) {
             return this.connections.at(-1)!;
         }
@@ -87,9 +89,9 @@ export class Session {
         };
 
         if (this.connections && this.connections.length !== 0) {
-            this.connections.forEach((connection)=> {  
-                const index = result.connections.push({...connection.getPublicDefinition()});
-                if (this.currentOrgSfName && connection.name === this.currentOrgSfName) {
+            this.connections.forEach((connection, index)=> {  
+                result.connections.push({...connection.getPublicDefinition()});
+                if (this.lastOrgSfNameConnected && connection.name === this.lastOrgSfNameConnected) {
                     result.currentConnection = index;
                 }
             });
@@ -105,14 +107,16 @@ export class Session {
     public requestAuthorization(orgSfName: string): string {
         const foundConnection = this.connections.find(connection => connection.name === orgSfName);
         if (foundConnection) {
+            console.info("Connection found: " + orgSfName);
             return foundConnection!.authorization();
         }
-
+        console.info("Connection not found: " + orgSfName);
         const newConnection = new SfConnection(orgSfName, (orgSfName === 'test') ? 'https://test.salesforce.com' : 'https://login.salesforce.com', this);
         this.connections.push(newConnection);
         
         return newConnection.authorization();
     }
+
 
     /**
      * @description Search the org inside of user 
@@ -124,11 +128,12 @@ export class Session {
         if (!this.userEntity) {
             throw new SessionError(`User not loaded`);
         }
-        console.log('findOrgInUser');
-        const index =  this.userEntity.getRecord().sfUsers.findIndex( (sfuser) => sfuser.sfUserId);
         if (this.tokenId!==this.userEntity.getRecord().tokenId) {
             this.tokenId = this.userEntity.getRecord().tokenId;            
         }
+        console.log('findOrgInUser');
+        const index =  this.userEntity.getRecord().sfUsers.findIndex( (sfuser) => sfuser.sfUserId===userInfo.user_id);
+
         if (index===-1) {
             const newOrg = {
                 sfUserId: userInfo.user_id,
@@ -139,10 +144,9 @@ export class Session {
                 organizationId: userInfo.organization_id,
                 organizationEntity: new OrgEntity({organizationId: userInfo.organization_id, orgName: orgSfName, instanceUrl: url, connectedOrgsName: 'New connected Org\'s'}),
                 refreshToken: ''
-                
             }
             this.userEntity.addSfUser(newOrg);
-            
+            userController.addSfUser(this.userEntity, newOrg);
         }
     }
 
@@ -159,7 +163,7 @@ export class Session {
      */
     public async upsetUser(userInfo: IdentityInfo , url: string, orgSfName: string) {
         console.log('upsetUser');
-        this.currentOrgSfName = orgSfName;
+        this.lastOrgSfNameConnected = orgSfName;
         if (this.userEntity) {
             this.findOrgInUser(userInfo, url, orgSfName);
         } else {

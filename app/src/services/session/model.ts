@@ -33,7 +33,8 @@ import { request,  URL_PATH } from './controller';
   }
 
   export function disconnect(orgName: string): void {
-    window.location.href=`${URL_PATH}/auth/logout/${orgName}`;
+    console.log(`${URL_PATH}/logout/${orgName}`);
+    window.location.href=`${URL_PATH}/logout/${orgName}`;
   }
 
   

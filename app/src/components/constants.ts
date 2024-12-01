@@ -15,7 +15,10 @@ export enum IconCharacter  {
     ORDER_DESC = '&#8595;',// ⬇️
     WHERE = '&#128269;',   // 🔍  U+1F50D
     EXE = "🗲", //'&#128498;', U+1F5F2
-    ARROW1 = "⮘"
+    ARROW1 = "⮘",
+    CHECK = '✔️' // &#10003 U+2713
+    CROSS = '&#10007;',    // ❌ U+274C
+
   }
 
 

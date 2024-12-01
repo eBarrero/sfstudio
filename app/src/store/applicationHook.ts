@@ -30,9 +30,10 @@ const useApplication = () => {
                 application.setContextLevel(CONTEXT_LEVEL.INIT);
                 return;
             }
+            const index = session.publicSession.currentConnection;
             console.log(`currentConnection: ${session.publicSession.currentConnection}`);
-            model.setOrg(session.publicSession.connections[0].name);
-            data.loadSchema(session.publicSession.connections[0].name);
+            model.setOrg(session.publicSession.connections[index].name);
+            data.loadSchema(session.publicSession.connections[index].name);
             view.setCurrentView(CONTEXT_LEVEL.ORG);
             application.setContextLevel(CONTEXT_LEVEL.ORG);
         } catch (e) {

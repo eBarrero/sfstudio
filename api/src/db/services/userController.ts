@@ -3,7 +3,7 @@ import User, {IUser, IsfUser} from "../schema/UserSchema";
 import Organization, {IOrganization} from "../schema/OrganizationSchema";
 
 import controller from "./../controller"; 
-import UserEntity from "./userEntity";
+import UserEntity, { IsfUserEntity } from "./userEntity";
 
 import dbError from "../dbError";
 
@@ -64,6 +64,36 @@ class UserController {
 
         } catch (error) {
             throw new dbError(`save(${userEntity.getRecord()}): ${(error as Error).message}`);
+        }
+        return true;
+    }
+
+    /**
+     * @description Add a new sfUser to an existing user
+     */
+    public async addSfUser (userEntity: UserEntity, sfUser: IsfUserEntity): Promise<boolean> {
+        try {
+            controller.connect();
+            const user = await User.findOne({sessionTokenId: userEntity.getRecord().tokenId});
+            if (!user) {
+                throw new dbError(`addSfUser(${userEntity.getRecord()}: User not found`);
+            }
+            user.sfUsers.push(sfUser);
+            await user.save();
+
+            // check if the organization exists
+            const org = await Organization.findOne({organizationId: sfUser.organizationId});
+            if (!org) {
+                const orgdb = {
+                    _id: new mongoose.Types.ObjectId(),
+                    createdAt: new Date(), 
+                    ...sfUser.organizationEntity!.getRecord()
+                } as IOrganization
+                await new Organization(orgdb).save();
+            }
+
+        } catch (error) {
+            throw new dbError(`addSfUser(${userEntity.getRecord()}: ${(error as Error).message}`);
         }
         return true;
     }
