@@ -1,0 +1,19 @@
+```mermaid
+sequenceDiagram
+    actor Cliente
+    participant ExpressApp as "Router"
+    participant Controller as "SignInController"
+    participant UseCase as "SignInUseCase"
+    participant EntitySessions as "Sessions"
+    participant EntityRepository as "MongoEntityRepository"
+
+
+    Cliente->>ExpressApp: POST /api/init
+    ExpressApp->>Controller: handleCreateEntity(request, response)
+    Controller->>UseCase: createEntity(entityDTO)
+    UseCase->>EntitySessions: lookUpSessionOnCache(idSession)
+    UseCase->>EntityRepository: findUserByTokenId(IdSession)
+    UseCase-->>Controller: SessionDTO
+    Controller-->>ExpressApp: Send 200 SessionDTO
+    ExpressApp-->>Cliente: HTTP Response (200)
+```

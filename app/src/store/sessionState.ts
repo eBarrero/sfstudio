@@ -8,7 +8,7 @@ interface SessionState {
     createSession: () => void;
     loginSFDC: () => void;
     loginSandBox: () => void;
-    loginOrganization: (orgName: string) => void;
+    loginOrganization: (connectionId: number) => void;
     initializeSession: () => void;
     disconnect: (orgName: string) => void;
 }
@@ -18,13 +18,11 @@ const sessionState = create<SessionState>((set, get) => {
         publicSession: { currentConnection: 0, connections: [] },
         createSession: () => {
             createSession().then((s) => {
-                s.connections.forEach(conn => {
+                s.connections.forEach((conn, index) => {
                     if (conn.isConnected) {
-                        addCommand({menuItem:'Login', menuOption:`close ${conn.name}`,command: `close_${conn.name}`,                      description: `close ${conn.name}`, context: CONTEXT_LEVEL.INIT,
-                            action: () => { get().disconnect(conn.name);}});
+                        addCommand({command: `close_${conn.alias}`,  description: `close ${conn.alias}:${conn.dbName}`, context: CONTEXT_LEVEL.INIT,  action: () => { get().disconnect(conn.dbName);}});
                     } else {
-                        addCommand({menuItem:'Login', menuOption:`${conn.name}`,command: `login_${conn.name}`,                      description: `${conn.name}`, context: CONTEXT_LEVEL.INIT,
-                            action: () => { get().loginOrganization(conn.name);}});
+                        addCommand({command: `login_${conn.alias}`,  description: `login ${conn.alias}:${conn.dbName}`, context: CONTEXT_LEVEL.INIT,  action: () => { get().loginOrganization(index);}});
                     }
                 });
                 set({publicSession: s});
@@ -36,8 +34,8 @@ const sessionState = create<SessionState>((set, get) => {
         loginSandBox: () => {
             loginSandBox();
         },
-        loginOrganization: (orgName: string) => {
-            loginOrganization(orgName);
+        loginOrganization: (connectionId: number) => {
+            loginOrganization(connectionId);
         },
         disconnect: (orgName: string) => {
             disconnect(orgName);

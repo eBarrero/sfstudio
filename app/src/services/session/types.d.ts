@@ -2,11 +2,12 @@
 
 
 type PublicConnectionDefinition = {
-    alias: string;
-    name: string;
-    sandbox: boolean;
-    isConnected: boolean;
-    isError: boolean;
+  alias: string;
+  dbName: string;
+  tech: string;
+  isConnected: boolean;
+  isOnError: boolean;
+  isClose: boolean;
   }
 
 

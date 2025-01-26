@@ -1,0 +1,43 @@
+.status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+  
+  .status-connected {
+    background-color: green;
+  }
+  
+  .status-error {
+    background-color: red;
+  }
+  
+  .status-closed {
+    background-color: gray;
+  }
+
+  .buttonLike {
+    display: inline-block;
+    padding: 5px 10px;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  
+  .buttonLike:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .buttonLike:active {
+    background-color: #e0e0e0;
+  }
+  
+  .buttonLike:focus {
+    outline: none;
+    border-color: #007bff; /* Puedes ajustar el color del borde en foco */
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); /* efecto de enfoque */
+  }

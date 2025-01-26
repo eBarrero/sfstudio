@@ -9,7 +9,7 @@ export function t(message:string | null) {
     const parts = message.split('|');
     if (parts.length === 1) { 
         const r = i18next.t(message);
-        if (r === message) console.log('#Error', message);
+        //if (r === message) console.log('#Error', message);
         return r;
     }
 

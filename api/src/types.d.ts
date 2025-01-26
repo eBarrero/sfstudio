@@ -8,9 +8,19 @@ declare global {
     interface Request {
       appSession?: Session; 
       appConnection?: SfConnection;
+      appSessionId?: number;
     }
   }
   
+
+  export interface Container {
+    signInCtrl: SignInController,
+    requestConnectionCtrl: RequestConnectionController,
+    requestedConnectionCtrl: RequestedConnectionController,
+    signOutCtrl: SignOutController
+    httpMetadataCtrl: HttpMetadataControllers
+  }
+
 type Base64 = string;
 }
 

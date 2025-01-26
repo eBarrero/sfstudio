@@ -1,5 +1,6 @@
+/*
 import express from "express";
-import { ENV, PORT } from './environment';
+import { ENV, PORT } from './config/environment';
 import cookieParser from "cookie-parser";
 import { errorHandler, notFoundHandler } from './middlewares';
 import loginRouter from './routes/loginRoutes';
@@ -23,4 +24,22 @@ process.on('uncaughtException', (error) => {
 app.listen(PORT, () => {
     console.log(`Server is running on Port: ${PORT}`);
 });
+*/
+
+import { PORT } from './config/environment';
+import { createApp } from "./app";
+
+const app =  createApp();
+
+
+
+app.listen(PORT, () => {
+    console.log(`Server is running on Port: ${PORT}`);
+});
+
+
+
+
+
+
 

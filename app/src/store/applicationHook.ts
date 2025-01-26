@@ -26,14 +26,15 @@ const useApplication = () => {
 
     useEffect(() => { 
         try {
-            if (session.publicSession.currentConnection===null) {
+            if (session.publicSession.currentConnection===null || session.publicSession.connections.length===0) {
                 application.setContextLevel(CONTEXT_LEVEL.INIT);
                 return;
             }
+            console.log('currentConnection:'); 
+            console.log(session.publicSession);            
             const index = session.publicSession.currentConnection;
-            console.log(`currentConnection: ${session.publicSession.currentConnection}`);
-            model.setOrg(session.publicSession.connections[index].name);
-            data.loadSchema(session.publicSession.connections[index].name);
+            model.setOrg(session.publicSession.connections[index].dbName);
+            data.loadSchema(session.publicSession.connections[index].dbName);
             view.setCurrentView(CONTEXT_LEVEL.ORG);
             application.setContextLevel(CONTEXT_LEVEL.ORG);
         } catch (e) {
