@@ -77,7 +77,7 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
             console.log((error as Error).message );
         }
     }   
-    public async addNewConnectionToUser(sessionId: number, configDriverDTO: ConnectionDriverDTO ): Promise<void> {
+    public async addNewConnectionToUser(sessionId: number, configDriverDTO: ConnectionDriverDTO ):  Promise<UserDTO> {
         console.log(`addNewConnectionToUser ${sessionId}`);
         const user = await this.userModel.findOne({ sessionId: sessionId });    
         if (!user) {
@@ -86,7 +86,7 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
         
         user.connections.push(configDriverDTO.toDatabse() as IConnection);
         await user.save();
-        return; 
+        return this.createUserDTO(user);; 
     }
 
 

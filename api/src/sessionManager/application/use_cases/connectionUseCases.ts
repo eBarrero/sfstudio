@@ -77,9 +77,8 @@ export class RequestedConnectionUseCase implements RequestedConnectionInputPort 
             user.setPendingToUpdate(true);
         } else {
             if (!user.checkConnectionExists(configDriverDTO.dbName!)) {
-                this.userRepository.addNewConnectionToUser(user.getSessionId(), configDriverDTO);
-            } else {
-                user.setPendingToUpdate(true);
+                const userDTO = await this.userRepository.addNewConnectionToUser(user.getSessionId(), configDriverDTO);
+                user.loadConnections(userDTO);
             }
         }
 

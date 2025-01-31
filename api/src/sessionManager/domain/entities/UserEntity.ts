@@ -45,6 +45,7 @@ export class UserEntity {
     public setcurrentConnection(dbName: string): number {
         console.log('setcurrentConnection:['+ dbName + ']');
         this.currentConnection =  this.configuredConnections.findIndex(connection => connection.getDbName() === dbName);
+        console.log('setcurrentConnection:['+ this.currentConnection + ']');
         return this.currentConnection;
     }
 

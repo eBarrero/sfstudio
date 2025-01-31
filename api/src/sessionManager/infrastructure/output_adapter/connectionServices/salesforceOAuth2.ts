@@ -89,7 +89,8 @@ export default class salesforceOAuth2 extends ConnectionDriver {
             userId: userInfo.user_id,
             userName: userInfo.username,
             email: userInfo.email,
-            callbackUrl: CALLBACK_URL
+            callbackUrl: CALLBACK_URL,
+            alias: name
         });
     }
 
