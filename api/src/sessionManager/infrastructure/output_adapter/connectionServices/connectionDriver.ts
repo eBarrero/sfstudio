@@ -9,4 +9,5 @@ export abstract class ConnectionDriver {
     abstract getDescribeGlobal(): Promise<string>; 
     abstract describeSObject(sobject: string): Promise<string>;
     abstract doSOQL(decodedQuery: string): Promise<string>
+    abstract dispose(): void;
 }

@@ -146,7 +146,9 @@ El UUID no aparece en el DTO público ni debe escribirse en logs. Una cookie aus
 
 MongoDB dispone de una colección mínima `WorkspaceSession` con referencia al usuario y un índice TTL sobre `expiresAt`. Al volver a autenticarse se crea esta sesión para los usuarios anteriores sin borrar sus organizaciones conocidas; las cookies numéricas/Base64 antiguas quedan invalidadas.
 
-`User.sessionId` se conserva temporalmente como clave heredada para mantener compatible el índice único ya desplegado. No se consulta para autenticar, no se envía al navegador y no coincide con el UUID de `WorkspaceSession`. Retirarlo exige una migración operativa explícita del índice de MongoDB; la aplicación no borra índices o campos automáticamente.
+`User.sessionId` se conserva temporalmente como clave heredada para mantener compatible el índice único ya desplegado. No se consulta para autenticar, no se envía al navegador y no coincide con el UUID de `WorkspaceSession`. Retirarlo exige una migración operativa explícita del índice de la colección `User`; la aplicación no borra ese índice ni el campo automáticamente.
+
+`WorkspaceSession.user` ya no es único: el mismo usuario puede abrir dos workspaces independientes. En el primer alta de sesión tras actualizar, el repositorio elimina solo el índice único heredado `user_1` de esa colección. La cuenta MongoDB necesita permiso para `dropIndex` durante esta migración; si no lo tiene, el operador debe retirar ese índice antes de usar sesiones concurrentes. Se conservan el índice único de `sessionId` y el TTL de `expiresAt`.
 
 ## Seguridad OAuth y trazabilidad
 
@@ -218,7 +220,7 @@ Verificaciones después del deploy:
 | `OAUTH_CONTEXT_INVALID` al conectar | La tecnología o el host guardado no corresponde al entorno Salesforce. |
 | `SALESFORCE_AUTH_FAILED` | Revisa callback, permisos y credenciales de la app OAuth en Salesforce sin registrar el código ni el token. |
 | En producción el navegador intenta conectar a tu PC | `URL_PATH` está fijado a `localhost`. |
-| «Connection not found» tras deploy/reinicio | `ConnectionPool` vive solo en memoria. |
+| `REAUTH_REQUIRED` tras deploy/reinicio | El registro de drivers vive solo en memoria; reautentica la org afectada. |
 | Metadatos de descripción de campos fallan con 404 | Falta la ruta `/api/getObjectmetadata/...`. |
 | Esquema obsoleto | `localStorage` no tiene TTL ni clave de versión. |
 | Logout parece funcionar pero la sesión sigue abierta | `UserEntity.signOut()` es un TODO. |
