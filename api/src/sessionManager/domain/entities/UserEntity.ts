@@ -37,6 +37,11 @@ export class UserEntity {
         this.connectionStatuses.set(orgKey, status);
     }
 
+    disconnectOrg(orgKey: OrgKey): void {
+        this.setConnectionStatus(orgKey, 'REAUTH_REQUIRED');
+        if (this.activeOrgKey === orgKey) this.activeOrgKey = null;
+    }
+
     reconcileActiveConnections(activeOrgKeys: ReadonlySet<OrgKey>): void {
         for (const connection of this.configuredConnections) {
             const key = connection.getOrgKey();

@@ -1,8 +1,8 @@
 import { MONGO_URL } from './config/environment';
 import { MongoDBService }                                                                                    from './infrastructure/DBs/mongoDBService';
 import { MongoDBUserRepository }                                                                             from "./sessionManager/infrastructure/output_adapter/mongoDB/mongoDBUserRepository";
-import { SignInController, RequestConnectionController, RequestedConnectionController, SignOutController }   from "./sessionManager/infrastructure/input_adapter/httpControllers";     
-import { SignInUseCase, RequestConnectionUseCase, RequestedConnectionUseCase, SignOutUseCase }               from "./sessionManager/application/use_cases/connectionUseCases";
+import { SignInController, RequestConnectionController, RequestedConnectionController, SignOutController, DisconnectOrgController }   from "./sessionManager/infrastructure/input_adapter/httpControllers";
+import { SignInUseCase, RequestConnectionUseCase, RequestedConnectionUseCase, SignOutUseCase, DisconnectOrgUseCase } from "./sessionManager/application/use_cases/connectionUseCases";
 import { HttpMetadataControllers }                                                                           from "./sessionManager/infrastructure/input_adapter/httpMetadataControllers";
 import { MetadataRequestUseCase }                                                                            from "./sessionManager/application/use_cases/metadataUseCases";
 import { OAuthStateStore }                                                                                   from "./sessionManager/domain/entities/oauthStateStore";
@@ -37,7 +37,8 @@ const container = {
         new RequestedConnectionUseCase(mongoDBUserRepository, sessions, connectionRegistry, createDriver),
         oauthStateStore,
     ),
-    signOutCtrl: new SignOutController(new SignOutUseCase(sessions, connectionRegistry)),
+    signOutCtrl: new SignOutController(new SignOutUseCase(mongoDBUserRepository, sessions, connectionRegistry)),
+    disconnectOrgCtrl: new DisconnectOrgController(new DisconnectOrgUseCase(sessions, connectionRegistry)),
     httpMetadataCtrl: new HttpMetadataControllers(new MetadataRequestUseCase(sessions, connectionRegistry)),
     readinessProbe: db,
 };

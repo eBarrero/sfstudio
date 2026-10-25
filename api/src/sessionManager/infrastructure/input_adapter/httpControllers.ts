@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort } from "../../domain/ports/inbound/httpInputPorts";
+import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort, DisconnectOrgInputPort } from "../../domain/ports/inbound/httpInputPorts";
 import { ConnectionDriverDTO, stringToTechnology } from "../../application/dtos/connectionDriverDTO";
 import { SessionError } from "../../domain/exceptions/sessionError";
 import {
@@ -297,19 +297,48 @@ export class RequestedConnectionController {
 
 
 export class SignOutController {
-    constructor( private logoutUseCase: SignOutInputPort) {}
+    constructor(
+        private readonly logoutUseCase: SignOutInputPort,
+        private readonly environment: RuntimeEnvironment = ENV,
+    ) {}
     async do(req: Request, res: Response) {
         try {
-            const id = readSessionCookie(req);
-            if (!id) {
-                sendUnauthorized(res, req.correlationId);
-                return;
-            }
-            await this.logoutUseCase.exe(id);
-            clearSessionCookie(res, ENV);
-            res.status(200).json('Session closed');
+            await this.logoutUseCase.exe(req.appSessionId!);
+            clearSessionCookie(res, this.environment);
+            res.status(204).end();
         } catch (error) {
             errorHandler(error as Error, req, res);
+        }
+    }
+}
+
+export class DisconnectOrgController {
+    constructor(private readonly disconnectUseCase: DisconnectOrgInputPort) {}
+
+    async do(req: Request, res: Response) {
+        let orgKey: OrgKey;
+        try {
+            orgKey = req.params.orgKey as OrgKey;
+            parseOrgKey(orgKey);
+        } catch {
+            res.status(400).json({ error: {
+                code: 'ORG_KEY_INVALID',
+                message: 'La identidad de la organización no es válida.',
+                correlationId: req.correlationId,
+            } });
+            return;
+        }
+        try {
+            const workspace = await this.disconnectUseCase.exe(req.appSessionId!, orgKey);
+            res.status(200).json(workspace.toJSON());
+        } catch (error) {
+            if (error instanceof SessionError) {
+                res.status(404).json({ error: {
+                    code: 'ORG_NOT_FOUND',
+                    message: 'La organización no pertenece al workspace.',
+                    correlationId: req.correlationId,
+                } });
+            } else errorHandler(error as Error, req, res);
         }
     }
 }

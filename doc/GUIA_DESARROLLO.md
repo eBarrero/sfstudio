@@ -220,10 +220,11 @@ Verificaciones después del deploy:
 | `OAUTH_CONTEXT_INVALID` al conectar | La tecnología o el host guardado no corresponde al entorno Salesforce. |
 | `SALESFORCE_AUTH_FAILED` | Revisa callback, permisos y credenciales de la app OAuth en Salesforce sin registrar el código ni el token. |
 | En producción el navegador intenta conectar a tu PC | `URL_PATH` está fijado a `localhost`. |
-| `REAUTH_REQUIRED` tras deploy/reinicio | El registro de drivers vive solo en memoria; reautentica la org afectada. |
+| `REAUTH_REQUIRED` tras deploy/reinicio o expiración del token | El registro de drivers vive solo en memoria; usa **Reautenticar** en la org afectada. La misma identidad Salesforce conserva su `OrgKey`. |
 | Metadatos de descripción de campos fallan con 404 | Falta la ruta `/api/getObjectmetadata/...`. |
 | Esquema obsoleto | `localStorage` no tiene TTL ni clave de versión. |
-| Logout parece funcionar pero la sesión sigue abierta | `UserEntity.signOut()` es un TODO. |
+| Quieres desconectar una org sin cerrar las otras | Usa **Desconectar** o el comando `Disconnect_org_<organizationId>_<userId>`; la org queda como `REAUTH_REQUIRED`. |
+| Quieres cerrar la sesión completa | Usa **Cerrar workspace** o `Close_workspace`; `DELETE /api/v1/workspace` revoca los tokens disponibles, elimina los drivers y la cookie. |
 | `FIELDS(ALL)` produce SOQL inválido | El generador concatena un segundo `SELECT`. |
 
 ## Convenciones recomendadas para continuar

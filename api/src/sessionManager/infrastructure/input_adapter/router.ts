@@ -30,8 +30,14 @@ export function createApiRouter(container: AppContainer): express.Router {
         container.requestedConnectionCtrl.salesforce.bind(container.requestedConnectionCtrl),
     );
 
-    router.get(
-        "/api/logout",
+    router.delete(
+        "/api/v1/workspace/orgs/:orgKey",
+        container.signInCtrl.setUser.bind(container.signInCtrl),
+        container.disconnectOrgCtrl.do.bind(container.disconnectOrgCtrl),
+    );
+
+    router.delete(
+        "/api/v1/workspace",
         container.signInCtrl.setUser.bind(container.signInCtrl),
         container.signOutCtrl.do.bind(container.signOutCtrl),
     );

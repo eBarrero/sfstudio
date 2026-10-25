@@ -8,5 +8,6 @@ export interface UserRepositoryPort {
     findUserByTokenId(tokenId: SessionId): Promise<UserDTO>;
     findUserByUserId(configDriverDTO: ConnectionDriverDTO): Promise<UserDTO | null>;    
     rotateSessionId(previousId: SessionId, sessionId: SessionId, expiresAt: Date): Promise<void>;
+    deleteWorkspaceSession(sessionId: SessionId): Promise<void>;
 }
 

@@ -169,7 +169,9 @@ La consola funciona como una «command palette» contextual. Los comandos se reg
 
 `GET /api/v1/workspace` devuelve JSON tipado, versión 1, con una lista de conexiones conocidas y `activeOrgKey`. `OrgKey` concatena `organizationId:userId`; alias y hostname nunca identifican una conexión. Cada conexión expone identidad, alias, URL de instancia, host de login, entorno y estado. La ruta `GET /api/v1/connections/:orgKey/authorize` reautentica una org conocida del workspace. El callback comprueba la identidad devuelta por Salesforce antes de asociar el driver al workspace. `ConnectionRegistry` guarda `Map<WorkspaceId, Map<OrgKey, driver>>` en memoria. La API reconcilia sus claves con las orgs conocidas para mostrar `CONNECTED` o `REAUTH_REQUIRED`; nunca serializa el driver ni sus tokens.
 
-La expiración de cada workspace se comprueba al acceder al registro y mediante una limpieza periódica de un minuto. Al expirar, cerrar o sustituir una conexión se llama a `dispose()` para soltar la referencia a jsforce. La rotación de sesión tras OAuth mueve todas las conexiones del workspace al nuevo ID. Una org conocida sin driver devuelve `401 REAUTH_REQUIRED` en los endpoints de lectura.
+La expiración de cada workspace se comprueba al acceder al registro y mediante una limpieza periódica de un minuto. Al expirar o sustituir una conexión se llama a `dispose()` para soltar la referencia a jsforce. Al desconectar se intenta revocar el access token con Salesforce y se elimina el driver aunque la revocación remota falle. La rotación de sesión tras OAuth mueve todas las conexiones del workspace al nuevo ID. Una org conocida sin driver, o con token Salesforce expirado, devuelve `401 REAUTH_REQUIRED` en los endpoints de lectura; el cliente actualiza el workspace para mostrar la acción de reautenticación.
+
+`DELETE /api/v1/workspace/orgs/:orgKey` es idempotente para una org conocida: devuelve el contrato público del workspace con esa org en `REAUTH_REQUIRED`, sin afectar las otras. Una identidad desconocida devuelve `404 ORG_NOT_FOUND`, y una clave mal formada `400 ORG_KEY_INVALID`. `DELETE /api/v1/workspace` elimina los drivers y el documento de sesión `WorkspaceSession`, revoca los tokens disponibles y expira la cookie; responde `204`. Se conservan únicamente las identidades no secretas de las orgs conocidas en `User` para una futura reconexión explícita.
 
 La colección `WorkspaceSession` admite varias sesiones del mismo usuario. Al crear la primera sesión tras actualizar, el repositorio elimina únicamente el índice único heredado `user_1` si sigue presente; mantiene intactos `sessionId_1` y el TTL. La aplicación no almacena conexiones activas en MongoDB.
 
@@ -186,7 +188,8 @@ Los documentos `User.connections` antiguos se normalizan al leerlos: se conserva
 | `GET /api/v1/workspace` | Obtener contrato público JSON versionado del workspace. |
 | `GET /api/v1/connections/:orgKey/authorize` | Reautenticar una organización conocida del workspace. |
 | `GET /api/callback` | Procesar el callback de Salesforce. |
-| `GET /api/logout` | Cerrar sesión; hoy es incompleto. |
+| `DELETE /api/v1/workspace/orgs/:orgKey` | Desconectar una org conocida; devuelve el workspace actualizado. |
+| `DELETE /api/v1/workspace` | Cerrar todo el workspace, borrar la sesión y expirar la cookie. |
 | `GET /api/describeGlobal/:orgKey` | Obtener objetos de la organización. |
 | `GET /api/describe/:orgKey/:sobject` | Obtener campos y relaciones. |
 | `GET /api/soql/:orgKey/:soql` | Ejecutar SOQL codificado en Base64 URL-safe; pendiente de sustitución por POST en Sprint 05. |

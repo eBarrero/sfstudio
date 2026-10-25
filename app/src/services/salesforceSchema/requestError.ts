@@ -7,6 +7,9 @@ class RequestError extends Error {
       this.statusText = response.statusText;  
       this.name = "RequestError";
       Object.setPrototypeOf(this, RequestError.prototype);
+      if (response.status === 401 && typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('sfstudio:reauth-required'));
+      }
     }
   }
 

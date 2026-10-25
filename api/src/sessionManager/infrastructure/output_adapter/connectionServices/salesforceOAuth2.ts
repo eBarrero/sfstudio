@@ -7,6 +7,9 @@ import { SessionError } from '../../../domain/exceptions/sessionError';
 import { SalesforceOAuthError } from '../../../domain/exceptions/salesforceOAuthError';
 import { validateSalesforceLoginHost } from '../../../domain/entities/salesforceLoginHost';
 import { SalesforceOAuthClient, LiveSalesforceOAuthClient } from './salesforceOAuthClient';
+import { logger } from '../../../../infrastructure/frameworks/structuredLogger';
+import { ReauthRequiredError } from '../../../domain/exceptions/reauthRequiredError';
+import { isExpiredSalesforceSession } from './salesforceSessionError';
 
 export default class salesforceOAuth2 extends ConnectionDriver {
     private conn?: Connection;     
@@ -21,6 +24,19 @@ export default class salesforceOAuth2 extends ConnectionDriver {
     public dispose(): void {
         this.conn = undefined;
         this.isConnected = false;
+    }
+
+    public async revoke(): Promise<void> {
+        const connection = this.conn;
+        if (!connection) return;
+        try {
+            // jsforce logout() revokes the access token for OAuth connections.
+            await connection.logout();
+        } catch {
+            logger.warn('salesforce.revoke_failed');
+        } finally {
+            this.dispose();
+        }
     }
 
 
@@ -72,6 +88,7 @@ export default class salesforceOAuth2 extends ConnectionDriver {
             const describeGlobalResult = await this.conn!.describeGlobal();
             return JSON.stringify(describeGlobalResult);
         } catch (error) {
+            if (isExpiredSalesforceSession(error)) throw new ReauthRequiredError();
             const sessionError = new SessionError("describeGlobal(): " + (error as Error).message);
             throw sessionError;
         }
@@ -85,6 +102,7 @@ export default class salesforceOAuth2 extends ConnectionDriver {
             return JSON.stringify(describeSObjectResult);
 
         } catch (error) {
+            if (isExpiredSalesforceSession(error)) throw new ReauthRequiredError();
             const sessionError = new SessionError("describe(): " + (error as Error).message);
             throw sessionError;
         }
@@ -105,6 +123,7 @@ export default class salesforceOAuth2 extends ConnectionDriver {
             return JSON.stringify(rows);
 
         } catch (error) {
+            if (isExpiredSalesforceSession(error)) throw new ReauthRequiredError();
             throw new SessionError("SOQL Error: " + (error as Error).message);
         }
 
