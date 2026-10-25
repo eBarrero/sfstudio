@@ -1,25 +1,38 @@
 import { Request, Response } from "express";
 import { HttpMetadataInputPort } from "./../../domain/ports/inbound/httpMetadataPorts";
+import { errorHandler } from "../../../infrastructure/frameworks/errorHandler";
 
 
 export class HttpMetadataControllers {
     constructor(private metadataRequestUseClase: HttpMetadataInputPort) {}
 
     async getDescribeGlobal(req: Request, res: Response) {
-        console.log(`getDescribeGlobal ${req.appSessionId!} ${req.params.dbName}`);
-        const metadata = await this.metadataRequestUseClase.getDescribeGlobal(req.appSessionId!, req.params.dbName);
-        res.send(metadata);
+        try {
+            console.log(`getDescribeGlobal ${req.appSessionId!} ${req.params.dbName}`);
+            const metadata = await this.metadataRequestUseClase.getDescribeGlobal(req.appSessionId!, req.params.dbName);
+            res.send(metadata);
+        } catch (error) {
+            errorHandler(error as Error, req, res);
+        }
     }
 
     async getObjectDescription(req: Request, res: Response) {
-        console.log(`getDescription ${req.appSessionId!} ${req.params.dbName} ${req.params.sobject}`);
-        const metadata = await this.metadataRequestUseClase.describeSObject(req.appSessionId!, req.params.dbName, req.params.sobject);
-        res.send(metadata);
+        try {
+            console.log(`getDescription ${req.appSessionId!} ${req.params.dbName} ${req.params.sobject}`);
+            const metadata = await this.metadataRequestUseClase.describeSObject(req.appSessionId!, req.params.dbName, req.params.sobject);
+            res.send(metadata);
+        } catch (error) {
+            errorHandler(error as Error, req, res);
+        }
     }
 
     public async getSOQL(req: Request, res: Response) {
-        const rows = await this.metadataRequestUseClase.doSOQL(req.appSessionId!, req.params.dbName,fromBase64UrlSafe(req.params.soql as string));
-        res.send(rows);
+        try {
+            const rows = await this.metadataRequestUseClase.doSOQL(req.appSessionId!, req.params.dbName,fromBase64UrlSafe(req.params.soql as string));
+            res.send(rows);
+        } catch (error) {
+        errorHandler(error as Error, req, res);
+        }
     }
 }
 

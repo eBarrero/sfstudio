@@ -1,5 +1,5 @@
 import { CLIENT_ID, CLIENTE_SECRET, CALLBACK_URL, API_SF_VERSION } from "../../../../config/environment";
-import { AccessToken, AuthorizationCode, ModuleOptions } from "simple-oauth2";
+import { AuthorizationCode, ModuleOptions } from "simple-oauth2"; //AccessToken,
 import jsforce,  { Connection, QueryResult    } from "jsforce"; //DescribeGlobalResult, DescribeSObjectResult
 import { FileProperties, ListMetadataQuery, Metadata, MetadataType } from "jsforce/api/metadata";
 // DescribeMetadataResult
@@ -8,9 +8,9 @@ import { ConnectionDriverDTO, Technology } from '../../../application/dtos/conne
 import { SessionError } from '../../../domain/exceptions/sessionError';
 
 export default class salesforceOAuth2 extends ConnectionDriver {
-    private sandbox: boolean = false;
-    private client?: AuthorizationCode;
-    private accessToken?: AccessToken;
+    //private sandbox: boolean = false;
+    //private client?: AuthorizationCode;
+    //private accessToken?: AccessToken;
     private conn?: Connection;     
     private instanceUrl: string | null = '';
     
@@ -54,7 +54,7 @@ export default class salesforceOAuth2 extends ConnectionDriver {
 
         url+= urlExtra; 
         console.log(`requestAuthorization URL: ${url}`);
-        this.client = undefined
+        //this.client = undefined
         return url;  
     }
 

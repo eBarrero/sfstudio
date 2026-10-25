@@ -4,6 +4,7 @@
     "useDefineForClassFields": true,
     "lib": ["ES2023", "ES2023.Array", "DOM", "DOM.Iterable"],
     "module": "ESNext",
+    "esModuleInterop": true,
     "skipLibCheck": true,
 
     /* Bundler mode */
@@ -20,6 +21,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],  // Incluye todos los archivos .d.ts en el directorio types],
+  "include": ["src","../api/src/types.d.ts"  ],  // Incluye todos los archivos .d.ts en el directorio types],
+  "exclude": ["node_modules"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -1,6 +1,6 @@
 //type technology = "MongoDB" | "MySQL" | "PostgreSQL" | "SF_Prod" | "SF_Test" | "SalesforceAuth0";
 
-import e from "express";
+
 
 export enum Technology {
     MongoDB = "MongoDB",

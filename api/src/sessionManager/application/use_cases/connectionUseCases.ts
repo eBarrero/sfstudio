@@ -38,7 +38,7 @@ export class SignInUseCase implements SignInInputPort {
 }
 
 export class RequestConnectionUseCase implements RequestConnectionInputPort {
-    constructor(private userRepository: UserRepositoryPort) {}
+    //constructor(private userRepository: UserRepositoryPort) {}
 
     toNewConnection(configDriverDTO: ConnectionDriverDTO): string {
         const driver = ConnectionDriverFactory.createDriver(configDriverDTO);
@@ -91,7 +91,7 @@ export class RequestedConnectionUseCase implements RequestedConnectionInputPort 
 }
 
 export class SignOutUseCase implements SignOutInputPort {
-    constructor(private userRepository: UserRepositoryPort) {}
+    //constructor(private userRepository: UserRepositoryPort) {}
 
     async exe(id: number): Promise<SessionDTO> {
         const user = sessions.lookUpUserOnCache(id);

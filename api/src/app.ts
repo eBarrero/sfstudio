@@ -6,7 +6,7 @@ import { notFoundHandler } from "./infrastructure/frameworks/errorHandler";
 import { ENV } from './config/environment';
 
 
-const logger = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const logger = (req: express.Request, _res: express.Response, next: express.NextFunction) => {
     console.log(`${req.method} ${req.url} ${req.ip}`);
     next();
 }
@@ -17,7 +17,7 @@ export function createApp() {
 
 
     const app = express();
-    if ((ENV!=="DEV")) { 
+    if ((ENV==="PROD")) { 
         app.use(express.static('../app/dist'));
     } else {
         app.use(logger);

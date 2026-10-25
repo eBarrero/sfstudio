@@ -9,7 +9,7 @@ import { SessionError, ErrorMessages } from '../../../domain/exceptions/sessionE
 export class MongoDBUserRepository  implements UserRepositoryPort {
     private userModel: Model<IUser>;    
     
-    constructor( private mongoDB: mongoDBService) {
+    constructor(mongoDB: mongoDBService) {
         this.userModel = getUserSchema(mongoDB.getConnection());  
     }
 

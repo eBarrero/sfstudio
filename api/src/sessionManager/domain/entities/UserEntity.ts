@@ -13,7 +13,6 @@ interface OpenedConnections {
 
 export class UserEntity { 
     private sessionId: number = 0;
-    private userId: string = ''; // db id of the user
     private configuredConnections: configuredConnections[] = [];
     private openConnections: Map<string,OpenedConnections> = new Map<string,OpenedConnections>(); 
     private isPendingToUpdate: boolean = false;

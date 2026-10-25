@@ -14,9 +14,9 @@ const mongoDBUserRepository  = new MongoDBUserRepository(db);
 
 const container = {
     signInCtrl: new SignInController(new SignInUseCase(mongoDBUserRepository)),
-    requestConnectionCtrl: new RequestConnectionController(new RequestConnectionUseCase(mongoDBUserRepository)),
+    requestConnectionCtrl: new RequestConnectionController(new RequestConnectionUseCase()),
     requestedConnectionCtrl: new RequestedConnectionController(new RequestedConnectionUseCase(mongoDBUserRepository)),
-    signOutCtrl: new SignOutController(new SignOutUseCase(mongoDBUserRepository)),
+    signOutCtrl: new SignOutController(new SignOutUseCase()),
     httpMetadataCtrl: new HttpMetadataControllers( new MetadataRequestUseCase())
 };
 

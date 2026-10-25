@@ -1,6 +1,6 @@
 import css from './style.module.css'
 import {t} from '../../../utils/utils';
-import parse from 'html-react-parser';
+//import parse from 'html-react-parser';
 import DBConnectionManager from '../../organisms/dbConnectionManager/dbConnectionManager'; 
 import SOQLPath from '../../organisms/SOQLPath/soqlPath';
 import SchemaPanel from '../../organisms/schemaPanel/schemaPanel';
@@ -56,9 +56,12 @@ const AppIntro = () => {
                     {t('#APP.Welcome')}
                 </p>
                 <aside className={css.AppBody__disclaimer}>
-                    {parse(t('#APP.Disclaimer'))}
+                    
+                    {(t('#APP.Disclaimer'))}
                 </aside>
             </section>    
         </article>
     );
 };
+
+//<!--{parse(t('#APP.Disclaimer'))}-->

@@ -1,5 +1,5 @@
 
-export const URL_PATH = '/api/';
+export const URL_PATH = 'http://localhost:3000/api/';
 
 export async function  request(uri: string ): Promise<string> {    
     const URL = `${URL_PATH}${uri}`;
