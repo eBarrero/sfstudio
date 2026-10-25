@@ -11,6 +11,7 @@ import connectionPool from '../../infrastructure/output_adapter/connectionServic
 import { SessionId } from '../../domain/entities/workspaceSession';
 import { UserEntity } from '../../domain/entities/UserEntity';
 import { createOrgKey, OrgKey } from '../../domain/entities/orgKey';
+import { validateSalesforceLoginHost } from '../../domain/entities/salesforceLoginHost';
 
 
 export class SignInUseCase implements SignInInputPort {
@@ -46,8 +47,12 @@ export class RequestConnectionUseCase implements RequestConnectionInputPort {
         return driver.requestAuthorization(state);
     }
 
-    getConfiguredTechnology(sessionId: SessionId, orgKey: OrgKey): string {
-        return sessions.getUser(sessionId).getConnection(orgKey).getTech();
+    getConfiguredOAuthContext(sessionId: SessionId, orgKey: OrgKey) {
+        const config = sessions.getUser(sessionId).getConnection(orgKey).getConnectionDriverConfig();
+        return {
+            technology: config.tech!,
+            loginHost: validateSalesforceLoginHost(config.tech!, config.loginHost),
+        };
     }
 
     toConfiguredConnection(sessionId: SessionId, orgKey: OrgKey, state: string): string {

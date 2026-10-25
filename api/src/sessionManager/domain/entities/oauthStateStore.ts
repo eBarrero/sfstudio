@@ -1,11 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { OrgKey } from './orgKey';
+import { SalesforceLoginHost, validateSalesforceLoginHost } from './salesforceLoginHost';
 
 export const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
 export type OAuthDestination =
-    | { type: "new"; technology: string }
-    | { type: "configured"; orgKey: OrgKey; technology: string };
+    | { type: "new"; technology: string; loginHost: SalesforceLoginHost }
+    | { type: "configured"; orgKey: OrgKey; technology: string; loginHost: SalesforceLoginHost };
 
 export type OAuthStateErrorReason = "EXPIRED" | "INVALID" | "WORKSPACE_MISMATCH";
 
@@ -52,6 +53,7 @@ export class OAuthStateStore {
         correlationId: string,
     ): string {
         this.removeExpired();
+        validateSalesforceLoginHost(destination.technology, destination.loginHost);
         let state: string;
 
         do {
@@ -60,7 +62,7 @@ export class OAuthStateStore {
 
         this.states.set(state, {
             workspaceBinding,
-            destination,
+            destination: Object.freeze({ ...destination }),
             correlationId,
             expiresAt: this.now() + this.ttlMs,
         });

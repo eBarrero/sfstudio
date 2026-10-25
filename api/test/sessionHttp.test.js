@@ -60,10 +60,10 @@ describe("workspace session HTTP contract", () => {
         const orgKey = '00D000000000001:005000000000001';
         const requested = [];
         const useCase = {
-            getConfiguredTechnology: (_sessionId, key) => {
+            getConfiguredOAuthContext: (_sessionId, key) => {
                 if (key !== orgKey) throw new SessionError('Connection not found in workspace');
                 requested.push(key);
-                return 'SF_Test';
+                return { technology: 'SF_Test', loginHost: 'https://test.salesforce.com' };
             },
             toConfiguredConnection: (_sessionId, key) => {
                 requested.push(key);
@@ -206,7 +206,7 @@ describe("workspace session HTTP contract", () => {
         const oauthStateStore = new OAuthStateStore();
         const state = oauthStateStore.issue(
             previousId,
-            { type: "new", technology: "SF_Prod" },
+            { type: "new", technology: "SF_Prod", loginHost: "https://login.salesforce.com" },
             randomUUID(),
         );
         const controller = new RequestedConnectionController(useCase, oauthStateStore, "PROD");

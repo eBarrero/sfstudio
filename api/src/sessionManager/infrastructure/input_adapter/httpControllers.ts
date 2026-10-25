@@ -8,6 +8,7 @@ import {
 } from "../../domain/entities/oauthStateStore";
 import { createSessionId } from "../../domain/entities/workspaceSession";
 import { parseOrgKey, OrgKey } from '../../domain/entities/orgKey';
+import { salesforceLoginHost, validateSalesforceLoginHost } from '../../domain/entities/salesforceLoginHost';
 import { errorHandler } from "../../../infrastructure/frameworks/errorHandler";
 import { ENV, REDIRECT_URI, RuntimeEnvironment } from "../../../config/environment";
 import { logger, StructuredLogger } from "../../../infrastructure/frameworks/structuredLogger";
@@ -126,6 +127,7 @@ export class RequestConnectionController {
                 throw new Error('Tech is required');
             }
             const tech = req.params.tech;
+            const loginHost = salesforceLoginHost(tech);
             const sessionId = readSessionCookie(req);
 
             if (sessionId) {
@@ -142,14 +144,14 @@ export class RequestConnectionController {
 
             const state = this.oauthStateStore.issue(
                 workspaceBinding,
-                { type: "new", technology: tech },
+                { type: "new", technology: tech, loginHost },
                 req.correlationId!,
             );
             let url: string;
 
             try {
                 url = this.requestConnectionUseCase.toNewConnection(
-                    new ConnectionDriverDTO({tech: stringToTechnology(tech)}),
+                    new ConnectionDriverDTO({ tech: stringToTechnology(tech), loginHost }),
                     state,
                 );
             } catch (error) {
@@ -184,10 +186,10 @@ export class RequestConnectionController {
         }
         try {
             const sessionId = req.appSessionId!;
-            const technology = this.requestConnectionUseCase.getConfiguredTechnology(sessionId, orgKey);
+            const { technology, loginHost } = this.requestConnectionUseCase.getConfiguredOAuthContext(sessionId, orgKey);
             const state = this.oauthStateStore.issue(
                 sessionId,
-                { type: "configured", orgKey, technology },
+                { type: "configured", orgKey, technology, loginHost },
                 req.correlationId!,
             );
             let url: string;
@@ -252,6 +254,10 @@ export class RequestedConnectionController {
 
         try {
             const consumedState = this.oauthStateStore.consume(state, workspaceBinding);
+            const loginHost = validateSalesforceLoginHost(
+                consumedState.destination.technology,
+                consumedState.destination.loginHost,
+            );
             const technology = stringToTechnology(consumedState.destination.technology);
             this.requestLogger.info("oauth.callback_validated", {
                 correlationId: consumedState.correlationId,
@@ -260,7 +266,7 @@ export class RequestedConnectionController {
                 technology,
             });
 
-            const configDriverDTO = new ConnectionDriverDTO({ code, tech: technology });
+            const configDriverDTO = new ConnectionDriverDTO({ code, tech: technology, loginHost });
             const expectedOrgKey = consumedState.destination.type === 'configured'
                 ? consumedState.destination.orgKey : undefined;
             const sessionId = await this.requestedUseCase.exe(workspaceSessionId, configDriverDTO, expectedOrgKey);

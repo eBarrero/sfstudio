@@ -2,6 +2,7 @@ import { SessionDTO } from '../../dtos/sessionDTO';
 import { ConnectionDriverDTO } from '../../../application/dtos/connectionDriverDTO';
 import { SessionId } from '../../entities/workspaceSession';
 import { OrgKey } from '../../entities/orgKey';
+import { SalesforceLoginHost } from '../../entities/salesforceLoginHost';
 
 export interface SignInInputPort {
     getSessionStatus(sessionId: SessionId): Promise<SessionDTO>;
@@ -10,7 +11,10 @@ export interface SignInInputPort {
 
 export interface RequestConnectionInputPort {
     toNewConnection(connectionDriverDTO: ConnectionDriverDTO, state: string): string;
-    getConfiguredTechnology(sessionId: SessionId, orgKey: OrgKey): string;
+    getConfiguredOAuthContext(sessionId: SessionId, orgKey: OrgKey): {
+        technology: string;
+        loginHost: SalesforceLoginHost;
+    };
     toConfiguredConnection(sessionId: SessionId, orgKey: OrgKey, state: string): string;
 }
 

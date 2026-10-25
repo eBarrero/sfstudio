@@ -5,7 +5,7 @@ const {
     OAuthStateStore,
 } = require("../build/sessionManager/domain/entities/oauthStateStore");
 
-const destination = { type: "new", technology: "SF_Prod" };
+const destination = { type: "new", technology: "SF_Prod", loginHost: "https://login.salesforce.com" };
 
 describe("OAuthStateStore", () => {
     it("generates opaque, unique state values", () => {
@@ -28,6 +28,17 @@ describe("OAuthStateStore", () => {
             destination,
             correlationId: "flow-correlation",
         });
+    });
+
+    it("rejects an inconsistent host and freezes the validated destination", () => {
+        const store = new OAuthStateStore();
+        assert.throws(() => store.issue("workspace", {
+            type: "new", technology: "SF_Prod", loginHost: "https://test.salesforce.com",
+        }, "correlation"));
+        const mutable = { ...destination };
+        const state = store.issue("workspace", mutable, "correlation");
+        mutable.loginHost = "https://test.salesforce.com";
+        assert.equal(store.consume(state, "workspace").destination.loginHost, "https://login.salesforce.com");
     });
 
     it("expires state values", () => {
