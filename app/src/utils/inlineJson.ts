@@ -109,7 +109,6 @@ export function xsalesforceJsontoInlineJson(salesforceJson: any): InlineJson {
     let rows: string='';           // it is used to store the rows of the records in inline json format  
     let indexHeader: number = 0;   // 
     console.log(salesforceJson);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     records.forEach((record: any) => {
         for (const [key, value] of Object.entries(record)) {
             // skip attributes
@@ -158,11 +157,9 @@ export function xsalesforceJsontoInlineJson(salesforceJson: any): InlineJson {
                 indexHeader++;
                 indexRow++;
                 // process the subrecords
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const subrecords = (value as any).records;
                 let firstrecord = true;
                 //the first interation we build the header of the subrecords
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 subrecords.forEach((subrecord: any) => {
                     if (!firstrecord) {
                         currentRow[indexRow] = `${delimeterType.newRecord}`   

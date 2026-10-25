@@ -40,8 +40,8 @@ useEffect(() => {
       {dialogStack && dialogStack.map((dialog) => { 
         console.log('dialog', dialog)
         if (dialog===Dialog.WhereDialog) return <FieldDialog key={dialog}/>
-        if (dialog===Dialog.Help) return <Help/>
-        if (dialog===Dialog.MSGBOX) return <MsgBox title={msgbox!.title} message={msgbox!.message} btnClose={popDialog} />
+        if (dialog===Dialog.Help) return <Help key={dialog}/>
+        if (dialog===Dialog.MSGBOX) return <MsgBox key={dialog} title={msgbox!.title} message={msgbox!.message} btnClose={popDialog} />
       })}
     </>
   )

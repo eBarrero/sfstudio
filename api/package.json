@@ -4,11 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "tsc": "tsc",
+    "build": "tsc",
+    "tsc": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --report-unused-disable-directives --max-warnings 0",
     "dev": "ts-node src/index.ts",
-    "start": "tsc & node build/index.js",
-    "start_local": "tsc & node --env-file .env build/index.js",
-    "test": "tsc & node --env-file .env_TESTING build/index.js"
+    "start": "node build/index.js",
+    "start_local": "npm run build && node --env-file=.env build/index.js"
   },
   "keywords": [],
   "author": "",

@@ -7,7 +7,7 @@
 - MongoDB accesible localmente o por URI.
 - Una Connected App de Salesforce.
 
-Conviene fijar Node en el repositorio mediante `.node-version` y `engines.node`; actualmente no están definidos.
+La versión está fijada mediante `.node-version` y `engines.node`.
 
 ## Instalación
 
@@ -69,47 +69,42 @@ Hay una excepción importante: `app/src/services/session/controller.ts` contiene
 ## Compilación verificada
 
 ```powershell
-npm --workspace api run tsc
-npm --workspace app run build
+npm run build
 ```
 
-Ambos comandos pasan en la revisión actual.
-
-El script raíz se llama `postbuild`, no `build`:
+Comandos canónicos desde la raíz:
 
 ```powershell
-npm run postbuild
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm run audit
 ```
 
-Se recomienda convertirlo en un script `build` normal y evitar que el propio build ejecute otro `npm install`.
+`npm run audit` valida las dependencias de producción con severidad alta o crítica. Para revisar también el toolchain de desarrollo se puede ejecutar `npm run audit:all`.
 
 ## Calidad
 
 ### Lint
 
-El comando actual falla:
+El lint de ambos workspaces se ejecuta con:
 
 ```powershell
-npm --workspace app run lint
+npm run lint
 ```
 
-Motivo: con `eslint.config.js` ya no se admite `--ext`. El script debería quedar aproximadamente así:
-
-```json
-"lint": "eslint . --report-unused-disable-directives --max-warnings 0"
-```
-
-Antes de cambiarlo hay que unificar las versiones duplicadas de ESLint y TypeScript entre raíz, API y app.
+Las configuraciones flat ignoran artefactos generados como `dist` y `coverage`.
 
 ### Pruebas
 
-El comando es:
+El comando canónico es:
 
 ```powershell
-npm --workspace app run e2e
+npm test
 ```
 
-Actualmente no llega a ejecutar tests porque `jest.e2e.setup.js` hace `require('node-fetch')` y la dependencia no existe. Node 24 ya incluye `fetch`; lo preferible es eliminar ese polyfill si Jest/jsdom lo permiten, o instalar y configurar explícitamente la versión adecuada.
+Jest usa un `fetch` controlado en el entorno jsdom y no necesita `node-fetch`.
 
 Los tests existentes son:
 
@@ -133,12 +128,12 @@ No usar `npm audit fix --force` de forma rutinaria. La corrección restante prop
 Configuración conceptual:
 
 - Root Directory: raíz del repositorio.
-- Build Command: `npm ci && npm --workspace api run tsc && npm --workspace app run build`.
+- Build Command: `npm ci && npm run build`.
 - Start Command: `node api/build/index.js` ejecutado desde la raíz, o ajustar la ruta de estáticos si se ejecuta desde `api`.
 - Variables: las de la sección anterior, con `ENV=PROD` y `REDIRECT_URI=https://<dominio>`.
 - Node: fijar `24.22.1`.
 
-El script actual `api:start` es `tsc & node build/index.js`. En Linux, `&` puede ejecutar la compilación en segundo plano y arrancar Node antes de terminar. En producción, el start solo debería ejecutar el JavaScript ya compilado.
+El script `api:start` ejecuta únicamente `node build/index.js`; la compilación pertenece al Build Command.
 
 Verificaciones después del deploy:
 

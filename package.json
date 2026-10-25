@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "engines": { 
+  "engines": {
     "node": ">=24.22.1 <25"
   },
   "workspaces": [
@@ -13,8 +13,12 @@
   ],
   "scripts": {
     "start": "npm --workspace api run start",
-    "postbuild": "npm install && npm --workspace api run tsc && npm --workspace app run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npm --workspace api run build && npm --workspace app run build",
+    "typecheck": "npm --workspace api run typecheck && npm --workspace app run typecheck",
+    "lint": "npm --workspace api run lint && npm --workspace app run lint",
+    "test": "npm --workspace app run test",
+    "audit": "npm audit --omit=dev --audit-level=high",
+    "audit:all": "npm audit"
   },
   "keywords": [],
   "author": "",

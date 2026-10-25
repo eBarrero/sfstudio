@@ -77,7 +77,6 @@ const useApplication = () => {
 
     useEffect(() => {
         setLastError(data.dataLastErrorMessage==='' ? '': t(data.dataLastErrorMessage));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data.dataLastErrorMessage]);
 
 

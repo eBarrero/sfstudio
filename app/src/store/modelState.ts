@@ -325,9 +325,9 @@ function sqlState( queryState: QueryState  ): SQLState {
     let sqlSelect = 'SELECT ';
     let sqlFrom = 'FROM ';
     let sqlWhere = '';
-    let sqlOrderBy = '';
+    const sqlOrderBy = '';
     let sqlGroupBy = '';
-    let sqlHaving = '';
+    const sqlHaving = '';
     let sqlLimit = '';
 
 

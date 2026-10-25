@@ -1,4 +1,4 @@
-import mongoose, {connect, Schema} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 export interface IOrganization extends mongoose.Document {
     organizationId: string;

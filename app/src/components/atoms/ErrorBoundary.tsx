@@ -15,7 +15,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   // Este método se llama cuando ocurre un error en alguno de los componentes hijos.
-  static getDerivedStateFromError(_error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(): ErrorBoundaryState {
     // Actualizamos el estado para renderizar la UI alternativa en la próxima renderización.
     return { hasError: true };
   }

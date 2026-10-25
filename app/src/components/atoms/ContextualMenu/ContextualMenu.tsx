@@ -76,6 +76,8 @@ const ContextualMenu: React.FC<ContextualMenuProps> = ({ menus, action }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
+  // handleOptionClick is intentionally excluded to avoid recreating the global listener.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [menuIndex, optionIndex, currentMenu, currentOption, menus]);
 
   /**

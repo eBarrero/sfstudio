@@ -120,6 +120,8 @@ const RelationshipDiagram: React.FC = () => {
     addMainNode('Account');
     addChildNode('Account', 'ContactId', 'Contact');
     addChildNode('Contact', 'OpportunityId', 'Opportunity');
+  // Demo data is added only once when the diagram mounts.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
