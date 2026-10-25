@@ -1,17 +1,17 @@
 import { ConnectionDriver } from "./connectionDriver";
+import { SessionId } from "../../../domain/entities/workspaceSession";
 
 interface UserConections {
     conns: Map<string, ConnectionDriver>;
 }
 
 class ConnectionPool {
-    private pool: Map<number, UserConections>;
+    private pool: Map<SessionId, UserConections>;
     constructor() {
         this.pool = new Map();
     }
 
-    private getUserPool(sessionId: number): UserConections {
-        console.log(`getUserPool ${sessionId}`);
+    private getUserPool(sessionId: SessionId): UserConections {
         if (!this.pool.has(sessionId)) {
             throw new Error('Session not found');
         }
@@ -22,8 +22,7 @@ class ConnectionPool {
         return userPool;
     }
 
-    public addConnection(sessionId: number, dbName: string,  connection: ConnectionDriver): void {
-        console.log(`addConnection ${sessionId}`);
+    public addConnection(sessionId: SessionId, dbName: string, connection: ConnectionDriver): void {
         if (!this.pool.has(sessionId)) {
             this.pool.set(sessionId, { conns: new Map() });
         }
@@ -32,13 +31,25 @@ class ConnectionPool {
         return; 
     }
 
-    public getConnection(sessionId: number, dbName: string): ConnectionDriver {
-        console.log(`getConnection ${sessionId} ${dbName}`);
+    public getConnection(sessionId: SessionId, dbName: string): ConnectionDriver {
         const userPool = this.getUserPool(sessionId);
         if (!userPool.conns.has(dbName)) {
             throw new Error('Connection not found');
         }
         return userPool.conns.get(dbName) as ConnectionDriver;
+    }
+
+    public rotateSession(previousId: SessionId, sessionId: SessionId): void {
+        const connections = this.pool.get(previousId);
+        this.pool.delete(previousId);
+
+        if (connections) {
+            this.pool.set(sessionId, connections);
+        }
+    }
+
+    public deleteSession(sessionId: SessionId): void {
+        this.pool.delete(sessionId);
     }
 
 }

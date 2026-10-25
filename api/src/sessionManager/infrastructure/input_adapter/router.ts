@@ -16,7 +16,7 @@ export function createApiRouter(container: AppContainer): express.Router {
 
     router.get(
         "/api/connections/:connectionId",
-        container.signInCtrl.setUser,
+        container.signInCtrl.setUser.bind(container.signInCtrl),
         container.requestConnectionCtrl.getUrlConnection.bind(container.requestConnectionCtrl),
     );
 
@@ -27,25 +27,25 @@ export function createApiRouter(container: AppContainer): express.Router {
 
     router.get(
         "/api/logout/:dbName",
-        container.signInCtrl.setUser,
-        container.signOutCtrl.do,
+        container.signInCtrl.setUser.bind(container.signInCtrl),
+        container.signOutCtrl.do.bind(container.signOutCtrl),
     );
 
     router.get(
         "/api/describeGlobal/:dbName",
-        container.signInCtrl.setUser,
+        container.signInCtrl.setUser.bind(container.signInCtrl),
         container.httpMetadataCtrl.getDescribeGlobal.bind(container.httpMetadataCtrl),
     );
 
     router.get(
         "/api/describe/:dbName/:sobject",
-        container.signInCtrl.setUser,
+        container.signInCtrl.setUser.bind(container.signInCtrl),
         container.httpMetadataCtrl.getObjectDescription.bind(container.httpMetadataCtrl),
     );
 
     router.get(
         "/api/soql/:dbName/:soql",
-        container.signInCtrl.setUser,
+        container.signInCtrl.setUser.bind(container.signInCtrl),
         container.httpMetadataCtrl.getSOQL.bind(container.httpMetadataCtrl),
     );
 

@@ -3,6 +3,7 @@ import { SessionError } from './../exceptions/sessionError';
 import { configuredConnections } from '../entities/configuredConnections';
 import { SessionDTO, PublicSesionDefinition } from '../dtos/sessionDTO';
 import { UserDTO } from '../../application/dtos/userDTO';
+import { SessionId, WorkspaceSession } from './workspaceSession';
 
 // inteeface to connection are opens
 interface OpenedConnections {
@@ -12,26 +13,34 @@ interface OpenedConnections {
 }
 
 export class UserEntity { 
-    private sessionId: number = 0;
+    private readonly workspaceSession: WorkspaceSession;
     private configuredConnections: configuredConnections[] = [];
     private openConnections: Map<string,OpenedConnections> = new Map<string,OpenedConnections>(); 
     private isPendingToUpdate: boolean = false;
     // indicates the indesx the last bd connected
     private currentConnection: number = -1;
 
-    constructor(sessionId: number | null) {
-        if (!sessionId) {
-            this.sessionId = this.sessionId = Math.floor(Math.random() * 1000000);
-        } else {
-            this.sessionId = sessionId;
-        }
-    }    
+    constructor(sessionId: SessionId | null, expiresAt?: Date) {
+        this.workspaceSession = new WorkspaceSession({
+            id: sessionId ?? undefined,
+            expiresAt,
+        });
+    }
 
-    public getSessionId(): number {
-        if (this.sessionId === 0) {
-            throw new SessionError(`Token not value`);
-        }
-        return this.sessionId;
+    public getSessionId(): SessionId {
+        return this.workspaceSession.getId();
+    }
+
+    public getExpiresAt(): Date {
+        return this.workspaceSession.getExpiresAt();
+    }
+
+    public isExpired(): boolean {
+        return this.workspaceSession.isExpired();
+    }
+
+    public rotateSession() {
+        return this.workspaceSession.rotate();
     }
 
     public setPendingToUpdate(pending: boolean) {
@@ -42,9 +51,7 @@ export class UserEntity {
     }
 
     public setcurrentConnection(dbName: string): number {
-        console.log('setcurrentConnection:['+ dbName + ']');
         this.currentConnection =  this.configuredConnections.findIndex(connection => connection.getDbName() === dbName);
-        console.log('setcurrentConnection:['+ this.currentConnection + ']');
         return this.currentConnection;
     }
 
@@ -53,7 +60,6 @@ export class UserEntity {
     }
 
     public checkConnectionExists(dbName: string): boolean {
-        console.log('checkConnectionExists:['+ dbName + ']');
         return this.configuredConnections.some(connection => connection.getDbName() === dbName);
     }
 
@@ -66,7 +72,6 @@ export class UserEntity {
 
 
     public getConnectionByName(dbName:string) : configuredConnections {
-        console.log('getConnection:['+ dbName + ']');
         if (dbName === undefined) {
             return this.configuredConnections.at(-1)!;
         }
@@ -79,7 +84,6 @@ export class UserEntity {
     }
 
     public getConnection(connectionId: number) : configuredConnections {
-        console.log('getConnection:['+ connectionId + ']');
         const connection = this.configuredConnections[connectionId];
         if (!connection) {
             throw new SessionError(`Connection with name "${connection}" not found`);
@@ -109,7 +113,6 @@ export class UserEntity {
     public getSessionStatus(): SessionDTO {
         const result: PublicSesionDefinition = {
             connections: [],
-            sessionId: this.sessionId,
             currentConnection: this.getCurrentConnection()
         };
 
@@ -122,7 +125,6 @@ export class UserEntity {
                 result.connections.push( {alias: connection.getAlias() , dbName: connection.getDbName(),  tech: connection.getTech(), isConnected: connectionStatus.isOpen, isOnError: connectionStatus.isOnError, isClose: connectionStatus.isClose });
             });
         }
-        console.log(result);
         return new SessionDTO(result);
     }
 

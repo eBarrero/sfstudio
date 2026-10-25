@@ -127,6 +127,22 @@ La API expone dos endpoints sin autenticación y sin información sensible:
 
 Cuando MongoDB no está disponible, `/ready` devuelve `503 {"status":"not_ready"}`. La respuesta no incluye URI, credenciales ni el detalle interno del error.
 
+## Sesión de workspace
+
+La API usa la cookie `sfstudio_workspace` como identificador opaco del workspace:
+
+- UUID v4 generado mediante `crypto.randomUUID`;
+- duración de ocho horas, tanto en cookie como en `expiresAt` de MongoDB;
+- `HttpOnly`, `SameSite=Lax` y `Path=/` en todos los entornos;
+- `Secure` adicional cuando `ENV=PROD`;
+- rotación después de completar una autenticación OAuth.
+
+El UUID no aparece en el DTO público ni debe escribirse en logs. Una cookie ausente inicia el flujo de un workspace nuevo; una cookie malformada, desconocida o expirada devuelve `401 SESSION_INVALID` y se elimina del navegador.
+
+MongoDB dispone de una colección mínima `WorkspaceSession` con referencia al usuario y un índice TTL sobre `expiresAt`. Al volver a autenticarse se crea esta sesión para los usuarios anteriores sin borrar sus organizaciones conocidas; las cookies numéricas/Base64 antiguas quedan invalidadas.
+
+`User.sessionId` se conserva temporalmente como clave heredada para mantener compatible el índice único ya desplegado. No se consulta para autenticar, no se envía al navegador y no coincide con el UUID de `WorkspaceSession`. Retirarlo exige una migración operativa explícita del índice de MongoDB; la aplicación no borra índices o campos automáticamente.
+
 ### Auditoría npm
 
 ```powershell

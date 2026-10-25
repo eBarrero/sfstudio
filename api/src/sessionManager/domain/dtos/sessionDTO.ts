@@ -12,7 +12,6 @@ export interface PublicConnectionDefinition  {
 export interface PublicSesionDefinition  {
     connections: PublicConnectionDefinition[];
     currentConnection: number | null;
-    sessionId: number;
 }
 
 

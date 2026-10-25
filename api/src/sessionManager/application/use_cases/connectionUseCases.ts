@@ -8,12 +8,14 @@ import { SessionError } from '../../domain/exceptions/sessionError';
 import { ConnectionDriverDTO } from '../dtos/connectionDriverDTO';
 import ConnectionDriverFactory  from '../../infrastructure/output_adapter/connectionServices/connectionDriverFactory';
 import connectionPool from '../../infrastructure/output_adapter/connectionServices/connectionPool';
+import { SessionId } from '../../domain/entities/workspaceSession';
+import { UserEntity } from '../../domain/entities/UserEntity';
 
 
 export class SignInUseCase implements SignInInputPort {
     constructor(private userRepository: UserRepositoryPort) {}
 
-    async getSessionStatus(sessionId: number): Promise<SessionDTO> {
+    async getSessionStatus(sessionId: SessionId): Promise<SessionDTO> {
         const user = sessions.lookUpUserOnCache(sessionId);
         if (user) {
             if (!user.getPendingToUpdate()) {
@@ -27,7 +29,7 @@ export class SignInUseCase implements SignInInputPort {
         }
         
         const userDTO = await this.userRepository.findUserByTokenId(sessionId);
-        const newUer = sessions.rebuildUser(sessionId);
+        const newUer = sessions.rebuildUser(sessionId, userDTO.expiresAt);
         
         newUer.loadConnections(userDTO);
         return newUer.getSessionStatus();
@@ -38,15 +40,12 @@ export class SignInUseCase implements SignInInputPort {
 }
 
 export class RequestConnectionUseCase implements RequestConnectionInputPort {
-    //constructor(private userRepository: UserRepositoryPort) {}
-
     toNewConnection(configDriverDTO: ConnectionDriverDTO): string {
         const driver = ConnectionDriverFactory.createDriver(configDriverDTO);
         return driver.requestAuthorization();
     }
 
-    toConfiguredConnection(sessionId: number, connectionId: number): string {
-        console.log(`toConfiguredConnection ${sessionId} ${connectionId}`);
+    toConfiguredConnection(sessionId: SessionId, connectionId: number): string {
         const connection = sessions.getUser(sessionId).getConnection(connectionId);
         if (connection) {
             const driver = ConnectionDriverFactory.createDriver(connection.getConnectionDriverConfig());
@@ -58,48 +57,58 @@ export class RequestConnectionUseCase implements RequestConnectionInputPort {
 
 export class RequestedConnectionUseCase implements RequestedConnectionInputPort {
     constructor(private userRepository: UserRepositoryPort) {}
-    async exe(sessionId: number | undefined, initialConfigDriverDTO: ConnectionDriverDTO): Promise<number> {
-        console.log(`RequestedConnectionUseCase ${sessionId}`);
-
+    async exe(sessionId: SessionId | undefined, initialConfigDriverDTO: ConnectionDriverDTO): Promise<SessionId> {
         const driver = ConnectionDriverFactory.createDriver(initialConfigDriverDTO);
         const configDriverDTO = await driver.login();
         
-        let user = (sessionId) ? sessions.getUser(sessionId) : sessions.addNewUser();
+        let user: UserEntity;
         if (!sessionId) {
             const userDTO = await this.userRepository.findUserByUserId(configDriverDTO);
             if (userDTO) {
-                user = sessions.rebuildUser(userDTO.sessionId);
+                user = sessions.rebuildUser(userDTO.sessionId, userDTO.expiresAt);
                 user.loadConnections(userDTO);
             } else {
                 user = sessions.addNewUser();
-                this.userRepository.crateUserAndFirstConnection(user.getSessionId(), configDriverDTO)
+                await this.userRepository.createUserAndFirstConnection(
+                    user.getSessionId(),
+                    user.getExpiresAt(),
+                    configDriverDTO,
+                );
             }
             user.setPendingToUpdate(true);
         } else {
+            user = sessions.getUser(sessionId);
             if (!user.checkConnectionExists(configDriverDTO.dbName!)) {
                 const userDTO = await this.userRepository.addNewConnectionToUser(user.getSessionId(), configDriverDTO);
                 user.loadConnections(userDTO);
             }
         }
 
+        const rotation = sessions.rotateUserSession(user);
+        await this.userRepository.rotateSessionId(
+            rotation.previousId,
+            rotation.sessionId,
+            rotation.expiresAt,
+        );
+        connectionPool.rotateSession(rotation.previousId, rotation.sessionId);
+
         user.setcurrentConnection(configDriverDTO.dbName!);
-        connectionPool.addConnection(user.getSessionId(), configDriverDTO.dbName!,  driver);
+        connectionPool.addConnection(rotation.sessionId, configDriverDTO.dbName!, driver);
         user.setConnectionAsOpen(configDriverDTO.dbName!);
-        console.log(user);
-        return user.getSessionId();
+        return rotation.sessionId;
     }
 }
 
 export class SignOutUseCase implements SignOutInputPort {
-    //constructor(private userRepository: UserRepositoryPort) {}
-
-    async exe(id: number): Promise<SessionDTO> {
+    async exe(id: SessionId): Promise<SessionDTO> {
         const user = sessions.lookUpUserOnCache(id);
         if (user) {
             user.signOut();
+            sessions.deleteSession(id);
+            connectionPool.deleteSession(id);
             return user.getSessionStatus();
         }
-        throw new SessionError(`Session not found with id ${id}`);
+        throw new SessionError("Session expired or invalid");
     }
 }
 
