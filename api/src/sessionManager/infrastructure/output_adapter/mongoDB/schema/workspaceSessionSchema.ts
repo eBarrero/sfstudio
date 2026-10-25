@@ -17,7 +17,6 @@ const WorkspaceSessionSchema = new Schema<IWorkspaceSession>({
         type: Schema.Types.ObjectId,
         ref: "User",
         required: true,
-        unique: true,
     },
     expiresAt: {
         type: Date,

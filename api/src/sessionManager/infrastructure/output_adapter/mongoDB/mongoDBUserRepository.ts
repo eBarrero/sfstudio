@@ -13,10 +13,12 @@ import {
 } from '../../../domain/entities/workspaceSession';
 import { createOrgKey } from '../../../domain/entities/orgKey';
 import { migrateConnections } from './connectionMigration';
+import { removeObsoleteWorkspaceOwnerIndex } from './workspaceIndexMigration';
 
 export class MongoDBUserRepository  implements UserRepositoryPort {
     private userModel: Model<IUser>;
     private workspaceSessionModel: Model<IWorkspaceSession>;
+    private workspaceIndexMigration?: Promise<void>;
     
     constructor(mongoDB: MongoDBService) {
         const connection = mongoDB.getConnection();
@@ -93,6 +95,7 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
     }
 
     public async createUserAndFirstConnection(sessionId: SessionId, expiresAt: Date, configDriverDTO: ConnectionDriverDTO): Promise<void> {
+        await this.ensureWorkspaceIndex();
         const user = new this.userModel({
             sessionId: createSessionId(),
             name: 'userName',
@@ -148,10 +151,24 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
     }
 
     private async createWorkspaceSession(user: Types.ObjectId): Promise<IWorkspaceSession> {
+        await this.ensureWorkspaceIndex();
         return new this.workspaceSessionModel({
             sessionId: createSessionId(),
             user,
             expiresAt: new Date(Date.now() + WORKSPACE_SESSION_TTL_MS),
         }).save();
+    }
+
+    /** Remove only the obsolete unique owner index; one user may have many workspaces. */
+    private async ensureWorkspaceIndex(): Promise<void> {
+        if (!this.workspaceIndexMigration) {
+            this.workspaceIndexMigration = (async () => {
+                await removeObsoleteWorkspaceOwnerIndex(this.workspaceSessionModel);
+            })().catch(error => {
+                this.workspaceIndexMigration = undefined;
+                throw error;
+            });
+        }
+        await this.workspaceIndexMigration;
     }
 }

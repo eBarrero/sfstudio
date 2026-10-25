@@ -18,6 +18,11 @@ export default class salesforceOAuth2 extends ConnectionDriver {
         super(configDriverDTO);
     }
 
+    public dispose(): void {
+        this.conn = undefined;
+        this.isConnected = false;
+    }
+
 
     public requestAuthorization(state: string): string {
         try {
