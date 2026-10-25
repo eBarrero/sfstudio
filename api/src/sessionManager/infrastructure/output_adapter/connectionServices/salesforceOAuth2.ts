@@ -1,4 +1,4 @@
-import { CLIENT_ID, CLIENTE_SECRET, CALLBACK_URL, API_SF_VERSION } from "../../../../config/environment";
+import { CLIENT_ID, CLIENT_SECRET, CALLBACK_URL, API_SF_VERSION } from "../../../../config/environment";
 import { AuthorizationCode, ModuleOptions } from "simple-oauth2"; //AccessToken,
 import jsforce,  { Connection, QueryResult    } from "jsforce"; //DescribeGlobalResult, DescribeSObjectResult
 import { FileProperties, ListMetadataQuery, Metadata, MetadataType } from "jsforce/api/metadata";
@@ -35,7 +35,7 @@ export default class salesforceOAuth2 extends ConnectionDriver {
         const authConfig: ModuleOptions = {
             client: {
                 id: CLIENT_ID,
-                secret: CLIENTE_SECRET
+                secret: CLIENT_SECRET
             },
             auth: {
                 tokenHost:   this.instanceUrl,
@@ -63,7 +63,7 @@ export default class salesforceOAuth2 extends ConnectionDriver {
         const oauth2 = new jsforce.OAuth2({
             loginUrl: "https://test.salesforce.com",
             clientId: CLIENT_ID,
-            clientSecret: CLIENTE_SECRET,
+            clientSecret: CLIENT_SECRET,
             redirectUri: CALLBACK_URL,
 
           });
@@ -174,15 +174,11 @@ export default class salesforceOAuth2 extends ConnectionDriver {
                     .map((field) => { return {name: field.fullName, description: field.description}; })
                     .filter((field) => field.description !== undefined);*/
                 
-            return metadata;   
-            
+            return metadata;
+
         } catch (error) {
             const sessionError = new SessionError(`getObjectmetadata(${type}:${sobject}): ${(error as Error).message}`);
             throw sessionError;
         }
-    }  
-
-
-
-
-}   
+    }
+}

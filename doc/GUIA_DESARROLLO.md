@@ -36,9 +36,10 @@ ENCRYPTION_KEY=<32-bytes-si-se-usa-cryptoWrapper>
 
 Notas:
 
-- El código llama `CLIENTE_SECRET` a la constante, pero lee `CLIENT_SECRET`.
-- La variable de MongoDB se llama `MONGO`, no `MONGO_URL`.
-- En `DEV` y `TESTING` el callback se fuerza a `http://Localhost:3000/api/callback`.
+- `CLIENT_ID`, `CLIENT_SECRET`, `REDIRECT_URI` y `MONGO` son obligatorias en `DEV` y `PROD`; la API falla antes de escuchar el puerto si falta alguna.
+- `REDIRECT_URI` es la URL pública base de la API, sin `/api/callback`; el callback se deriva añadiendo esa ruta.
+- `TESTING` permite valores aislados por defecto y no necesita credenciales reales.
+- La variable externa de MongoDB se llama `MONGO`; el módulo tipado la expone internamente como `mongoUrl`.
 - `ENCRYPTION_KEY` pertenece a un wrapper que actualmente no se usa.
 - Ajusta `API_SF_VERSION` a una versión soportada y probada; el valor por defecto del código es `58.0`.
 
@@ -108,10 +109,23 @@ Jest usa un `fetch` controlado en el entorno jsdom y no necesita `node-fetch`.
 
 Los tests existentes son:
 
+- pruebas unitarias del parsing de configuración para `DEV`, `TESTING` y `PROD`;
+- pruebas de integración de liveness/readiness con Mongo disponible y no disponible;
 - un smoke test que siempre pasa;
 - una prueba de `App` que solo comprueba una sesión vacía.
 
-No existen pruebas de API, OAuth, repositorio, caché, generador SOQL ni transformación de resultados.
+Todavía no existen pruebas de OAuth, repositorio, caché, generador SOQL ni transformación de resultados.
+
+## Salud de la API
+
+La API expone dos endpoints sin autenticación y sin información sensible:
+
+| Ruta | Significado | Respuesta correcta |
+| --- | --- | --- |
+| `GET /health` | El proceso HTTP está vivo; no consulta MongoDB ni Salesforce. | `200 {"status":"ok"}` |
+| `GET /ready` | La conexión Mongoose con MongoDB está disponible. | `200 {"status":"ready"}` |
+
+Cuando MongoDB no está disponible, `/ready` devuelve `503 {"status":"not_ready"}`. La respuesta no incluye URI, credenciales ni el detalle interno del error.
 
 ### Auditoría npm
 
@@ -132,18 +146,20 @@ Configuración conceptual:
 - Start Command: `node api/build/index.js` ejecutado desde la raíz, o ajustar la ruta de estáticos si se ejecuta desde `api`.
 - Variables: las de la sección anterior, con `ENV=PROD` y `REDIRECT_URI=https://<dominio>`.
 - Node: fijar `24.22.1`.
+- Health Check Path: `/health`.
 
 El script `api:start` ejecuta únicamente `node build/index.js`; la compilación pertenece al Build Command.
 
 Verificaciones después del deploy:
 
 1. El log muestra Node 24.
-2. MongoDB conecta.
-3. `GET /api/init` devuelve 200.
-4. OAuth usa el callback HTTPS exacto.
-5. La SPA llama al dominio actual, no a `localhost`.
-6. La conexión sobrevive a navegación y consulta.
-7. Un reinicio fuerza una reautenticación comprensible, no un error genérico.
+2. `GET /health` devuelve 200.
+3. `GET /ready` devuelve 200 cuando MongoDB conecta y 503 cuando no está disponible.
+4. `GET /api/init` devuelve 200.
+5. OAuth usa el callback HTTPS exacto.
+6. La SPA llama al dominio actual, no a `localhost`.
+7. La conexión sobrevive a navegación y consulta.
+8. Un reinicio fuerza una reautenticación comprensible, no un error genérico.
 
 ## Diagnóstico rápido
 

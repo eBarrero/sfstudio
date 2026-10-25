@@ -51,8 +51,9 @@ flowchart TB
 
 ### Arranque y composición
 
-- `api/src/index.ts` crea la aplicación y escucha en `PORT`.
-- `api/src/app.ts` instala JSON, cookies, estáticos en producción, router y 404.
+- `api/src/config/environment.ts` valida y tipa la configuración antes de abrir el puerto.
+- `api/src/index.ts` compone la aplicación, el router y la sonda de readiness, y escucha en `PORT`.
+- `api/src/app.ts` instala JSON, cookies, health/readiness, estáticos en producción, router y 404.
 - `api/src/container.ts` construye manualmente repositorios, casos de uso y controladores.
 
 El contenedor es sencillo y suficiente para el tamaño actual. No hace falta introducir un framework de inyección.
@@ -150,6 +151,8 @@ La consola funciona como una «command palette» contextual. Los comandos se reg
 
 | Método y ruta | Uso |
 | --- | --- |
+| `GET /health` | Liveness del proceso, independiente de MongoDB y Salesforce. |
+| `GET /ready` | Readiness basada en el estado de la conexión MongoDB. |
 | `GET /api/init` | Recuperar la sesión pública o indicar sesión nueva. |
 | `GET /api/auth/:tech` | Iniciar OAuth para producción o sandbox. |
 | `GET /api/connections/:connectionId` | Reautenticar una organización conocida. |

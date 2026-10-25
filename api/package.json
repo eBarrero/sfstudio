@@ -7,7 +7,8 @@
     "build": "tsc",
     "tsc": "npm run build",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint src test --report-unused-disable-directives --max-warnings 0",
+    "test": "npm run build && node --test",
     "dev": "ts-node src/index.ts",
     "start": "node build/index.js",
     "start_local": "npm run build && node --env-file=.env build/index.js"

@@ -1,5 +1,5 @@
 import { Model } from 'mongoose';
-import { mongoDBService }  from '../../../../infrastructure/DBs/mongoDBService';
+import { MongoDBService }  from '../../../../infrastructure/DBs/mongoDBService';
 import { UserRepositoryPort } from '../../../domain/ports/outbound/userRepositoryPort';
 import { getUserSchema, IUser, IConnection }  from './schema/userSchema';
 import { ConnectionDriverDTO, ConnectionDriverParams, stringToTechnology } from '../../../application/dtos/connectionDriverDTO';
@@ -9,7 +9,7 @@ import { SessionError, ErrorMessages } from '../../../domain/exceptions/sessionE
 export class MongoDBUserRepository  implements UserRepositoryPort {
     private userModel: Model<IUser>;    
     
-    constructor(mongoDB: mongoDBService) {
+    constructor(mongoDB: MongoDBService) {
         this.userModel = getUserSchema(mongoDB.getConnection());  
     }
 

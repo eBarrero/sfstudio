@@ -1,5 +1,5 @@
 import { MONGO_URL } from './config/environment';
-import { mongoDBService }                                                                                    from './infrastructure/DBs/mongoDBService';
+import { MongoDBService }                                                                                    from './infrastructure/DBs/mongoDBService';
 import { MongoDBUserRepository }                                                                             from "./sessionManager/infrastructure/output_adapter/mongoDB/mongoDBUserRepository";
 import { SignInController, RequestConnectionController, RequestedConnectionController, SignOutController }   from "./sessionManager/infrastructure/input_adapter/httpControllers";     
 import { SignInUseCase, RequestConnectionUseCase, RequestedConnectionUseCase, SignOutUseCase }               from "./sessionManager/application/use_cases/connectionUseCases";
@@ -9,7 +9,7 @@ import { MetadataRequestUseCase }                                               
 
 
 
-const db =  new mongoDBService(MONGO_URL);
+const db = new MongoDBService(MONGO_URL);
 const mongoDBUserRepository  = new MongoDBUserRepository(db);
 
 const container = {
@@ -17,8 +17,10 @@ const container = {
     requestConnectionCtrl: new RequestConnectionController(new RequestConnectionUseCase()),
     requestedConnectionCtrl: new RequestedConnectionController(new RequestedConnectionUseCase(mongoDBUserRepository)),
     signOutCtrl: new SignOutController(new SignOutUseCase()),
-    httpMetadataCtrl: new HttpMetadataControllers( new MetadataRequestUseCase())
+    httpMetadataCtrl: new HttpMetadataControllers(new MetadataRequestUseCase()),
+    readinessProbe: db,
 };
 
+export type AppContainer = typeof container;
 
 export default container;

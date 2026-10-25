@@ -16,7 +16,7 @@
     "build": "npm --workspace api run build && npm --workspace app run build",
     "typecheck": "npm --workspace api run typecheck && npm --workspace app run typecheck",
     "lint": "npm --workspace api run lint && npm --workspace app run lint",
-    "test": "npm --workspace app run test",
+    "test": "npm --workspace api run test && npm --workspace app run test",
     "audit": "npm audit --omit=dev --audit-level=high",
     "audit:all": "npm audit"
   },

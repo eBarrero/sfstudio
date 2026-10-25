@@ -1,45 +1,14 @@
-/*
-import express from "express";
-import { ENV, PORT } from './config/environment';
-import cookieParser from "cookie-parser";
-import { errorHandler, notFoundHandler } from './middlewares';
-import loginRouter from './routes/loginRoutes';
-import sfRouter from './routes/sfRoutes';
-import controller from "./db/controller";
-
-
-const app = express();
-if ((ENV!=="DEV")) app.use(express.static('../app/dist'));
-app.use(cookieParser());
-app.use(loginRouter);
-app.use(sfRouter);
-app.use(notFoundHandler);
-app.use(errorHandler);
-// manage crash application
-process.on('uncaughtException', (error) => {
-    console.error('uncaughtException:', error);
-    controller.close();
-    process.exit(1);
-});
-app.listen(PORT, () => {
-    console.log(`Server is running on Port: ${PORT}`);
-});
-*/
-
-import { PORT } from './config/environment';
 import { createApp } from "./app";
+import { config } from "./config/environment";
+import container from "./container";
+import { createApiRouter } from "./sessionManager/infrastructure/input_adapter/router";
 
-const app =  createApp();
-
-
-
-app.listen(PORT, () => {
-    console.log(`Server is running on Port: ${PORT}`);
+const app = createApp({
+    apiRouter: createApiRouter(container),
+    readinessProbe: container.readinessProbe,
+    environment: config.environment,
 });
 
-
-
-
-
-
-
+app.listen(config.port, () => {
+    console.log(`Server is running on port ${config.port} (${config.environment})`);
+});
