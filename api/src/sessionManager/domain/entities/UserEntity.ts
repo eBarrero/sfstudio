@@ -37,6 +37,16 @@ export class UserEntity {
         this.connectionStatuses.set(orgKey, status);
     }
 
+    reconcileActiveConnections(activeOrgKeys: ReadonlySet<OrgKey>): void {
+        for (const connection of this.configuredConnections) {
+            const key = connection.getOrgKey();
+            if (activeOrgKeys.has(key)) this.connectionStatuses.set(key, 'CONNECTED');
+            else if (this.connectionStatuses.get(key) === 'CONNECTED') {
+                this.connectionStatuses.set(key, 'REAUTH_REQUIRED');
+            }
+        }
+    }
+
     getConnection(orgKey: OrgKey): configuredConnections {
         const connection = this.configuredConnections.find(item => item.getOrgKey() === orgKey);
         if (!connection) throw new SessionError('Connection not found in workspace');
@@ -62,7 +72,8 @@ export class UserEntity {
     getSessionStatus(): SessionDTO {
         return new SessionDTO({
             version: 1,
-            activeOrgKey: this.activeOrgKey,
+            activeOrgKey: this.activeOrgKey && this.connectionStatuses.get(this.activeOrgKey) === 'CONNECTED'
+                ? this.activeOrgKey : null,
             connections: this.configuredConnections.map(connection => {
                 const config = connection.getConnectionDriverConfig();
                 const orgKey = createOrgKey(config.dbId, config.userId);

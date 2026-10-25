@@ -9,11 +9,14 @@ import { SessionId } from "./workspaceSession";
 export class Sessions {
     private sessions: Map<SessionId, UserEntity> = new Map();
 
+    constructor(private readonly onRemoved: (sessionId: SessionId) => void = () => {}) {}
+
     public lookUpUserOnCache(sessionId: SessionId): UserEntity | null {
         const user = this.sessions.get(sessionId);
 
         if (user?.isExpired()) {
             this.sessions.delete(sessionId);
+            this.onRemoved(sessionId);
             return null;
         }
 
@@ -54,8 +57,10 @@ export class Sessions {
 
     public deleteSession(id: SessionId): void {
         this.sessions.delete(id);
+        this.onRemoved(id);
     }
-} 
 
-
-export const sessions = new Sessions();
+    public sweepExpired(): void {
+        for (const id of this.sessions.keys()) this.lookUpUserOnCache(id);
+    }
+}
