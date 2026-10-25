@@ -101,6 +101,8 @@ La cookie `sfstudio_workspace` contiene únicamente el UUID opaco. Es `HttpOnly`
 
 Los intentos OAuth se guardan temporalmente en `OAuthStateStore`. Cada `state` contiene 256 bits aleatorios y queda asociado en el servidor al workspace (o a un UUID temporal durante el primer login), al destino, a un `correlationId` y a una expiración de diez minutos. El callback lee `state` desde la query, comprueba su asociación y lo consume antes de intercambiar el `code` con Salesforce. Por tanto, un valor ausente, expirado, repetido o perteneciente a otro workspace no llega al driver externo.
 
+El destino validado incluye `loginHost`: `login.salesforce.com` para producción o `test.salesforce.com` para sandbox. El mismo host se usa en la autorización y el intercambio; `instanceUrl` solo describe la instancia recibida después del login. Connected Apps y External Client Apps comparten el flujo Web Server Flow con `CLIENT_ID`, `CLIENT_SECRET` y callback configurados en la API. El adapter OAuth traduce fallos del proveedor a `SALESFORCE_AUTH_FAILED` sin copiar sus mensajes a respuestas o logs.
+
 El store OAuth vive en memoria y no contiene tokens. Un reinicio o el uso de varias instancias invalida los intentos pendientes; el usuario debe iniciar de nuevo el login. Esta limitación es aceptada para la primera fase y deberá resolverse con un almacén temporal compartido antes de escalar horizontalmente.
 
 La API emite logs JSON mediante un logger estructurado. Cada petición obtiene un `correlationId`, que también se devuelve en `X-Correlation-Id` y en los errores. El logger redacta cookies, códigos OAuth, `state`, tokens, secretos, URLs de autorización e identificadores personales sensibles.

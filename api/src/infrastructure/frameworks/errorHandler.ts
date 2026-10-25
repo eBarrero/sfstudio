@@ -1,11 +1,26 @@
 import { Request, Response } from 'express';
 import { SessionError } from '../../sessionManager/domain/exceptions/sessionError';
+import { OAuthContextError } from '../../sessionManager/domain/entities/salesforceLoginHost';
+import { SalesforceOAuthError } from '../../sessionManager/domain/exceptions/salesforceOAuthError';
 import { logger } from './structuredLogger';
 
 
 
 export function errorHandler(error: Error, req: Request, res: Response) {
-    if (error instanceof SessionError) {
+    if (error instanceof OAuthContextError) {
+        res.status(400).json({ error: {
+            code: 'OAUTH_CONTEXT_INVALID',
+            message: 'La configuración OAuth no es válida.',
+            correlationId: req.correlationId,
+        } });
+    } else if (error instanceof SalesforceOAuthError) {
+        logger.warn('oauth.salesforce_failed', { correlationId: req.correlationId });
+        res.status(502).json({ error: {
+            code: 'SALESFORCE_AUTH_FAILED',
+            message: 'No se pudo completar la autenticación con Salesforce.',
+            correlationId: req.correlationId,
+        } });
+    } else if (error instanceof SessionError) {
         const sessionError = error as SessionError;
         res.status(sessionError.getErrorNumber())
            .json({

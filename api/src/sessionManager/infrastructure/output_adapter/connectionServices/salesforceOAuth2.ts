@@ -1,85 +1,63 @@
-import { CLIENT_ID, CLIENT_SECRET, CALLBACK_URL, API_SF_VERSION } from "../../../../config/environment";
-import { AuthorizationCode, ModuleOptions } from "simple-oauth2";
-import jsforce,  { Connection, QueryResult } from "jsforce";
+import { API_SF_VERSION } from "../../../../config/environment";
+import { Connection, QueryResult } from "jsforce";
 import { FileProperties, ListMetadataQuery, Metadata, MetadataType } from "jsforce/api/metadata";
 import { ConnectionDriver } from './connectionDriver';
 import { ConnectionDriverDTO } from '../../../application/dtos/connectionDriverDTO';
 import { SessionError } from '../../../domain/exceptions/sessionError';
+import { SalesforceOAuthError } from '../../../domain/exceptions/salesforceOAuthError';
+import { validateSalesforceLoginHost } from '../../../domain/entities/salesforceLoginHost';
+import { SalesforceOAuthClient, LiveSalesforceOAuthClient } from './salesforceOAuthClient';
 
 export default class salesforceOAuth2 extends ConnectionDriver {
     private conn?: Connection;     
-    private instanceUrl: string | null = '';
-    
 
-    constructor(configDriverDTO: ConnectionDriverDTO) {
+    constructor(
+        configDriverDTO: ConnectionDriverDTO,
+        private readonly oauthClient: SalesforceOAuthClient = new LiveSalesforceOAuthClient(),
+    ) {
         super(configDriverDTO);
     }
 
 
     public requestAuthorization(state: string): string {
-        this.instanceUrl = this.configDriverDTO.instanceUrl!;
-        let urlExtra = '';
-        if (!this.instanceUrl) {
-            urlExtra = "&prompt=login";
-            this.instanceUrl = (this.configDriverDTO.isSalesforceSandbox()) ? "https://test.salesforce.com" : "https://login.salesforce.com";
+        try {
+            return this.oauthClient.authorizationUrl(
+                validateSalesforceLoginHost(this.configDriverDTO.tech!, this.configDriverDTO.loginHost),
+                state,
+            );
+        } catch {
+            throw new SalesforceOAuthError();
         }
-
-        const authConfig: ModuleOptions = {
-            client: {
-                id: CLIENT_ID,
-                secret: CLIENT_SECRET
-            },
-            auth: {
-                tokenHost:   this.instanceUrl,
-                tokenPath:  "/services/oauth2/token",
-                authorizePath: "/services/oauth2/authorize"
-            }
-        };
-
-        const auth0 = new AuthorizationCode(authConfig);
-
-        let url = auth0.authorizeURL({
-            redirect_uri: CALLBACK_URL,
-            scope: "api web id profile email",
-            state: state
-        }); 
-
-        url+= urlExtra; 
-        return url;
     }
 
-    async login(): Promise<ConnectionDriverDTO> {    
-
-        const oauth2 = new jsforce.OAuth2({
-            loginUrl: this.configDriverDTO.isSalesforceSandbox()
-                ? "https://test.salesforce.com"
-                : "https://login.salesforce.com",
-            clientId: CLIENT_ID,
-            clientSecret: CLIENT_SECRET,
-            redirectUri: CALLBACK_URL,
-
-          });
-          
-        this.conn = new jsforce.Connection({ oauth2: oauth2 });
-        await this.conn.authorize(this.configDriverDTO.code!);
-        const userInfo = await this.conn.identity()
-
-        const regexp = /(?<=\/\/).*?(?=\.my|\.sandbox)/
-        const name = (this.conn.instanceUrl as string).match(regexp)![0];
-        this.isConnected = true;
-
-       
-        
-        return new ConnectionDriverDTO({
-            tech: this.configDriverDTO.tech,
-            dbId: userInfo.organization_id,
-            dbName: name,
-            instanceUrl: this.conn.instanceUrl as string,
-            userId: userInfo.user_id,
-            userName: userInfo.username,
-            email: userInfo.email,
-            alias: name
-        });
+    async login(): Promise<ConnectionDriverDTO> {
+        try {
+            const result = await this.oauthClient.exchangeCode(
+                validateSalesforceLoginHost(this.configDriverDTO.tech!, this.configDriverDTO.loginHost),
+                this.configDriverDTO.code!,
+            );
+            const instance = new URL(result.instanceUrl);
+            if (instance.protocol !== 'https:' || !instance.hostname.endsWith('.salesforce.com')) {
+                throw new Error('Invalid Salesforce instance');
+            }
+            const alias = instance.hostname.split('.')[0];
+            const configured = new ConnectionDriverDTO({
+                tech: this.configDriverDTO.tech,
+                dbId: result.organizationId,
+                dbName: alias,
+                instanceUrl: instance.origin,
+                userId: result.userId,
+                userName: result.userName,
+                email: result.email,
+                alias,
+                loginHost: this.configDriverDTO.loginHost,
+            });
+            this.conn = result.connection;
+            this.isConnected = true;
+            return configured;
+        } catch {
+            throw new SalesforceOAuthError();
+        }
     }
 
   

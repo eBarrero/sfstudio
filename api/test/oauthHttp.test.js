@@ -5,6 +5,7 @@ const express = require("express");
 const { createApp } = require("../build/app");
 const { StructuredLogger } = require("../build/infrastructure/frameworks/structuredLogger");
 const { OAuthStateStore } = require("../build/sessionManager/domain/entities/oauthStateStore");
+const { SalesforceOAuthError } = require("../build/sessionManager/domain/exceptions/salesforceOAuthError");
 const {
     RequestConnectionController,
     RequestedConnectionController,
@@ -67,12 +68,80 @@ afterEach(async () => {
 });
 
 describe("OAuth HTTP flow", () => {
+    it('rejects unsupported technology before creating an OAuth state', async () => {
+        const stateStore = new OAuthStateStore();
+        let driverCalls = 0;
+        const controller = new RequestConnectionController({
+            toNewConnection: () => { driverCalls += 1; return ''; },
+        }, { getSessionStatus: async () => {}, getStatus: () => 'ok' },
+        stateStore, 'TESTING', silentLogger);
+        const router = express.Router();
+        router.get('/api/auth/:tech', controller.getNewUrlConnection.bind(controller));
+        const baseUrl = await startApplication(router);
+        const response = await fetch(`${baseUrl}/api/auth/SalesforceAuth0`, { redirect: 'manual' });
+        assert.equal(response.status, 400);
+        assert.equal((await response.json()).error.code, 'OAUTH_CONTEXT_INVALID');
+        assert.equal(driverCalls, 0);
+    });
+
+    for (const [technology, loginHost] of [
+        ['SF_Prod', 'https://login.salesforce.com'],
+        ['SF_Test', 'https://test.salesforce.com'],
+    ]) {
+        it(`uses the validated ${technology} host even if callback query suggests another`, async () => {
+            const workspace = randomUUID();
+            const stateStore = new OAuthStateStore();
+            const state = stateStore.issue(workspace, {
+                type: 'new', technology, loginHost,
+            }, randomUUID());
+            let received;
+            const controller = new RequestedConnectionController({
+                exe: async (_sessionId, config) => {
+                    received = config;
+                    return randomUUID();
+                },
+            }, stateStore, 'TESTING', silentLogger);
+            const router = express.Router();
+            router.get('/api/callback', controller.salesforce.bind(controller));
+            const baseUrl = await startApplication(router);
+            const response = await fetch(
+                `${baseUrl}/api/callback?code=fixture-code&state=${state}&loginHost=https://untrusted.invalid`,
+                { headers: { Cookie: `${SESSION_COOKIE_NAME}=${workspace}` }, redirect: 'manual' },
+            );
+            assert.equal(response.status, 302);
+            assert.equal(received.loginHost, loginHost);
+            assert.equal(received.tech, technology);
+        });
+    }
+
+    it('maps Salesforce failures to a stable public code without provider details', async () => {
+        const workspace = randomUUID();
+        const stateStore = new OAuthStateStore();
+        const state = stateStore.issue(workspace, {
+            type: 'new', technology: 'SF_Prod', loginHost: 'https://login.salesforce.com',
+        }, randomUUID());
+        const controller = new RequestedConnectionController({
+            exe: async () => { throw new SalesforceOAuthError(); },
+        }, stateStore, 'TESTING', silentLogger);
+        const router = express.Router();
+        router.get('/api/callback', controller.salesforce.bind(controller));
+        const baseUrl = await startApplication(router);
+        const response = await fetch(`${baseUrl}/api/callback?code=fixture-code&state=${state}`, {
+            headers: { Cookie: `${SESSION_COOKIE_NAME}=${workspace}` },
+        });
+        const body = await response.json();
+        assert.equal(response.status, 502);
+        assert.equal(body.error.code, 'SALESFORCE_AUTH_FAILED');
+        assert.equal(body.error.correlationId, response.headers.get('x-correlation-id'));
+        assert.equal(JSON.stringify(body).includes('fixture-code'), false);
+    });
+
     it("creates state associated with a pending workspace and destination", async () => {
         const stateStore = new OAuthStateStore();
         const requestUseCase = {
             toNewConnection: (_configuration, state) =>
                 `https://login.example.test/authorize?state=${state}`,
-            getConfiguredTechnology: () => "SF_Prod",
+            getConfiguredOAuthContext: () => ({ technology: "SF_Prod", loginHost: "https://login.salesforce.com" }),
             toConfiguredConnection: () => "",
         };
         const signInUseCase = {
@@ -100,7 +169,7 @@ describe("OAuth HTTP flow", () => {
         const consumed = stateStore.consume(state, binding);
 
         assert.equal(response.status, 302);
-        assert.deepEqual(consumed.destination, { type: "new", technology: "SF_Prod" });
+        assert.deepEqual(consumed.destination, { type: "new", technology: "SF_Prod", loginHost: "https://login.salesforce.com" });
         assert.match(consumed.correlationId, /^[0-9a-f-]{36}$/i);
     });
 
@@ -109,7 +178,7 @@ describe("OAuth HTTP flow", () => {
         const stateStore = new OAuthStateStore();
         const state = stateStore.issue(
             workspace,
-            { type: "new", technology: "SF_Prod" },
+            { type: "new", technology: "SF_Prod", loginHost: "https://login.salesforce.com" },
             randomUUID(),
         );
         const harness = callbackHarness(stateStore);
@@ -141,7 +210,7 @@ describe("OAuth HTTP flow", () => {
         const stateStore = new OAuthStateStore({ now: () => now, ttlMs: 100 });
         const state = stateStore.issue(
             workspace,
-            { type: "new", technology: "SF_Prod" },
+            { type: "new", technology: "SF_Prod", loginHost: "https://login.salesforce.com" },
             randomUUID(),
         );
         now = 1_100;
@@ -161,7 +230,7 @@ describe("OAuth HTTP flow", () => {
         const stateStore = new OAuthStateStore();
         const state = stateStore.issue(
             randomUUID(),
-            { type: "new", technology: "SF_Prod" },
+            { type: "new", technology: "SF_Prod", loginHost: "https://login.salesforce.com" },
             randomUUID(),
         );
         const harness = callbackHarness(stateStore);
@@ -181,7 +250,7 @@ describe("OAuth HTTP flow", () => {
         const stateStore = new OAuthStateStore();
         const state = stateStore.issue(
             workspace,
-            { type: "new", technology: "SF_Prod" },
+            { type: "new", technology: "SF_Prod", loginHost: "https://login.salesforce.com" },
             randomUUID(),
         );
         const harness = callbackHarness(stateStore);

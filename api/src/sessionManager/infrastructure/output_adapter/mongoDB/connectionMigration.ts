@@ -1,5 +1,6 @@
 import { createOrgKey } from '../../../domain/entities/orgKey';
 import { IConnection } from './schema/userSchema';
+import { salesforceLoginHost } from '../../../domain/entities/salesforceLoginHost';
 
 /** Legacy rows with no verified Salesforce IDs cannot be assigned an OrgKey. */
 export function migrateConnections(rows: IConnection[]): { connections: IConnection[]; changed: boolean } {
@@ -10,6 +11,7 @@ export function migrateConnections(rows: IConnection[]): { connections: IConnect
         let key: string;
         try {
             key = createOrgKey(row.dbId, row.userId);
+            salesforceLoginHost(row.tech);
         } catch {
             changed = true;
             continue;
@@ -19,8 +21,7 @@ export function migrateConnections(rows: IConnection[]): { connections: IConnect
             continue;
         }
         seen.add(key);
-        const loginHost = row.loginHost ?? (row.tech === 'SF_Test'
-            ? 'https://test.salesforce.com' : 'https://login.salesforce.com');
+        const loginHost = salesforceLoginHost(row.tech);
         const migrated: IConnection = {
             tech: row.tech,
             userId: row.userId,

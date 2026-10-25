@@ -1,4 +1,5 @@
 import { createOrgKey } from '../../domain/entities/orgKey';
+import { salesforceLoginHost, validateSalesforceLoginHost } from '../../domain/entities/salesforceLoginHost';
 
 //type technology = "MongoDB" | "MySQL" | "PostgreSQL" | "SF_Prod" | "SF_Test" | "SalesforceAuth0";
 
@@ -64,8 +65,9 @@ export class ConnectionDriverDTO {
         this.userName = (params.userName===undefined) ? "" : params.userName;
         this.email = (params.email===undefined) ? "" : params.email;
         this.alias = (params.alias===undefined) ? "" : params.alias;
-        this.loginHost = params.loginHost ?? (params.tech === Technology.SF_Test
-            ? "https://test.salesforce.com" : "https://login.salesforce.com");
+        this.loginHost = this.isSalesforce()
+            ? validateSalesforceLoginHost(this.tech!, params.loginHost ?? salesforceLoginHost(this.tech!))
+            : '';
     
 
         if (!this.tech) {
@@ -103,9 +105,9 @@ export class ConnectionDriverDTO {
         }
     }
 
-    isSalesforce(): boolean         { return this.tech ? (this.tech.includes("SalesforceAuth0") || this.tech.includes("SF_Test") || this.tech.includes("SF_Prod")) : false; }
-    isSalesforceSandbox(): boolean  { return this.tech ? this.tech.includes("SF_Test") : false; }
-    isSalesforceProd(): boolean     { return this.tech ? this.tech.includes("SF_Prod") : false; }
+    isSalesforce(): boolean         { return this.tech === Technology.SF_Test || this.tech === Technology.SF_Prod; }
+    isSalesforceSandbox(): boolean  { return this.tech === Technology.SF_Test; }
+    isSalesforceProd(): boolean     { return this.tech === Technology.SF_Prod; }
     isMongoDB(): boolean            { return this.tech ? this.tech.includes("MongoDB") : false; }
     isMySQL(): boolean              { return this.tech ? this.tech.includes("MySQL") : false; }
     isPostgreSQL(): boolean         { return this.tech ? this.tech.includes("PostgreSQL") : false; }
