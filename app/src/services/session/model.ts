@@ -1,4 +1,4 @@
-import { request,  URL_PATH } from './controller';
+import { request, URL_PATH, deleteOrg, deleteWorkspace } from './controller';
 import type { PublicWorkspaceDefinition } from './types';
 
 
@@ -22,8 +22,12 @@ import type { PublicWorkspaceDefinition } from './types';
     window.location.href=`${URL_PATH}v1/connections/${encodeURIComponent(orgKey)}/authorize`;
   }
 
-  export function disconnect(): void {
-    window.location.href=`${URL_PATH}logout`;
+  export async function disconnectOrg(orgKey: string): Promise<PublicWorkspaceDefinition> {
+    return deleteOrg(orgKey);
+  }
+
+  export async function closeWorkspace(): Promise<void> {
+    await deleteWorkspace();
   }
 
 

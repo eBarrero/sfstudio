@@ -2,7 +2,7 @@
 import { Sessions } from '../../domain/entities/sessions';
 
 import { SessionDTO } from '../../domain/dtos/sessionDTO';
-import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort } from '../../domain/ports/inbound/httpInputPorts';
+import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort, DisconnectOrgInputPort } from '../../domain/ports/inbound/httpInputPorts';
 import { UserRepositoryPort } from '../../domain/ports/outbound/userRepositoryPort';
 import { SessionError } from '../../domain/exceptions/sessionError';
 import { ConnectionDriverDTO } from '../dtos/connectionDriverDTO';
@@ -12,6 +12,21 @@ import { UserEntity } from '../../domain/entities/UserEntity';
 import { createOrgKey, OrgKey } from '../../domain/entities/orgKey';
 import { validateSalesforceLoginHost } from '../../domain/entities/salesforceLoginHost';
 import { CreateDriver } from '../ports/connectionDriverFactoryPort';
+
+async function revokeAndRemove(
+    registry: ConnectionRegistryPort,
+    sessionId: SessionId,
+    orgKey: OrgKey,
+): Promise<void> {
+    if (!registry.listOrgKeys(sessionId).includes(orgKey)) return;
+    try {
+        await registry.getConnection(sessionId, orgKey).revoke();
+    } catch {
+        // A failed remote revoke must not keep a local credential available.
+    } finally {
+        registry.removeConnection(sessionId, orgKey);
+    }
+}
 
 
 export class SignInUseCase implements SignInInputPort {
@@ -138,17 +153,34 @@ export class RequestedConnectionUseCase implements RequestedConnectionInputPort 
     }
 }
 
-export class SignOutUseCase implements SignOutInputPort {
+export class DisconnectOrgUseCase implements DisconnectOrgInputPort {
     constructor(private readonly sessions: Sessions, private readonly registry: ConnectionRegistryPort) {}
-    async exe(id: SessionId): Promise<SessionDTO> {
-        const user = this.sessions.lookUpUserOnCache(id);
-        if (user) {
-            user.signOut();
-            this.sessions.deleteSession(id);
-            this.registry.deleteSession(id);
-            return user.getSessionStatus();
+
+    async exe(id: SessionId, orgKey: OrgKey): Promise<SessionDTO> {
+        const user = this.sessions.getUser(id);
+        user.getConnection(orgKey);
+        await revokeAndRemove(this.registry, id, orgKey);
+        user.disconnectOrg(orgKey);
+        user.reconcileActiveConnections(new Set(this.registry.listOrgKeys(id)));
+        return user.getSessionStatus();
+    }
+}
+
+export class SignOutUseCase implements SignOutInputPort {
+    constructor(
+        private readonly userRepository: UserRepositoryPort,
+        private readonly sessions: Sessions,
+        private readonly registry: ConnectionRegistryPort,
+    ) {}
+    async exe(id: SessionId): Promise<void> {
+        const user = this.sessions.getUser(id);
+        await this.userRepository.deleteWorkspaceSession(id);
+        for (const orgKey of this.registry.listOrgKeys(id)) {
+            await revokeAndRemove(this.registry, id, orgKey);
         }
-        throw new SessionError("Session expired or invalid");
+        user.signOut();
+        this.sessions.deleteSession(id);
+        this.registry.deleteSession(id);
     }
 }
 

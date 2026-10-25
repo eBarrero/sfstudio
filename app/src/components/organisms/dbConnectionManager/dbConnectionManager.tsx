@@ -5,7 +5,7 @@ import { IconCharacter } from "../../constants";
 import type { PublicConnectionDefinition } from '../../../services/session/types';
 
 const DBConnectionManager = () => {
-    const { publicSession } = sessionState();
+    const { publicSession, lastError, loginOrganization, disconnectOrg, closeWorkspace } = sessionState();
   
     const getStatusClass = (connection: PublicConnectionDefinition) => {
       if (connection.status === 'ERROR') return css['status-error'];
@@ -17,18 +17,26 @@ const DBConnectionManager = () => {
       <div>
         {publicSession.connections && publicSession.connections.map((c) => (
           <div key={c.orgKey} className={css.connectionItem}>
-            {/* tools */}
-            <span 
-                className={css.buttonLike} 
-                role="button" 
-                aria-label="connection tools">
-                {IconCharacter.GEAR_WHEEl}
-            </span>
             <span className={`${css['status-indicator']} ${getStatusClass(c)}`} />          {/* status connection */}
             {c.orgKey === publicSession.activeOrgKey && <span>{IconCharacter.CHECK} </span>}
             <span>{c.alias} - {c.organizationId} - {c.userName} - {c.environmentKind} - {c.status}</span>
+            {c.status === 'CONNECTED' ? (
+              <button className={css.buttonLike} onClick={() => { void disconnectOrg(c.orgKey); }}>
+                Desconectar
+              </button>
+            ) : (
+              <button className={css.buttonLike} onClick={() => loginOrganization(c.orgKey)}>
+                Reautenticar
+              </button>
+            )}
           </div>
         ))}
+        {publicSession.connections.length > 0 && (
+          <button className={css.buttonLike} onClick={() => { void closeWorkspace(); }}>
+            Cerrar workspace
+          </button>
+        )}
+        {lastError && <p role="alert">{lastError}</p>}
       </div>
     );
   };

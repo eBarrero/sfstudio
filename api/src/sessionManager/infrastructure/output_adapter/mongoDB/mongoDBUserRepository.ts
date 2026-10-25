@@ -137,6 +137,10 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
         }
     }
 
+    public async deleteWorkspaceSession(sessionId: SessionId): Promise<void> {
+        await this.workspaceSessionModel.deleteOne({ sessionId });
+    }
+
     private async findActiveSession(sessionId: SessionId): Promise<IWorkspaceSession> {
         const workspaceSession = await this.workspaceSessionModel.findOne({ sessionId });
 

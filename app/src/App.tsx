@@ -23,6 +23,8 @@ const { initializeSqlExecution } = sqlExecutionState();
 const { initializeView, dialogStack, msgbox, popDialog } = viewState();
 const { initializeApp } = applicationState();
 useEffect(() => {
+  const refreshConnections = () => createSession();
+  window.addEventListener('sfstudio:reauth-required', refreshConnections);
   initializeSession();
   initializeData();
   initializeModel();
@@ -30,6 +32,7 @@ useEffect(() => {
   initializeSqlExecution();
   initializeApp();
   createSession();
+  return () => window.removeEventListener('sfstudio:reauth-required', refreshConnections);
 // eslint-disable-next-line react-hooks/exhaustive-deps
 },[]);
 

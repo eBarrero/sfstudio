@@ -23,5 +23,9 @@ export interface RequestedConnectionInputPort {
 }
 
 export interface SignOutInputPort {
-    exe(id: SessionId): Promise<SessionDTO>;
+    exe(id: SessionId): Promise<void>;
+}
+
+export interface DisconnectOrgInputPort {
+    exe(id: SessionId, orgKey: OrgKey): Promise<SessionDTO>;
 }

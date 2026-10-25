@@ -3,6 +3,8 @@ import { ConnectionRegistryPort } from '../../domain/ports/outbound/connectionRe
 import { SessionId } from '../../domain/entities/workspaceSession';
 import { parseOrgKey, OrgKey } from '../../domain/entities/orgKey';
 import { Sessions } from '../../domain/entities/sessions';
+import { ReauthRequiredError } from '../../domain/exceptions/reauthRequiredError';
+import { ActiveConnectionPort } from '../../domain/ports/outbound/connectionRegistryPort';
 
 function ownedOrgKey(sessions: Sessions, sessionId: SessionId, value: string): OrgKey {
     parseOrgKey(value);
@@ -13,19 +15,33 @@ function ownedOrgKey(sessions: Sessions, sessionId: SessionId, value: string): O
 
 export class MetadataRequestUseCase implements HttpMetadataInputPort {
     constructor(private readonly sessions: Sessions, private readonly registry: ConnectionRegistryPort) {}
+
+    private async withConnection(
+        sessionId: SessionId,
+        value: string,
+        read: (connection: ActiveConnectionPort) => Promise<string>,
+    ): Promise<string> {
+        const orgKey = ownedOrgKey(this.sessions, sessionId, value);
+        try {
+            return await read(this.registry.getConnection(sessionId, orgKey));
+        } catch (error) {
+            if (error instanceof ReauthRequiredError) {
+                this.registry.removeConnection(sessionId, orgKey);
+                this.sessions.getUser(sessionId).disconnectOrg(orgKey);
+            }
+            throw error;
+        }
+    }
     
     async getDescribeGlobal(sessionId: SessionId, orgKey: string): Promise<string> {
-        const conn = this.registry.getConnection(sessionId, ownedOrgKey(this.sessions, sessionId, orgKey));
-        return conn.getDescribeGlobal();
+        return this.withConnection(sessionId, orgKey, conn => conn.getDescribeGlobal());
     }
 
     async describeSObject(sessionId: SessionId, orgKey: string, sobject: string): Promise<string> {
-        const conn = this.registry.getConnection(sessionId, ownedOrgKey(this.sessions, sessionId, orgKey));
-        return conn.describeSObject(sobject);
+        return this.withConnection(sessionId, orgKey, conn => conn.describeSObject(sobject));
     }
 
     async doSOQL(sessionId: SessionId, orgKey: string, soql: string): Promise<string> {
-        const conn = this.registry.getConnection(sessionId, ownedOrgKey(this.sessions, sessionId, orgKey));
-        return conn.doSOQL(soql);
+        return this.withConnection(sessionId, orgKey, conn => conn.doSOQL(soql));
     }
 }
