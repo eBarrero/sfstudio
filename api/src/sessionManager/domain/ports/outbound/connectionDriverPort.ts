@@ -2,5 +2,5 @@ import { ConnectionDriverDTO } from '../../../application/dtos/connectionDriverD
 
 export abstract class ConnectionDriverPort {
     constructor(private ConfigDriverDTO: ConnectionDriverDTO) { }
-    abstract requestAuthorization(): string;
+    abstract requestAuthorization(state: string): string;
 }

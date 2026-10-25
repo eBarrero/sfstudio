@@ -1,16 +1,12 @@
 import { CLIENT_ID, CLIENT_SECRET, CALLBACK_URL, API_SF_VERSION } from "../../../../config/environment";
-import { AuthorizationCode, ModuleOptions } from "simple-oauth2"; //AccessToken,
-import jsforce,  { Connection, QueryResult    } from "jsforce"; //DescribeGlobalResult, DescribeSObjectResult
+import { AuthorizationCode, ModuleOptions } from "simple-oauth2";
+import jsforce,  { Connection, QueryResult } from "jsforce";
 import { FileProperties, ListMetadataQuery, Metadata, MetadataType } from "jsforce/api/metadata";
-// DescribeMetadataResult
 import { ConnectionDriver } from './connectionDriver';
-import { ConnectionDriverDTO, Technology } from '../../../application/dtos/connectionDriverDTO';
+import { ConnectionDriverDTO } from '../../../application/dtos/connectionDriverDTO';
 import { SessionError } from '../../../domain/exceptions/sessionError';
 
 export default class salesforceOAuth2 extends ConnectionDriver {
-    //private sandbox: boolean = false;
-    //private client?: AuthorizationCode;
-    //private accessToken?: AccessToken;
     private conn?: Connection;     
     private instanceUrl: string | null = '';
     
@@ -20,17 +16,13 @@ export default class salesforceOAuth2 extends ConnectionDriver {
     }
 
 
-    public requestAuthorization(): string {
+    public requestAuthorization(state: string): string {
         this.instanceUrl = this.configDriverDTO.instanceUrl!;
         let urlExtra = '';
-        let state = '';
         if (!this.instanceUrl) {
             urlExtra = "&prompt=login";
-            state = this.configDriverDTO.tech!;
             this.instanceUrl = (this.configDriverDTO.isSalesforceSandbox()) ? "https://test.salesforce.com" : "https://login.salesforce.com";
-        } else {
-            state= this.configDriverDTO.dbName!;
-        };
+        }
 
         const authConfig: ModuleOptions = {
             client: {
@@ -46,22 +38,22 @@ export default class salesforceOAuth2 extends ConnectionDriver {
 
         const auth0 = new AuthorizationCode(authConfig);
 
-        let  url =  auth0.authorizeURL({
+        let url = auth0.authorizeURL({
             redirect_uri: CALLBACK_URL,
             scope: "api web id profile email",
             state: state
         }); 
 
         url+= urlExtra; 
-        console.log(`requestAuthorization URL: ${url}`);
-        //this.client = undefined
-        return url;  
+        return url;
     }
 
     async login(): Promise<ConnectionDriverDTO> {    
 
         const oauth2 = new jsforce.OAuth2({
-            loginUrl: "https://test.salesforce.com",
+            loginUrl: this.configDriverDTO.isSalesforceSandbox()
+                ? "https://test.salesforce.com"
+                : "https://login.salesforce.com",
             clientId: CLIENT_ID,
             clientSecret: CLIENT_SECRET,
             redirectUri: CALLBACK_URL,
@@ -78,18 +70,14 @@ export default class salesforceOAuth2 extends ConnectionDriver {
 
        
         
-        console.log(`Name: ${name} `);
-
         return new ConnectionDriverDTO({
-            tech: Technology.SalesforceAuth0,
+            tech: this.configDriverDTO.tech,
             dbId: userInfo.organization_id,
             dbName: name,
             instanceUrl: this.conn.instanceUrl as string,
-            code: this.configDriverDTO.code,
             userId: userInfo.user_id,
             userName: userInfo.username,
             email: userInfo.email,
-            callbackUrl: CALLBACK_URL,
             alias: name
         });
     }
@@ -109,7 +97,6 @@ export default class salesforceOAuth2 extends ConnectionDriver {
 
     
     public async describeSObject(sobject: string): Promise<string>  {
-        console.log("describeSObject");
         try {
             const describeSObjectResult = await this.conn!.describe(sobject);
             return JSON.stringify(describeSObjectResult);
@@ -141,8 +128,7 @@ export default class salesforceOAuth2 extends ConnectionDriver {
     }     
 
 
-    async getDescribe() : Promise<string>  {  // DescribeMetadataResult
-        console.log("getDescribe");
+    async getDescribe() : Promise<string>  {
         try {
             const r =  await this.conn!.metadata.describe(API_SF_VERSION);
             return JSON.stringify(r);
