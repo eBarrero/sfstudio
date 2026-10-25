@@ -2,6 +2,7 @@ import { createApp } from "./app";
 import { config } from "./config/environment";
 import container from "./container";
 import { createApiRouter } from "./sessionManager/infrastructure/input_adapter/router";
+import { logger } from "./infrastructure/frameworks/structuredLogger";
 
 const app = createApp({
     apiRouter: createApiRouter(container),
@@ -10,5 +11,8 @@ const app = createApp({
 });
 
 app.listen(config.port, () => {
-    console.log(`Server is running on port ${config.port} (${config.environment})`);
+    logger.info("server.started", {
+        port: config.port,
+        environment: config.environment,
+    });
 });

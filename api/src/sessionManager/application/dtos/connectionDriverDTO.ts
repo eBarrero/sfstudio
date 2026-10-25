@@ -93,7 +93,7 @@ export class ConnectionDriverDTO {
         }
     }
 
-    isSalesforce(): boolean         { return this.tech ? (this.tech.includes("SalesforceAuth0") || this.tech.includes("SF_Test") || this.tech.includes("SF_Test")) : false; }
+    isSalesforce(): boolean         { return this.tech ? (this.tech.includes("SalesforceAuth0") || this.tech.includes("SF_Test") || this.tech.includes("SF_Prod")) : false; }
     isSalesforceSandbox(): boolean  { return this.tech ? this.tech.includes("SF_Test") : false; }
     isSalesforceProd(): boolean     { return this.tech ? this.tech.includes("SF_Prod") : false; }
     isMongoDB(): boolean            { return this.tech ? this.tech.includes("MongoDB") : false; }

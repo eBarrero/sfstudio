@@ -99,6 +99,12 @@ No se persiste el access token. Esto reduce el impacto de una fuga de MongoDB, p
 
 La cookie `sfstudio_workspace` contiene únicamente el UUID opaco. Es `HttpOnly`, `SameSite=Lax`, usa `Path=/`, expira a las ocho horas y añade `Secure` en producción. El identificador se rota después de completar OAuth; la rotación actualiza memoria, MongoDB y el pool de conexiones, por lo que el valor anterior deja de ser válido.
 
+Los intentos OAuth se guardan temporalmente en `OAuthStateStore`. Cada `state` contiene 256 bits aleatorios y queda asociado en el servidor al workspace (o a un UUID temporal durante el primer login), al destino, a un `correlationId` y a una expiración de diez minutos. El callback lee `state` desde la query, comprueba su asociación y lo consume antes de intercambiar el `code` con Salesforce. Por tanto, un valor ausente, expirado, repetido o perteneciente a otro workspace no llega al driver externo.
+
+El store OAuth vive en memoria y no contiene tokens. Un reinicio o el uso de varias instancias invalida los intentos pendientes; el usuario debe iniciar de nuevo el login. Esta limitación es aceptada para la primera fase y deberá resolverse con un almacén temporal compartido antes de escalar horizontalmente.
+
+La API emite logs JSON mediante un logger estructurado. Cada petición obtiene un `correlationId`, que también se devuelve en `X-Correlation-Id` y en los errores. El logger redacta cookies, códigos OAuth, `state`, tokens, secretos, URLs de autorización e identificadores personales sensibles.
+
 ## 3. Frontend
 
 ### Stores Zustand
@@ -185,9 +191,11 @@ sequenceDiagram
     participant DB as MongoDB
 
     App->>API: GET /api/auth/SF_Prod o SF_Test
+    API->>API: Crear state de un uso ligado al workspace y destino
     API-->>User: Redirección a authorize
     User->>SF: Login y consentimiento
     SF-->>API: GET /api/callback?code=...&state=...
+    API->>API: Validar y consumir state
     API->>SF: Intercambio del code
     SF-->>API: Identidad y conexión
     API->>DB: Crear/actualizar usuario y org
@@ -228,6 +236,7 @@ sequenceDiagram
 ## 6. Límites arquitectónicos actuales
 
 - Las sesiones y conexiones activas no son compartidas entre instancias.
+- Los intentos OAuth pendientes viven en memoria; un reinicio o cambio de instancia obliga a reiniciar el login.
 - Un reinicio del proceso invalida el pool aunque MongoDB conserve la organización.
 - La caché del navegador no tiene TTL ni versión de esquema.
 - Los tipos globales `.d.ts` acoplan muchas áreas del frontend.

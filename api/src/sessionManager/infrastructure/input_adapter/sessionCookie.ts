@@ -7,6 +7,8 @@ import {
 } from "../../domain/entities/workspaceSession";
 
 export const SESSION_COOKIE_NAME = "sfstudio_workspace";
+export const OAUTH_FLOW_COOKIE_NAME = "sfstudio_oauth_flow";
+const OAUTH_FLOW_MAX_AGE_MS = 10 * 60 * 1000;
 
 function getBaseCookieOptions(environment: RuntimeEnvironment): CookieOptions {
     return {
@@ -43,4 +45,28 @@ export function setSessionCookie(
 
 export function clearSessionCookie(response: Response, environment: RuntimeEnvironment): void {
     response.clearCookie(SESSION_COOKIE_NAME, getBaseCookieOptions(environment));
+}
+
+export function readOAuthFlowCookie(request: Request): string | undefined {
+    const value: unknown = request.cookies?.[OAUTH_FLOW_COOKIE_NAME];
+    return isSessionId(value) ? value : undefined;
+}
+
+export function setOAuthFlowCookie(
+    response: Response,
+    binding: string,
+    environment: RuntimeEnvironment,
+): void {
+    response.cookie(OAUTH_FLOW_COOKIE_NAME, binding, {
+        ...getBaseCookieOptions(environment),
+        path: "/api",
+        maxAge: OAUTH_FLOW_MAX_AGE_MS,
+    });
+}
+
+export function clearOAuthFlowCookie(response: Response, environment: RuntimeEnvironment): void {
+    response.clearCookie(OAUTH_FLOW_COOKIE_NAME, {
+        ...getBaseCookieOptions(environment),
+        path: "/api",
+    });
 }

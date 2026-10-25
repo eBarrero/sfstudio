@@ -4,6 +4,7 @@ const { afterEach, describe, it } = require("node:test");
 const express = require("express");
 const { createApp } = require("../build/app");
 const { SessionDTO } = require("../build/sessionManager/domain/dtos/sessionDTO");
+const { OAuthStateStore } = require("../build/sessionManager/domain/entities/oauthStateStore");
 const {
     ErrorMessages,
     SessionError,
@@ -148,12 +149,18 @@ describe("workspace session HTTP contract", () => {
                 return rotatedId;
             },
         };
-        const controller = new RequestedConnectionController(useCase, "PROD");
+        const oauthStateStore = new OAuthStateStore();
+        const state = oauthStateStore.issue(
+            previousId,
+            { type: "new", technology: "SF_Prod" },
+            randomUUID(),
+        );
+        const controller = new RequestedConnectionController(useCase, oauthStateStore, "PROD");
         const router = express.Router();
         router.get("/api/callback", controller.salesforce.bind(controller));
         const baseUrl = await startApplication(router, "PROD");
 
-        const response = await fetch(`${baseUrl}/api/callback?code=test-code&state=test-state`, {
+        const response = await fetch(`${baseUrl}/api/callback?code=test-code&state=${state}`, {
             headers: { Cookie: `${SESSION_COOKIE_NAME}=${previousId}` },
             redirect: "manual",
         });

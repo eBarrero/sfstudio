@@ -107,14 +107,17 @@ npm test
 
 Jest usa un `fetch` controlado en el entorno jsdom y no necesita `node-fetch`.
 
-Los tests existentes son:
+Los tests existentes cubren, entre otros casos:
 
 - pruebas unitarias del parsing de configuración para `DEV`, `TESTING` y `PROD`;
 - pruebas de integración de liveness/readiness con Mongo disponible y no disponible;
+- generación, expiración, asociación y consumo único de OAuth `state`;
+- callbacks OAuth válidos, inválidos, expirados, repetidos y de otro workspace con un driver falso;
+- redacción de secretos y PII en el logger estructurado;
 - un smoke test que siempre pasa;
 - una prueba de `App` que solo comprueba una sesión vacía.
 
-Todavía no existen pruebas de OAuth, repositorio, caché, generador SOQL ni transformación de resultados.
+Todavía no existen pruebas suficientes de repositorio, caché, generador SOQL ni transformación de resultados.
 
 ## Salud de la API
 
@@ -142,6 +145,22 @@ El UUID no aparece en el DTO público ni debe escribirse en logs. Una cookie aus
 MongoDB dispone de una colección mínima `WorkspaceSession` con referencia al usuario y un índice TTL sobre `expiresAt`. Al volver a autenticarse se crea esta sesión para los usuarios anteriores sin borrar sus organizaciones conocidas; las cookies numéricas/Base64 antiguas quedan invalidadas.
 
 `User.sessionId` se conserva temporalmente como clave heredada para mantener compatible el índice único ya desplegado. No se consulta para autenticar, no se envía al navegador y no coincide con el UUID de `WorkspaceSession`. Retirarlo exige una migración operativa explícita del índice de MongoDB; la aplicación no borra índices o campos automáticamente.
+
+## Seguridad OAuth y trazabilidad
+
+Cada autorización crea un `state` aleatorio de 256 bits, válido durante diez minutos y consumible una sola vez. Se asocia en memoria al workspace, al destino solicitado y al `correlationId`. Durante el primer login, la cookie temporal `sfstudio_oauth_flow` enlaza el navegador con ese intento; es `HttpOnly`, `SameSite=Lax`, limitada a `/api` y `Secure` en producción.
+
+El callback valida y consume `state` antes de invocar Salesforce. Los rechazos tienen contratos estables:
+
+| Situación | HTTP | Código |
+| --- | ---: | --- |
+| Falta `state` o `code` | 400 | `OAUTH_CALLBACK_INVALID` |
+| `state` desconocido, expirado o ya consumido | 400 | `OAUTH_STATE_INVALID` |
+| El intento pertenece a otro workspace | 401 | `OAUTH_STATE_MISMATCH` |
+
+Todos los errores incluyen un `correlationId` y la respuesta HTTP expone el mismo valor en `X-Correlation-Id`. Los logs son JSON y no deben registrar cookies, códigos OAuth, `state`, tokens, secretos, URLs completas de autorización, correo o nombre de usuario. El logger aplica redacción defensiva, pero los llamadores deben seguir enviando solo los campos mínimos.
+
+`OAuthStateStore` vive en memoria. Tras reiniciar la API o al saltar entre instancias, un callback pendiente se rechazará y habrá que iniciar de nuevo OAuth. En esta fase no se persisten refresh tokens.
 
 ### Auditoría npm
 

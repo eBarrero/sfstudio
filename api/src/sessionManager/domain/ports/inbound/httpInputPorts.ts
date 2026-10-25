@@ -8,8 +8,9 @@ export interface SignInInputPort {
 }
 
 export interface RequestConnectionInputPort {
-    toNewConnection(connectionDriverDTO: ConnectionDriverDTO): string;
-    toConfiguredConnection(sessionId: SessionId, connectionID: number): string;
+    toNewConnection(connectionDriverDTO: ConnectionDriverDTO, state: string): string;
+    getConfiguredTechnology(sessionId: SessionId, connectionID: number): string;
+    toConfiguredConnection(sessionId: SessionId, connectionID: number, state: string): string;
 }
 
 export interface RequestedConnectionInputPort {
