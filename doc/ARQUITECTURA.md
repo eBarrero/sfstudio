@@ -62,10 +62,10 @@ El contenedor es sencillo y suficiente para el tamaño actual. No hace falta int
 
 #### Dominio
 
-- `Sessions` contiene un mapa en memoria de `sessionId -> UserEntity`.
+- `Sessions` contiene un mapa en memoria de UUID de workspace a `UserEntity` y elimina entradas expiradas al consultarlas.
 - `UserEntity` contiene organizaciones configuradas, conexión actual y estado abierto/cerrado.
 - `configuredConnections` envuelve la configuración de una organización.
-- `SessionDTO` devuelve al cliente una vista pública codificada en Base64.
+- `SessionDTO` devuelve al cliente una vista pública codificada en Base64 que no contiene el identificador de sesión.
 
 #### Aplicación
 
@@ -85,11 +85,19 @@ El contenedor es sencillo y suficiente para el tamaño actual. No hace falta int
 
 La colección `User` contiene:
 
-- identificador numérico de sesión;
 - nombre y fecha de creación;
 - conexiones con tecnología, usuario Salesforce, organización, URL de instancia y alias.
+- una clave `sessionId` heredada, no usada para autenticación, que se conserva temporalmente para no romper el índice único existente en despliegues anteriores.
+
+La colección `WorkspaceSession` contiene únicamente:
+
+- identificador de workspace UUID generado con `crypto.randomUUID`;
+- referencia al usuario propietario;
+- fecha `expiresAt`, usada también como índice TTL de MongoDB.
 
 No se persiste el access token. Esto reduce el impacto de una fuga de MongoDB, pero obliga a reautenticar tras reinicios o cuando la conexión desaparece del pool.
+
+La cookie `sfstudio_workspace` contiene únicamente el UUID opaco. Es `HttpOnly`, `SameSite=Lax`, usa `Path=/`, expira a las ocho horas y añade `Secure` en producción. El identificador se rota después de completar OAuth; la rotación actualiza memoria, MongoDB y el pool de conexiones, por lo que el valor anterior deja de ser válido.
 
 ## 3. Frontend
 

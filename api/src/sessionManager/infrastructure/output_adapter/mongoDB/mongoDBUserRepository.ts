@@ -1,25 +1,38 @@
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { MongoDBService }  from '../../../../infrastructure/DBs/mongoDBService';
 import { UserRepositoryPort } from '../../../domain/ports/outbound/userRepositoryPort';
 import { getUserSchema, IUser, IConnection }  from './schema/userSchema';
+import { getWorkspaceSessionSchema, IWorkspaceSession } from './schema/workspaceSessionSchema';
 import { ConnectionDriverDTO, ConnectionDriverParams, stringToTechnology } from '../../../application/dtos/connectionDriverDTO';
 import { UserDTO } from '../../../application/dtos/userDTO';
 import { SessionError, ErrorMessages } from '../../../domain/exceptions/sessionError';
+import {
+    createSessionId,
+    isSessionId,
+    SessionId,
+    WORKSPACE_SESSION_TTL_MS,
+} from '../../../domain/entities/workspaceSession';
 
 export class MongoDBUserRepository  implements UserRepositoryPort {
-    private userModel: Model<IUser>;    
+    private userModel: Model<IUser>;
+    private workspaceSessionModel: Model<IWorkspaceSession>;
     
     constructor(mongoDB: MongoDBService) {
-        this.userModel = getUserSchema(mongoDB.getConnection());  
+        const connection = mongoDB.getConnection();
+        this.userModel = getUserSchema(connection);
+        this.workspaceSessionModel = getWorkspaceSessionSchema(connection);
     }
 
-    public async findUserByTokenId(sessionId: number) : Promise<UserDTO> {
-        console.log(`findUserByTokenId ${sessionId}`);
-        const user  = await this.userModel.findOne({ sessionId: sessionId });
+    public async findUserByTokenId(sessionId: SessionId): Promise<UserDTO> {
+        const workspaceSession = await this.findActiveSession(sessionId);
+        const user = await this.userModel.findById(workspaceSession.user);
+
         if (!user) {
-            throw new SessionError(ErrorMessages.USER_NOT_FOUND);
+            await this.workspaceSessionModel.deleteOne({ _id: workspaceSession._id });
+            throw new SessionError(ErrorMessages.SESSION_INVALID);
         }
-        return this.createUserDTO(user);
+
+        return this.createUserDTO(user, workspaceSession);
     }
 
     /**
@@ -28,12 +41,27 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
      * @returns 
      */
     public async findUserByUserId(configDriverDTO: ConnectionDriverDTO): Promise<UserDTO | null> {
-        console.log(`findUserByUserId ${configDriverDTO.userId}`);
-        const user  = await this.userModel.findOne({ 'connections.userId': configDriverDTO.userId });
+        const user = await this.userModel.findOne({ 'connections.userId': configDriverDTO.userId });
         if (!user) {
-            return null
+            return null;
         }
-        return this.createUserDTO(user);
+
+        let workspaceSession: IWorkspaceSession | null = await this.workspaceSessionModel.findOne({ user: user._id });
+        if (workspaceSession && workspaceSession.expiresAt.getTime() <= Date.now()) {
+            await this.workspaceSessionModel.deleteOne({ _id: workspaceSession._id });
+            workspaceSession = null;
+        }
+
+        if (workspaceSession && !isSessionId(workspaceSession.sessionId)) {
+            await this.workspaceSessionModel.deleteOne({ _id: workspaceSession._id });
+            workspaceSession = null;
+        }
+
+        if (!workspaceSession) {
+            workspaceSession = await this.createWorkspaceSession(user._id);
+        }
+
+        return this.createUserDTO(user, workspaceSession);
     }
 
     /**
@@ -41,7 +69,7 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
      * @param user 
      * @returns 
      */
-    private createUserDTO(user: IUser): UserDTO {
+    private createUserDTO(user: IUser, workspaceSession: IWorkspaceSession): UserDTO {
         const configDriverDTOs:  ConnectionDriverDTO[] = [];
         
         user.connections.forEach(connection => {
@@ -58,70 +86,71 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
             configDriverDTOs.push(new ConnectionDriverDTO(params));
         });
         
-        const userDTO = new UserDTO(user.sessionId, user.name, user.createdAt, configDriverDTOs);             
+        const userDTO = new UserDTO(
+            workspaceSession.sessionId,
+            user.name,
+            user.createdAt,
+            workspaceSession.expiresAt,
+            configDriverDTOs,
+        );
 
         return userDTO;
     }
 
-    public async crateUserAndFirstConnection(sessionId: number, configDriverDTO: ConnectionDriverDTO ): Promise<void> {
-        console.log(`crateUserAndFirstConnection ${sessionId}`);
-        try {
-            const user = new this.userModel({
-                sessionId: sessionId,
-                name: 'userName',
-                connections: [configDriverDTO.toDatabse() as IConnection]
-            });
-            await user.save();
-            return;
-        } catch (error) {
-            console.log((error as Error).message );
-        }
+    public async createUserAndFirstConnection(sessionId: SessionId, expiresAt: Date, configDriverDTO: ConnectionDriverDTO): Promise<void> {
+        const user = new this.userModel({
+            sessionId: createSessionId(),
+            name: 'userName',
+            connections: [configDriverDTO.toDatabse() as IConnection]
+        });
+        await user.save();
+        await new this.workspaceSessionModel({
+            sessionId,
+            user: user._id,
+            expiresAt,
+        }).save();
     }   
-    public async addNewConnectionToUser(sessionId: number, configDriverDTO: ConnectionDriverDTO ):  Promise<UserDTO> {
-        console.log(`addNewConnectionToUser ${sessionId}`);
-        const user = await this.userModel.findOne({ sessionId: sessionId });    
+    public async addNewConnectionToUser(sessionId: SessionId, configDriverDTO: ConnectionDriverDTO): Promise<UserDTO> {
+        const workspaceSession = await this.findActiveSession(sessionId);
+        const user = await this.userModel.findById(workspaceSession.user);
         if (!user) {
-            throw new Error('User not found');
+            throw new SessionError(ErrorMessages.SESSION_INVALID);
         }   
         
         user.connections.push(configDriverDTO.toDatabse() as IConnection);
         await user.save();
-        return this.createUserDTO(user);; 
+        return this.createUserDTO(user, workspaceSession);
     }
 
+    public async rotateSessionId(previousId: SessionId, sessionId: SessionId, expiresAt: Date): Promise<void> {
+        const result = await this.workspaceSessionModel.updateOne(
+            { sessionId: previousId },
+            { $set: { sessionId, expiresAt } },
+        );
 
-/*
-    async saveSession(session: any) {
-        try {
-            await this.db.collection(this.collection).insertOne(session);
-        } catch (error) {
-            console.log(error);
+        if (result.matchedCount !== 1) {
+            throw new SessionError(ErrorMessages.SESSION_INVALID);
         }
     }
 
+    private async findActiveSession(sessionId: SessionId): Promise<IWorkspaceSession> {
+        const workspaceSession = await this.workspaceSessionModel.findOne({ sessionId });
 
-
-    async updateSession(session: any) {
-        try {
-            await this.db.collection(this.collection).updateOne({ sessionId: session.sessionId }, { $set: session });
-        } catch (error) {
-            console.log(error);
+        if (!workspaceSession || workspaceSession.expiresAt.getTime() <= Date.now()) {
+            if (workspaceSession) {
+                await this.workspaceSessionModel.deleteOne({ _id: workspaceSession._id });
+            }
+            throw new SessionError(ErrorMessages.SESSION_INVALID);
         }
+
+        return workspaceSession;
     }
 
-    async deleteSession(sessionId: string) {
-        try {
-            await this.db.collection(this.collection).deleteOne({ sessionId: sessionId });
-        } catch (error) {
-            console.log(error);
-        }
+    private async createWorkspaceSession(user: Types.ObjectId): Promise<IWorkspaceSession> {
+        return new this.workspaceSessionModel({
+            sessionId: createSessionId(),
+            user,
+            expiresAt: new Date(Date.now() + WORKSPACE_SESSION_TTL_MS),
+        }).save();
     }
-
-    async deleteAllSessions() {
-        try {
-            await this.db.collection(this.collection).deleteMany({});
-        } catch (error) {
-            console.log(error);
-        }
-    }*/
 }

@@ -61,8 +61,6 @@ export class ConnectionDriverDTO {
         this.alias = (params.alias===undefined) ? "" : params.alias;
     
 
-        console.log(`ConnectionDriverDTO:  ${this.alias} ${this.dbName} `);
-        
         if (!this.tech) {
             throw new Error("Tech not found");
         }

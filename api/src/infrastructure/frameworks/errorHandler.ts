@@ -6,9 +6,13 @@ import { SessionError } from '../../sessionManager/domain/exceptions/sessionErro
 export function errorHandler(error: Error, req: Request, res: Response) {
     if (error instanceof SessionError) {
         const sessionError = error as SessionError;
-        console.error(`SessionError: ${sessionError.getErrorNumber()}-${sessionError.message}`);
         res.status(sessionError.getErrorNumber())
-           .json(sessionError.message);
+           .json({
+               error: {
+                   code: "SESSION_INVALID",
+                   message: "Workspace session is invalid or expired.",
+               },
+           });
     } else {
         const msg = (error as Error).message;
         console.error('Error', msg);

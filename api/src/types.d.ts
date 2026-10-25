@@ -2,12 +2,13 @@
 
 
 import { SfConnection } from './connection'; 
+import { SessionId } from './sessionManager/domain/entities/workspaceSession';
 
 declare global {
   namespace Express {
     interface Request {
       appConnection?: SfConnection;
-      appSessionId?: number;
+      appSessionId?: SessionId;
     }
   }
   

@@ -39,6 +39,8 @@ El mayor problema no es la antigüedad del stack. Es que las piezas críticas �
 
 La cookie contiene solo un `sessionId` numérico en Base64. El ID se genera con `Math.random()` entre 0 y 999.999. Base64 no firma ni cifra; un cliente puede fabricar valores y probar IDs.
 
+Estado: corregido en PBI-003 mediante UUID criptográfico, expiración persistida, cookie endurecida y rotación tras OAuth. Los identificadores ya no forman parte del DTO público.
+
 Impacto: posible acceso a organizaciones/sesiones de otro usuario y colisiones.
 
 Propuesta:
