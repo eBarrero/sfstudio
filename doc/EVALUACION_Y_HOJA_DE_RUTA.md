@@ -55,6 +55,8 @@ Propuesta:
 
 El `state` se usa como etiqueta de tecnología/organización y no como nonce antifalsificación. Tampoco se compara el valor del callback con uno asociado a la sesión.
 
+Estado: corregido en PBI-004 mediante un nonce criptográfico de 256 bits, ligado al workspace y destino, con expiración de diez minutos y consumo único antes de contactar con Salesforce.
+
 Impacto: riesgo de login CSRF y confusión de conexiones.
 
 Propuesta: nonce criptográfico de un solo uso ligado a sesión y destino; considerar PKCE si la integración elegida lo soporta.
@@ -76,6 +78,8 @@ Propuesta: usar rutas relativas `/api/...` y dejar el proxy solo para desarrollo
 #### 5. Secretos y datos sensibles en logs
 
 Se imprimen URL de autorización, cookie/token Base64, sesión, IP, DTO y objetos de usuario.
+
+Estado: corregido en PBI-004 mediante logs JSON correlacionados, campos mínimos y redacción defensiva de credenciales, OAuth, cookies y PII.
 
 Propuesta: logger estructurado con redacción; nunca registrar code, cookie, token, client secret ni PII completa.
 

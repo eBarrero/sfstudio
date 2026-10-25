@@ -3,25 +3,22 @@ import cookieParser from "cookie-parser";
 import type { RuntimeEnvironment } from "./config/environment";
 import { createHealthRouter, type ReadinessProbe } from "./infrastructure/frameworks/healthRouter";
 import { notFoundHandler } from "./infrastructure/frameworks/errorHandler";
+import { correlationMiddleware } from "./infrastructure/frameworks/correlation";
+import { logger, StructuredLogger } from "./infrastructure/frameworks/structuredLogger";
 
 export interface AppOptions {
     apiRouter: express.Router;
     readinessProbe: ReadinessProbe;
     environment: RuntimeEnvironment;
+    requestLogger?: StructuredLogger;
 }
-
-const logger = (request: express.Request, _response: express.Response, next: express.NextFunction) => {
-    console.log(`${request.method} ${request.path} ${request.ip}`);
-    next();
-};
 
 export function createApp(options: AppOptions): express.Express {
     const app = express();
+    app.use(correlationMiddleware(options.requestLogger ?? logger));
 
     if (options.environment === "PROD") {
         app.use(express.static("../app/dist"));
-    } else {
-        app.use(logger);
     }
 
     app.use(cookieParser());

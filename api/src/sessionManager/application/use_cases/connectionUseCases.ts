@@ -40,16 +40,20 @@ export class SignInUseCase implements SignInInputPort {
 }
 
 export class RequestConnectionUseCase implements RequestConnectionInputPort {
-    toNewConnection(configDriverDTO: ConnectionDriverDTO): string {
+    toNewConnection(configDriverDTO: ConnectionDriverDTO, state: string): string {
         const driver = ConnectionDriverFactory.createDriver(configDriverDTO);
-        return driver.requestAuthorization();
+        return driver.requestAuthorization(state);
     }
 
-    toConfiguredConnection(sessionId: SessionId, connectionId: number): string {
+    getConfiguredTechnology(sessionId: SessionId, connectionId: number): string {
+        return sessions.getUser(sessionId).getConnection(connectionId).getTech();
+    }
+
+    toConfiguredConnection(sessionId: SessionId, connectionId: number, state: string): string {
         const connection = sessions.getUser(sessionId).getConnection(connectionId);
         if (connection) {
             const driver = ConnectionDriverFactory.createDriver(connection.getConnectionDriverConfig());
-            return driver.requestAuthorization();
+            return driver.requestAuthorization(state);
         }
         throw new SessionError(`Connection not found with id ${connectionId}`);
     }

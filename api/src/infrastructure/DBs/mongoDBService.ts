@@ -1,4 +1,5 @@
 import mongoose, { Connection } from "mongoose";
+import { logger } from "../frameworks/structuredLogger";
 
 
 export class MongoDBService {
@@ -9,9 +10,11 @@ export class MongoDBService {
         this.mongoURL = mongoURL;
         this.dbConnection = mongoose.createConnection(this.mongoURL, clientOptions);
 
-        this.dbConnection.on('connected', () => console.log('Conectado a la base de datos'));
-        this.dbConnection.on('error', (err) => console.error('Error en la conexión:', err));
-        this.dbConnection.on('disconnected', () => console.log('Conexión cerrada'));
+        this.dbConnection.on('connected', () => logger.info("mongodb.connected"));
+        this.dbConnection.on('error', (error) => logger.error("mongodb.connection_error", {
+            errorName: (error as Error).name,
+        }));
+        this.dbConnection.on('disconnected', () => logger.warn("mongodb.disconnected"));
     }
 
     public getConnection = ():Connection => this.dbConnection;
@@ -21,13 +24,13 @@ export class MongoDBService {
     }
 
     public async disconnect() {
-        console.log("Disconnecting from MongoDB...");
+        logger.info("mongodb.disconnecting");
         try {
             if (this.dbConnection.readyState!==0) {        
                 await this.dbConnection.close();
-                console.log("Disconnected from MongoDB!");
+                logger.info("mongodb.disconnected");
             } else {
-                console.log("Already disconnected from MongoDB");
+                logger.info("mongodb.already_disconnected");
             }
         } catch (error) {
             throw new Error("Error disconnecting from MongoDB: " + (error as Error).message);

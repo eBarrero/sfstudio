@@ -9,6 +9,7 @@ declare global {
     interface Request {
       appConnection?: SfConnection;
       appSessionId?: SessionId;
+      correlationId?: string;
     }
   }
   
