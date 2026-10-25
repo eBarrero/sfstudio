@@ -1,151 +1,83 @@
-
-import { SessionError } from './../exceptions/sessionError';
-import { configuredConnections } from '../entities/configuredConnections';
-import { SessionDTO, PublicSesionDefinition } from '../dtos/sessionDTO';
+import { SessionError } from '../exceptions/sessionError';
+import { configuredConnections } from './configuredConnections';
+import { SessionDTO, ConnectionStatus } from '../dtos/sessionDTO';
 import { UserDTO } from '../../application/dtos/userDTO';
 import { SessionId, WorkspaceSession } from './workspaceSession';
+import { createOrgKey, OrgKey } from './orgKey';
 
-// inteeface to connection are opens
-interface OpenedConnections {
-    isOpen: boolean;
-    isOnError: boolean;
-    isClose: boolean;
-}
-
-export class UserEntity { 
+export class UserEntity {
     private readonly workspaceSession: WorkspaceSession;
     private configuredConnections: configuredConnections[] = [];
-    private openConnections: Map<string,OpenedConnections> = new Map<string,OpenedConnections>(); 
-    private isPendingToUpdate: boolean = false;
-    // indicates the indesx the last bd connected
-    private currentConnection: number = -1;
+    private connectionStatuses = new Map<OrgKey, ConnectionStatus>();
+    private isPendingToUpdate = false;
+    private activeOrgKey: OrgKey | null = null;
 
     constructor(sessionId: SessionId | null, expiresAt?: Date) {
-        this.workspaceSession = new WorkspaceSession({
-            id: sessionId ?? undefined,
-            expiresAt,
-        });
+        this.workspaceSession = new WorkspaceSession({ id: sessionId ?? undefined, expiresAt });
     }
 
-    public getSessionId(): SessionId {
-        return this.workspaceSession.getId();
+    getSessionId(): SessionId { return this.workspaceSession.getId(); }
+    getExpiresAt(): Date { return this.workspaceSession.getExpiresAt(); }
+    isExpired(): boolean { return this.workspaceSession.isExpired(); }
+    rotateSession() { return this.workspaceSession.rotate(); }
+    setPendingToUpdate(pending: boolean): void { this.isPendingToUpdate = pending; }
+    getPendingToUpdate(): boolean { return this.isPendingToUpdate; }
+
+    setActiveOrgKey(orgKey: OrgKey): void {
+        this.getConnection(orgKey);
+        this.activeOrgKey = orgKey;
     }
 
-    public getExpiresAt(): Date {
-        return this.workspaceSession.getExpiresAt();
+    checkConnectionExists(orgKey: OrgKey): boolean {
+        return this.configuredConnections.some(connection => connection.getOrgKey() === orgKey);
     }
 
-    public isExpired(): boolean {
-        return this.workspaceSession.isExpired();
+    setConnectionStatus(orgKey: OrgKey, status: ConnectionStatus): void {
+        this.getConnection(orgKey);
+        this.connectionStatuses.set(orgKey, status);
     }
 
-    public rotateSession() {
-        return this.workspaceSession.rotate();
-    }
-
-    public setPendingToUpdate(pending: boolean) {
-        this.isPendingToUpdate = pending;
-    }
-    public getPendingToUpdate(): boolean {
-        return this.isPendingToUpdate;
-    }
-
-    public setcurrentConnection(dbName: string): number {
-        this.currentConnection =  this.configuredConnections.findIndex(connection => connection.getDbName() === dbName);
-        return this.currentConnection;
-    }
-
-    public getCurrentConnection(): number | null {
-        return (this.currentConnection===-1) ? null : this.currentConnection;
-    }
-
-    public checkConnectionExists(dbName: string): boolean {
-        return this.configuredConnections.some(connection => connection.getDbName() === dbName);
-    }
-
-    public setConnectionAsOpen(dbName: string) {
-        this.openConnections.set(dbName, { isOpen: true, isOnError: false, isClose: false });
-    }
-
-
-
-
-
-    public getConnectionByName(dbName:string) : configuredConnections {
-        if (dbName === undefined) {
-            return this.configuredConnections.at(-1)!;
-        }
-
-        const foundConnection = this.configuredConnections.find(connection => connection.getDbName() === dbName);
-        if (!foundConnection) {
-            throw new SessionError(`Connection with name "${dbName}" not found`);
-        }
-        return foundConnection;
-    }
-
-    public getConnection(connectionId: number) : configuredConnections {
-        const connection = this.configuredConnections[connectionId];
-        if (!connection) {
-            throw new SessionError(`Connection with name "${connection}" not found`);
-        }
+    getConnection(orgKey: OrgKey): configuredConnections {
+        const connection = this.configuredConnections.find(item => item.getOrgKey() === orgKey);
+        if (!connection) throw new SessionError('Connection not found in workspace');
         return connection;
     }
 
-
-    public loadConnections(userDTO: UserDTO) {
-        this.configuredConnections = [];
-        this.configuredConnections = userDTO.getConnections().map((connection) => { return new configuredConnections(connection) });
-        this.setPendingToUpdate(false);
-    }
-
-
-    public signOut() {
-        //TODO: delete all connections and close the session
-    }
-
-
-
-
-    /**
-     * Gets the session status as a base64 encoded string.
-     * @returns The session status as a base64 encoded string.
-     */
-    public getSessionStatus(): SessionDTO {
-        const result: PublicSesionDefinition = {
-            connections: [],
-            currentConnection: this.getCurrentConnection()
-        };
-
-        if (this.configuredConnections && this.configuredConnections.length !== 0) {
-            this.configuredConnections.forEach((connection)=> {  
-                let connectionStatus = { isOpen: false, isOnError: false, isClose: false };
-                if (this.openConnections.has(connection.getDbName())) {
-                    connectionStatus = this.openConnections.get(connection.getDbName())!;
-                }
-                result.connections.push( {alias: connection.getAlias() , dbName: connection.getDbName(),  tech: connection.getTech(), isConnected: connectionStatus.isOpen, isOnError: connectionStatus.isOnError, isClose: connectionStatus.isClose });
-            });
+    loadConnections(userDTO: UserDTO): void {
+        this.configuredConnections = userDTO.getConnections().map(connection => new configuredConnections(connection));
+        const available = new Set(this.configuredConnections.map(connection => connection.getOrgKey()));
+        for (const key of this.connectionStatuses.keys()) {
+            if (!available.has(key)) this.connectionStatuses.delete(key);
         }
-        return new SessionDTO(result);
+        if (this.activeOrgKey && !available.has(this.activeOrgKey)) this.activeOrgKey = null;
+        this.isPendingToUpdate = false;
     }
 
+    signOut(): void {
+        this.configuredConnections = [];
+        this.connectionStatuses.clear();
+        this.activeOrgKey = null;
+    }
 
-
-
-
-
-
-
-
-
-
-
+    getSessionStatus(): SessionDTO {
+        return new SessionDTO({
+            version: 1,
+            activeOrgKey: this.activeOrgKey,
+            connections: this.configuredConnections.map(connection => {
+                const config = connection.getConnectionDriverConfig();
+                const orgKey = createOrgKey(config.dbId, config.userId);
+                return {
+                    orgKey,
+                    organizationId: config.dbId,
+                    userId: config.userId,
+                    userName: config.userName,
+                    alias: config.alias,
+                    instanceUrl: config.instanceUrl ?? '',
+                    loginHost: config.loginHost,
+                    environmentKind: config.isSalesforceSandbox() ? 'SANDBOX' as const : 'PRODUCTION' as const,
+                    status: this.connectionStatuses.get(orgKey) ?? 'REAUTH_REQUIRED' as const,
+                };
+            }),
+        });
+    }
 }
-
-    
-
-
-
-
-
-
-

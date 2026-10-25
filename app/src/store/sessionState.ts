@@ -1,28 +1,29 @@
 import {create} from 'zustand';
 import { addCommand, SESSION_CMD, CONTEXT_LEVEL } from '../core/commandManager';
 import { createSession, loginSFDC, loginSandBox, loginOrganization, disconnect } from '../services/session/model';
+import type { PublicWorkspaceDefinition } from '../services/session/types';
 
 
 interface SessionState {
-    publicSession: PublicSesionDefinition;
+    publicSession: PublicWorkspaceDefinition;
     createSession: () => void;
     loginSFDC: () => void;
     loginSandBox: () => void;
-    loginOrganization: (connectionId: number) => void;
+    loginOrganization: (orgKey: string) => void;
     initializeSession: () => void;
-    disconnect: (orgName: string) => void;
+    disconnect: () => void;
 }
 
 const sessionState = create<SessionState>((set, get) => {
     return  {
-        publicSession: { currentConnection: 0, connections: [] },
+        publicSession: { version: 1, activeOrgKey: null, connections: [] },
         createSession: () => {
             createSession().then((s) => {
-                s.connections.forEach((conn, index) => {
-                    if (conn.isConnected) {
-                        addCommand({command: `close_${conn.alias}`,  description: `close ${conn.alias}:${conn.dbName}`, context: CONTEXT_LEVEL.INIT,  action: () => { get().disconnect(conn.dbName);}});
+                s.connections.forEach((conn) => {
+                    if (conn.status === 'CONNECTED') {
+                        addCommand({command: `close_${conn.orgKey.replace(':', '_')}`,  description: `close ${conn.alias}:${conn.organizationId}`, context: CONTEXT_LEVEL.INIT,  action: () => { get().disconnect();}});
                     } else {
-                        addCommand({command: `login_${conn.alias}`,  description: `login ${conn.alias}:${conn.dbName}`, context: CONTEXT_LEVEL.INIT,  action: () => { get().loginOrganization(index);}});
+                        addCommand({command: `login_${conn.orgKey.replace(':', '_')}`,  description: `login ${conn.alias}:${conn.organizationId}`, context: CONTEXT_LEVEL.INIT,  action: () => { get().loginOrganization(conn.orgKey);}});
                     }
                 });
                 set({publicSession: s});
@@ -34,11 +35,11 @@ const sessionState = create<SessionState>((set, get) => {
         loginSandBox: () => {
             loginSandBox();
         },
-        loginOrganization: (connectionId: number) => {
-            loginOrganization(connectionId);
+        loginOrganization: (orgKey: string) => {
+            loginOrganization(orgKey);
         },
-        disconnect: (orgName: string) => {
-            disconnect(orgName);
+        disconnect: () => {
+            disconnect();
         },
         initializeSession: () => {
             addCommand({...SESSION_CMD.PROD, action: () => { get().loginSFDC();}});

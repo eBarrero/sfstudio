@@ -7,6 +7,7 @@ import {
     OAuthStateStore,
 } from "../../domain/entities/oauthStateStore";
 import { createSessionId } from "../../domain/entities/workspaceSession";
+import { parseOrgKey, OrgKey } from '../../domain/entities/orgKey';
 import { errorHandler } from "../../../infrastructure/frameworks/errorHandler";
 import { ENV, REDIRECT_URI, RuntimeEnvironment } from "../../../config/environment";
 import { logger, StructuredLogger } from "../../../infrastructure/frameworks/structuredLogger";
@@ -86,6 +87,28 @@ export class SignInController {
         }
     }
 
+    async workspace(req: Request, res: Response) {
+        const sessionId = readSessionCookie(req);
+        if (!sessionId) {
+            if (hasSessionCookie(req)) {
+                clearSessionCookie(res, this.environment);
+                sendUnauthorized(res, req.correlationId);
+            } else {
+                res.status(200).json({ version: 1, connections: [], activeOrgKey: null });
+            }
+            return;
+        }
+        try {
+            const sessionDTO = await this.useCase.getSessionStatus(sessionId);
+            res.status(200).json(sessionDTO.toJSON());
+        } catch (error) {
+            if (error instanceof SessionError) {
+                clearSessionCookie(res, this.environment);
+                sendUnauthorized(res, req.correlationId);
+            } else errorHandler(error as Error, req, res);
+        }
+    }
+
 }
 
 export class RequestConnectionController {     
@@ -145,19 +168,32 @@ export class RequestConnectionController {
         }
     }    
     getUrlConnection(req: Request, res: Response) {
+        let orgKey: OrgKey;
+        try {
+            orgKey = req.params.orgKey as OrgKey;
+            parseOrgKey(orgKey);
+        } catch {
+            res.status(400).json({
+                error: {
+                    code: 'ORG_KEY_INVALID',
+                    message: 'La identidad de la organización no es válida.',
+                    correlationId: req.correlationId,
+                },
+            });
+            return;
+        }
         try {
             const sessionId = req.appSessionId!;
-            const connectionId = parseInt(req.params.connectionId);
-            const technology = this.requestConnectionUseCase.getConfiguredTechnology(sessionId, connectionId);
+            const technology = this.requestConnectionUseCase.getConfiguredTechnology(sessionId, orgKey);
             const state = this.oauthStateStore.issue(
                 sessionId,
-                { type: "configured", connectionId, technology },
+                { type: "configured", orgKey, technology },
                 req.correlationId!,
             );
             let url: string;
 
             try {
-                url = this.requestConnectionUseCase.toConfiguredConnection(sessionId, connectionId, state);
+                url = this.requestConnectionUseCase.toConfiguredConnection(sessionId, orgKey, state);
             } catch (error) {
                 this.oauthStateStore.discard(state);
                 throw error;
@@ -170,7 +206,15 @@ export class RequestConnectionController {
             });
             res.redirect(url);
         } catch (error) {
-            errorHandler(error as Error, req, res);
+            if (error instanceof SessionError) {
+                res.status(404).json({
+                    error: {
+                        code: 'ORG_NOT_FOUND',
+                        message: 'La organización no pertenece al workspace.',
+                        correlationId: req.correlationId,
+                    },
+                });
+            } else errorHandler(error as Error, req, res);
         }
     }        
 }
@@ -217,7 +261,9 @@ export class RequestedConnectionController {
             });
 
             const configDriverDTO = new ConnectionDriverDTO({ code, tech: technology });
-            const sessionId = await this.requestedUseCase.exe(workspaceSessionId, configDriverDTO);
+            const expectedOrgKey = consumedState.destination.type === 'configured'
+                ? consumedState.destination.orgKey : undefined;
+            const sessionId = await this.requestedUseCase.exe(workspaceSessionId, configDriverDTO, expectedOrgKey);
             setSessionCookie(res, sessionId, this.environment);
             clearOAuthFlowCookie(res, this.environment);
             res.redirect(REDIRECT_URI);
