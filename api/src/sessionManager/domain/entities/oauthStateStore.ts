@@ -1,10 +1,11 @@
 import { randomBytes } from "node:crypto";
+import { OrgKey } from './orgKey';
 
 export const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
 export type OAuthDestination =
     | { type: "new"; technology: string }
-    | { type: "configured"; connectionId: number; technology: string };
+    | { type: "configured"; orgKey: OrgKey; technology: string };
 
 export type OAuthStateErrorReason = "EXPIRED" | "INVALID" | "WORKSPACE_MISMATCH";
 

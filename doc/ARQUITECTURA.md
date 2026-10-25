@@ -63,9 +63,9 @@ El contenedor es sencillo y suficiente para el tamaño actual. No hace falta int
 #### Dominio
 
 - `Sessions` contiene un mapa en memoria de UUID de workspace a `UserEntity` y elimina entradas expiradas al consultarlas.
-- `UserEntity` contiene organizaciones configuradas, conexión actual y estado abierto/cerrado.
-- `configuredConnections` envuelve la configuración de una organización.
-- `SessionDTO` devuelve al cliente una vista pública codificada en Base64 que no contiene el identificador de sesión.
+- `UserEntity` contiene organizaciones configuradas, `activeOrgKey` y estados de conexión por `OrgKey`.
+- `configuredConnections` envuelve la configuración de una organización y obtiene su `OrgKey` de los IDs Salesforce.
+- `SessionDTO` devuelve la vista pública JSON versionada; `/api/init` conserva temporalmente la representación Base64 sin identificador de sesión.
 
 #### Aplicación
 
@@ -163,18 +163,27 @@ La consola funciona como una «command palette» contextual. Los comandos se reg
 
 ## 4. API HTTP actual
 
+### Contrato multi-org v1
+
+`GET /api/v1/workspace` devuelve JSON tipado, versión 1, con una lista de conexiones conocidas y `activeOrgKey`. `OrgKey` concatena `organizationId:userId`; alias y hostname nunca identifican una conexión. Cada conexión expone identidad, alias, URL de instancia, host de login, entorno y estado. La ruta `GET /api/v1/connections/:orgKey/authorize` reautentica una org conocida del workspace. El callback comprueba la identidad devuelta por Salesforce antes de asociar el driver al workspace. El pool en memoria se indexa por workspace y `OrgKey`.
+
+Los documentos `User.connections` antiguos se normalizan al leerlos: se conserva una entrada solo si tiene ambos IDs Salesforce válidos. Se añade `contractVersion: 1` y el host de login; entradas sin identidad o duplicadas se descartan y requieren nueva conexión. El identificador heredado `dbName` se conserva únicamente en MongoDB por compatibilidad del documento. No se usa como clave de sesión o conexión.
+
+`/api/init` sigue disponible temporalmente para compatibilidad, con el mismo contenido público codificado en Base64. El frontend usa el JSON de `/api/v1/workspace`.
+
 | Método y ruta | Uso |
 | --- | --- |
 | `GET /health` | Liveness del proceso, independiente de MongoDB y Salesforce. |
 | `GET /ready` | Readiness basada en el estado de la conexión MongoDB. |
 | `GET /api/init` | Recuperar la sesión pública o indicar sesión nueva. |
 | `GET /api/auth/:tech` | Iniciar OAuth para producción o sandbox. |
-| `GET /api/connections/:connectionId` | Reautenticar una organización conocida. |
+| `GET /api/v1/workspace` | Obtener contrato público JSON versionado del workspace. |
+| `GET /api/v1/connections/:orgKey/authorize` | Reautenticar una organización conocida del workspace. |
 | `GET /api/callback` | Procesar el callback de Salesforce. |
-| `GET /api/logout/:dbName` | Cerrar sesión; hoy es incompleto. |
-| `GET /api/describeGlobal/:dbName` | Obtener objetos de la organización. |
-| `GET /api/describe/:dbName/:sobject` | Obtener campos y relaciones. |
-| `GET /api/soql/:dbName/:soql` | Ejecutar SOQL codificado en Base64 URL-safe. |
+| `GET /api/logout` | Cerrar sesión; hoy es incompleto. |
+| `GET /api/describeGlobal/:orgKey` | Obtener objetos de la organización. |
+| `GET /api/describe/:orgKey/:sobject` | Obtener campos y relaciones. |
+| `GET /api/soql/:orgKey/:soql` | Ejecutar SOQL codificado en Base64 URL-safe; pendiente de sustitución por POST en Sprint 05. |
 
 El frontend también intenta llamar a `GET /api/getObjectmetadata/:dbName/:sobject`, pero esa ruta no existe en el router.
 
@@ -245,7 +254,7 @@ sequenceDiagram
 
 ## 7. Evolución necesaria para multi-org
 
-La implementación ya contiene un mapa de conexiones por sesión, pero el frontend y parte del dominio siguen suponiendo una única `currentConnection`.
+El dominio y el frontend usan `OrgKey` para la org activa; el pool puede contener varias conexiones en el mismo workspace. La selección visual completa de orgs se aborda en Sprint 03.
 
 El modelo recomendado es:
 

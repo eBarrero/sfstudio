@@ -8,10 +8,11 @@ import { UserDTO } from '../../../application/dtos/userDTO';
 import { SessionError, ErrorMessages } from '../../../domain/exceptions/sessionError';
 import {
     createSessionId,
-    isSessionId,
     SessionId,
     WORKSPACE_SESSION_TTL_MS,
 } from '../../../domain/entities/workspaceSession';
+import { createOrgKey } from '../../../domain/entities/orgKey';
+import { migrateConnections } from './connectionMigration';
 
 export class MongoDBUserRepository  implements UserRepositoryPort {
     private userModel: Model<IUser>;
@@ -41,26 +42,16 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
      * @returns 
      */
     public async findUserByUserId(configDriverDTO: ConnectionDriverDTO): Promise<UserDTO | null> {
-        const user = await this.userModel.findOne({ 'connections.userId': configDriverDTO.userId });
+        const user = await this.userModel.findOne({
+            connections: { $elemMatch: { dbId: configDriverDTO.dbId, userId: configDriverDTO.userId } },
+        });
         if (!user) {
             return null;
         }
 
-        let workspaceSession: IWorkspaceSession | null = await this.workspaceSessionModel.findOne({ user: user._id });
-        if (workspaceSession && workspaceSession.expiresAt.getTime() <= Date.now()) {
-            await this.workspaceSessionModel.deleteOne({ _id: workspaceSession._id });
-            workspaceSession = null;
-        }
-
-        if (workspaceSession && !isSessionId(workspaceSession.sessionId)) {
-            await this.workspaceSessionModel.deleteOne({ _id: workspaceSession._id });
-            workspaceSession = null;
-        }
-
-        if (!workspaceSession) {
-            workspaceSession = await this.createWorkspaceSession(user._id);
-        }
-
+        // A new OAuth flow without a workspace cookie must never reuse another
+        // browser's live workspace session, even for the same Salesforce user.
+        const workspaceSession = await this.createWorkspaceSession(user._id);
         return this.createUserDTO(user, workspaceSession);
     }
 
@@ -69,10 +60,13 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
      * @param user 
      * @returns 
      */
-    private createUserDTO(user: IUser, workspaceSession: IWorkspaceSession): UserDTO {
+    private async createUserDTO(user: IUser, workspaceSession: IWorkspaceSession): Promise<UserDTO> {
         const configDriverDTOs:  ConnectionDriverDTO[] = [];
-        
-        user.connections.forEach(connection => {
+        const migration = migrateConnections(user.connections);
+        if (migration.changed) {
+            await this.userModel.updateOne({ _id: user._id }, { $set: { connections: migration.connections } });
+        }
+        migration.connections.forEach(connection => {
             const params: ConnectionDriverParams = {
                 tech: stringToTechnology(connection.tech),
                 dbId: connection.dbId,
@@ -81,7 +75,8 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
                 userName: connection.userName,
                 email: connection.email,
                 instanceUrl: connection.instanceUrl,
-                alias: connection.alias
+                alias: connection.alias,
+                loginHost: connection.loginHost,
             };
             configDriverDTOs.push(new ConnectionDriverDTO(params));
         });
@@ -117,9 +112,15 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
             throw new SessionError(ErrorMessages.SESSION_INVALID);
         }   
         
-        user.connections.push(configDriverDTO.toDatabse() as IConnection);
-        await user.save();
-        return this.createUserDTO(user, workspaceSession);
+        const key = createOrgKey(configDriverDTO.dbId, configDriverDTO.userId);
+        const migration = migrateConnections(user.connections);
+        const existingIndex = migration.connections.findIndex(row => createOrgKey(row.dbId, row.userId) === key);
+        if (existingIndex < 0) migration.connections.push(configDriverDTO.toDatabse() as IConnection);
+        else migration.connections[existingIndex] = configDriverDTO.toDatabse() as IConnection;
+        await this.userModel.updateOne({ _id: user._id }, { $set: { connections: migration.connections } });
+        const updatedUser = await this.userModel.findById(user._id);
+        if (!updatedUser) throw new SessionError(ErrorMessages.SESSION_INVALID);
+        return this.createUserDTO(updatedUser, workspaceSession);
     }
 
     public async rotateSessionId(previousId: SessionId, sessionId: SessionId, expiresAt: Date): Promise<void> {

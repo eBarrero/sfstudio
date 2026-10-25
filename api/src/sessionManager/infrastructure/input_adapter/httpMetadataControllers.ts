@@ -8,7 +8,7 @@ export class HttpMetadataControllers {
 
     async getDescribeGlobal(req: Request, res: Response) {
         try {
-            const metadata = await this.metadataRequestUseClase.getDescribeGlobal(req.appSessionId!, req.params.dbName);
+            const metadata = await this.metadataRequestUseClase.getDescribeGlobal(req.appSessionId!, req.params.orgKey);
             res.send(metadata);
         } catch (error) {
             errorHandler(error as Error, req, res);
@@ -17,7 +17,7 @@ export class HttpMetadataControllers {
 
     async getObjectDescription(req: Request, res: Response) {
         try {
-            const metadata = await this.metadataRequestUseClase.describeSObject(req.appSessionId!, req.params.dbName, req.params.sobject);
+            const metadata = await this.metadataRequestUseClase.describeSObject(req.appSessionId!, req.params.orgKey, req.params.sobject);
             res.send(metadata);
         } catch (error) {
             errorHandler(error as Error, req, res);
@@ -26,7 +26,7 @@ export class HttpMetadataControllers {
 
     public async getSOQL(req: Request, res: Response) {
         try {
-            const rows = await this.metadataRequestUseClase.doSOQL(req.appSessionId!, req.params.dbName,fromBase64UrlSafe(req.params.soql as string));
+            const rows = await this.metadataRequestUseClase.doSOQL(req.appSessionId!, req.params.orgKey,fromBase64UrlSafe(req.params.soql as string));
             res.send(rows);
         } catch (error) {
         errorHandler(error as Error, req, res);

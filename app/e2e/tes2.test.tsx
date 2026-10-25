@@ -21,7 +21,8 @@ describe('Integración de App y sessionState', () => {
       const state = sessionState.getState();
       // Por ejemplo, si createSession() asigna 'usuarioEjemplo'
       expect(state.publicSession.connections.length).toBe(0);
-      expect(state.publicSession.currentConnection).toBe(null);
+      expect(state.publicSession.activeOrgKey).toBe(null);
+      expect(state.publicSession.version).toBe(1);
     });
   });
 });

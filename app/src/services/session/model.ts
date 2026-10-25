@@ -1,23 +1,13 @@
 import { request,  URL_PATH } from './controller';
+import type { PublicWorkspaceDefinition } from './types';
 
 
 
 
-  export async function createSession(): Promise<PublicSesionDefinition>  {
-    const s = await request('init');
-    console.log('createSession:' + s);
-    if (s==='newsession') {
-      return { connections: [], currentConnection: null};
-    }
-    if (s==='#Error') {
-      return { connections: [], currentConnection: null};
-    }
-    if (s==='reseted') {
-      return { connections: [], currentConnection: null};
-    }
-    
-    const token = JSON.parse(atob(s ));
-    return token as PublicSesionDefinition;
+  export async function createSession(): Promise<PublicWorkspaceDefinition>  {
+    const response = await request('v1/workspace');
+    if (response === '#Error') return { version: 1, connections: [], activeOrgKey: null };
+    return response as PublicWorkspaceDefinition;
   }
 
   export function loginSFDC(): void {
@@ -28,13 +18,12 @@ import { request,  URL_PATH } from './controller';
     window.location.href=`${URL_PATH}auth/SF_Test`;
   }
 
-  export function loginOrganization(connectionId: number): void {
-    window.location.href=`${URL_PATH}connections/${connectionId}`;
+  export function loginOrganization(orgKey: string): void {
+    window.location.href=`${URL_PATH}v1/connections/${encodeURIComponent(orgKey)}/authorize`;
   }
 
-  export function disconnect(orgName: string): void {
-    console.log(`${URL_PATH}/logout/${orgName}`);
-    window.location.href=`${URL_PATH}logout/${orgName}`;
+  export function disconnect(): void {
+    window.location.href=`${URL_PATH}logout`;
   }
 
-  
+

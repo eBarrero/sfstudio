@@ -10,12 +10,17 @@ export function createApiRouter(container: AppContainer): express.Router {
     );
 
     router.get(
+        "/api/v1/workspace",
+        container.signInCtrl.workspace.bind(container.signInCtrl),
+    );
+
+    router.get(
         "/api/auth/:tech",
         container.requestConnectionCtrl.getNewUrlConnection.bind(container.requestConnectionCtrl),
     );
 
     router.get(
-        "/api/connections/:connectionId",
+        "/api/v1/connections/:orgKey/authorize",
         container.signInCtrl.setUser.bind(container.signInCtrl),
         container.requestConnectionCtrl.getUrlConnection.bind(container.requestConnectionCtrl),
     );
@@ -26,25 +31,25 @@ export function createApiRouter(container: AppContainer): express.Router {
     );
 
     router.get(
-        "/api/logout/:dbName",
+        "/api/logout",
         container.signInCtrl.setUser.bind(container.signInCtrl),
         container.signOutCtrl.do.bind(container.signOutCtrl),
     );
 
     router.get(
-        "/api/describeGlobal/:dbName",
+        "/api/describeGlobal/:orgKey",
         container.signInCtrl.setUser.bind(container.signInCtrl),
         container.httpMetadataCtrl.getDescribeGlobal.bind(container.httpMetadataCtrl),
     );
 
     router.get(
-        "/api/describe/:dbName/:sobject",
+        "/api/describe/:orgKey/:sobject",
         container.signInCtrl.setUser.bind(container.signInCtrl),
         container.httpMetadataCtrl.getObjectDescription.bind(container.httpMetadataCtrl),
     );
 
     router.get(
-        "/api/soql/:dbName/:soql",
+        "/api/soql/:orgKey/:soql",
         container.signInCtrl.setUser.bind(container.signInCtrl),
         container.httpMetadataCtrl.getSOQL.bind(container.httpMetadataCtrl),
     );

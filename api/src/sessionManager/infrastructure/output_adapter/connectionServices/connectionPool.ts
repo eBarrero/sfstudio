@@ -1,8 +1,9 @@
 import { ConnectionDriver } from "./connectionDriver";
 import { SessionId } from "../../../domain/entities/workspaceSession";
+import { OrgKey } from '../../../domain/entities/orgKey';
 
 interface UserConections {
-    conns: Map<string, ConnectionDriver>;
+    conns: Map<OrgKey, ConnectionDriver>;
 }
 
 class ConnectionPool {
@@ -22,21 +23,21 @@ class ConnectionPool {
         return userPool;
     }
 
-    public addConnection(sessionId: SessionId, dbName: string, connection: ConnectionDriver): void {
+    public addConnection(sessionId: SessionId, orgKey: OrgKey, connection: ConnectionDriver): void {
         if (!this.pool.has(sessionId)) {
             this.pool.set(sessionId, { conns: new Map() });
         }
         const userPool = this.getUserPool(sessionId);
-        userPool.conns.set(dbName, connection);
+        userPool.conns.set(orgKey, connection);
         return; 
     }
 
-    public getConnection(sessionId: SessionId, dbName: string): ConnectionDriver {
+    public getConnection(sessionId: SessionId, orgKey: OrgKey): ConnectionDriver {
         const userPool = this.getUserPool(sessionId);
-        if (!userPool.conns.has(dbName)) {
+        if (!userPool.conns.has(orgKey)) {
             throw new Error('Connection not found');
         }
-        return userPool.conns.get(dbName) as ConnectionDriver;
+        return userPool.conns.get(orgKey) as ConnectionDriver;
     }
 
     public rotateSession(previousId: SessionId, sessionId: SessionId): void {

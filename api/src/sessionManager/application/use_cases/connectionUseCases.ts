@@ -10,6 +10,7 @@ import ConnectionDriverFactory  from '../../infrastructure/output_adapter/connec
 import connectionPool from '../../infrastructure/output_adapter/connectionServices/connectionPool';
 import { SessionId } from '../../domain/entities/workspaceSession';
 import { UserEntity } from '../../domain/entities/UserEntity';
+import { createOrgKey, OrgKey } from '../../domain/entities/orgKey';
 
 
 export class SignInUseCase implements SignInInputPort {
@@ -45,25 +46,29 @@ export class RequestConnectionUseCase implements RequestConnectionInputPort {
         return driver.requestAuthorization(state);
     }
 
-    getConfiguredTechnology(sessionId: SessionId, connectionId: number): string {
-        return sessions.getUser(sessionId).getConnection(connectionId).getTech();
+    getConfiguredTechnology(sessionId: SessionId, orgKey: OrgKey): string {
+        return sessions.getUser(sessionId).getConnection(orgKey).getTech();
     }
 
-    toConfiguredConnection(sessionId: SessionId, connectionId: number, state: string): string {
-        const connection = sessions.getUser(sessionId).getConnection(connectionId);
+    toConfiguredConnection(sessionId: SessionId, orgKey: OrgKey, state: string): string {
+        const connection = sessions.getUser(sessionId).getConnection(orgKey);
         if (connection) {
             const driver = ConnectionDriverFactory.createDriver(connection.getConnectionDriverConfig());
             return driver.requestAuthorization(state);
         }
-        throw new SessionError(`Connection not found with id ${connectionId}`);
+        throw new SessionError('Connection not found in workspace');
     }
 }
 
 export class RequestedConnectionUseCase implements RequestedConnectionInputPort {
     constructor(private userRepository: UserRepositoryPort) {}
-    async exe(sessionId: SessionId | undefined, initialConfigDriverDTO: ConnectionDriverDTO): Promise<SessionId> {
+    async exe(sessionId: SessionId | undefined, initialConfigDriverDTO: ConnectionDriverDTO, expectedOrgKey?: OrgKey): Promise<SessionId> {
         const driver = ConnectionDriverFactory.createDriver(initialConfigDriverDTO);
         const configDriverDTO = await driver.login();
+        const orgKey = createOrgKey(configDriverDTO.dbId, configDriverDTO.userId);
+        if (expectedOrgKey && expectedOrgKey !== orgKey) {
+            throw new SessionError('Authenticated Salesforce identity does not match requested connection');
+        }
         
         let user: UserEntity;
         if (!sessionId) {
@@ -82,7 +87,7 @@ export class RequestedConnectionUseCase implements RequestedConnectionInputPort 
             user.setPendingToUpdate(true);
         } else {
             user = sessions.getUser(sessionId);
-            if (!user.checkConnectionExists(configDriverDTO.dbName!)) {
+            if (!user.checkConnectionExists(orgKey)) {
                 const userDTO = await this.userRepository.addNewConnectionToUser(user.getSessionId(), configDriverDTO);
                 user.loadConnections(userDTO);
             }
@@ -96,9 +101,13 @@ export class RequestedConnectionUseCase implements RequestedConnectionInputPort 
         );
         connectionPool.rotateSession(rotation.previousId, rotation.sessionId);
 
-        user.setcurrentConnection(configDriverDTO.dbName!);
-        connectionPool.addConnection(rotation.sessionId, configDriverDTO.dbName!, driver);
-        user.setConnectionAsOpen(configDriverDTO.dbName!);
+        if (!user.checkConnectionExists(orgKey)) {
+            const userDTO = await this.userRepository.findUserByTokenId(rotation.sessionId);
+            user.loadConnections(userDTO);
+        }
+        user.setActiveOrgKey(orgKey);
+        connectionPool.addConnection(rotation.sessionId, orgKey, driver);
+        user.setConnectionStatus(orgKey, 'CONNECTED');
         return rotation.sessionId;
     }
 }

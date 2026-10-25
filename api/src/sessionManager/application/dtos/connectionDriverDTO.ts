@@ -1,3 +1,5 @@
+import { createOrgKey } from '../../domain/entities/orgKey';
+
 //type technology = "MongoDB" | "MySQL" | "PostgreSQL" | "SF_Prod" | "SF_Test" | "SalesforceAuth0";
 
 
@@ -34,6 +36,7 @@ export interface ConnectionDriverParams {
     userName?: string;
     email?: string;
     alias?: string;
+    loginHost?: string;
 }
 
 export class ConnectionDriverDTO {
@@ -47,10 +50,12 @@ export class ConnectionDriverDTO {
     public readonly userName: string = "";
     public readonly email: string = "";
     public readonly alias: string = "";
+    public readonly loginHost: string;
     
 
     constructor(params: ConnectionDriverParams | ConnectionDriverDTO) {
         this.tech = params.tech;
+        this.dbId = params.dbId ?? "";
         this.dbName = (params.dbName===undefined) ? params.tech : params.dbName;
         this.instanceUrl = params.instanceUrl;
         this.callbackUrl = params.callbackUrl;
@@ -59,6 +64,8 @@ export class ConnectionDriverDTO {
         this.userName = (params.userName===undefined) ? "" : params.userName;
         this.email = (params.email===undefined) ? "" : params.email;
         this.alias = (params.alias===undefined) ? "" : params.alias;
+        this.loginHost = params.loginHost ?? (params.tech === Technology.SF_Test
+            ? "https://test.salesforce.com" : "https://login.salesforce.com");
     
 
         if (!this.tech) {
@@ -81,6 +88,7 @@ export class ConnectionDriverDTO {
         if (!this.isWritable()) {
             throw new Error("Connection is not writable");
         }
+        createOrgKey(this.dbId, this.userId);
         return {
             tech: this.tech,
             dbId: this.dbId,
@@ -89,7 +97,9 @@ export class ConnectionDriverDTO {
             userName: this.userName,
             instanceUrl: this.instanceUrl,
             email: this.email,
-            alias: this.alias
+            alias: this.alias,
+            loginHost: this.loginHost,
+            contractVersion: 1
         }
     }
 
