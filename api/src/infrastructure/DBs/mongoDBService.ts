@@ -1,7 +1,7 @@
 import mongoose, { Connection } from "mongoose";
 
 
-export class mongoDBService {
+export class MongoDBService {
     private dbConnection: Connection;
 
     constructor(private mongoURL: string) {
@@ -15,6 +15,10 @@ export class mongoDBService {
     }
 
     public getConnection = ():Connection => this.dbConnection;
+
+    public async isReady(): Promise<boolean> {
+        return this.dbConnection.readyState === 1;
+    }
 
     public async disconnect() {
         console.log("Disconnecting from MongoDB...");
