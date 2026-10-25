@@ -13,7 +13,7 @@ export interface IConnection {
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
-  sessionId: number;
+  sessionId: string;
   name: string;
   createdAt: Date;
   connections: IConnection[]; 
@@ -21,13 +21,15 @@ export interface IUser extends Document {
 
 // Define the User schema
 const UserSchema = new Schema({
+  // Retained only for compatibility with the historical unique MongoDB index.
+  // Authentication never reads this value; active sessions use WorkspaceSession.
   sessionId: {
-    type: Number,
+    type: String,
     required: true,
-    unique: true, // Ensure tokens are unique
+    unique: true,
   },
   name: {     type: String,    required: true,  },
-  createdAt: {    type: Date,    default: Date.now,  },  
+  createdAt: {    type: Date,    default: Date.now,  },
   connections: [{    
     tech:       { type: String, required: true,  },
     userId:     { type: String, required: true,  unique: true,    },

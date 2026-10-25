@@ -1,20 +1,21 @@
 import { SessionDTO } from '../../dtos/sessionDTO';
 import { ConnectionDriverDTO } from '../../../application/dtos/connectionDriverDTO';
+import { SessionId } from '../../entities/workspaceSession';
 
 export interface SignInInputPort {
-    getSessionStatus(sessionId: number): Promise<SessionDTO>;
+    getSessionStatus(sessionId: SessionId): Promise<SessionDTO>;
     getStatus(): string;
 }
 
 export interface RequestConnectionInputPort {
     toNewConnection(connectionDriverDTO: ConnectionDriverDTO): string;
-    toConfiguredConnection(sessionId: number, connectionID: number): string;   
+    toConfiguredConnection(sessionId: SessionId, connectionID: number): string;
 }
 
 export interface RequestedConnectionInputPort {
-    exe(sessionId: number | undefined, configDriverDTO: ConnectionDriverDTO): Promise<number>;
+    exe(sessionId: SessionId | undefined, configDriverDTO: ConnectionDriverDTO): Promise<SessionId>;
 }
 
 export interface SignOutInputPort {
-    exe(id: number): Promise<SessionDTO>;
+    exe(id: SessionId): Promise<SessionDTO>;
 }

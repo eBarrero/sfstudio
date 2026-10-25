@@ -8,7 +8,6 @@ export class HttpMetadataControllers {
 
     async getDescribeGlobal(req: Request, res: Response) {
         try {
-            console.log(`getDescribeGlobal ${req.appSessionId!} ${req.params.dbName}`);
             const metadata = await this.metadataRequestUseClase.getDescribeGlobal(req.appSessionId!, req.params.dbName);
             res.send(metadata);
         } catch (error) {
@@ -18,7 +17,6 @@ export class HttpMetadataControllers {
 
     async getObjectDescription(req: Request, res: Response) {
         try {
-            console.log(`getDescription ${req.appSessionId!} ${req.params.dbName} ${req.params.sobject}`);
             const metadata = await this.metadataRequestUseClase.describeSObject(req.appSessionId!, req.params.dbName, req.params.sobject);
             res.send(metadata);
         } catch (error) {

@@ -1,34 +1,46 @@
 import { Request, Response, NextFunction } from "express";
 import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort } from "../../domain/ports/inbound/httpInputPorts";
 import { ConnectionDriverDTO, Technology, stringToTechnology } from "../../application/dtos/connectionDriverDTO"; 
-import { SessionError, ErrorMessages } from "../../domain/exceptions/sessionError";
+import { SessionError } from "../../domain/exceptions/sessionError";
 import { errorHandler } from "../../../infrastructure/frameworks/errorHandler";
-import { REDIRECT_URI } from "../../../config/environment";
+import { ENV, REDIRECT_URI, RuntimeEnvironment } from "../../../config/environment";
+import {
+    clearSessionCookie,
+    hasSessionCookie,
+    readSessionCookie,
+    setSessionCookie,
+} from "./sessionCookie";
 
 
 export class SignInController {    
     private useCase: SignInInputPort
-    constructor( useCase: SignInInputPort) {
+    constructor(
+        useCase: SignInInputPort,
+        private readonly environment: RuntimeEnvironment = ENV,
+    ) {
         this.useCase = useCase;
-        console.log(this.useCase.getStatus());
-    }
-    getStatus() {
-        console.log(this.useCase.getStatus());
     }
     async login(req: Request, res: Response) {
         try {
-            let response;
-            if (req.cookies.id) {
-                const sessionDTO = await this.useCase.getSessionStatus(decode(req.cookies.id));
-                response = sessionDTO.serialize();
-            } else {
-                response = 'newsession';
+            const sessionId = readSessionCookie(req);
+
+            if (!sessionId) {
+                if (hasSessionCookie(req)) {
+                    clearSessionCookie(res, this.environment);
+                    sendUnauthorized(res);
+                    return;
+                }
+
+                res.status(200).json("newsession");
+                return;
             }
-            res.status(200).json(response);
+
+            const sessionDTO = await this.useCase.getSessionStatus(sessionId);
+            res.status(200).json(sessionDTO.serialize());
         } catch (error) {  
-            if (error instanceof SessionError && error.message === ErrorMessages.USER_NOT_FOUND) {
-                res.clearCookie('id');
-                res.status(401).json('newsession');
+            if (error instanceof SessionError) {
+                clearSessionCookie(res, this.environment);
+                sendUnauthorized(res);
             } else {
                 errorHandler(error as Error, req, res);
             }
@@ -36,19 +48,22 @@ export class SignInController {
         }        
     }  
 
-    public setUser(req: Request, res: Response, next:NextFunction) {
-        console.log(`${req.url} ${req.ip}`);
-        const signInToken = decode(req.cookies.id);
-        if (!signInToken) {
-            console.log('Authentication failed');
-            res.status(500).json('Authentication failed');
+    public async setUser(req: Request, res: Response, next: NextFunction) {
+        const sessionId = readSessionCookie(req);
+
+        if (!sessionId) {
+            clearSessionCookie(res, this.environment);
+            sendUnauthorized(res);
             return;
         }
+
         try {
-            req.appSessionId = signInToken;
+            await this.useCase.getSessionStatus(sessionId);
+            req.appSessionId = sessionId;
             next();
-        } catch (error) {  
-            next(error);
+        } catch {
+            clearSessionCookie(res, this.environment);
+            sendUnauthorized(res);
         }
     } 
     
@@ -80,7 +95,7 @@ export class RequestConnectionController {
     }    
     getUrlConnection(req: Request, res: Response) {
         try {
-            const sessionId = decode(req.cookies.id);
+            const sessionId = req.appSessionId!;
             const connectionId = parseInt(req.params.connectionId);
             const url = this.requestConnectionUseCase.toConfiguredConnection(sessionId, connectionId);
             res.redirect(url);
@@ -91,12 +106,15 @@ export class RequestConnectionController {
 }
 
 export class RequestedConnectionController {     
-    constructor( private requestedUseCase: RequestedConnectionInputPort) {}
+    constructor(
+        private requestedUseCase: RequestedConnectionInputPort,
+        private readonly environment: RuntimeEnvironment = ENV,
+    ) {}
     public async salesforce(req: Request, res: Response) {
         try {
             const configDriverDTO = new ConnectionDriverDTO({ dbName: req.params.state, callbackUrl: req.url, code: req.query.code as string, tech: Technology.SalesforceAuth0 })
-            const sessionId = await this.requestedUseCase.exe(decode(req.cookies.id), configDriverDTO);
-            res.cookie("id", Buffer.from(JSON.stringify({id: sessionId.toString()})).toString('base64'), { httpOnly: true });
+            const sessionId = await this.requestedUseCase.exe(readSessionCookie(req), configDriverDTO);
+            setSessionCookie(res, sessionId, this.environment);
             res.redirect(REDIRECT_URI);
         } catch (error) {
             errorHandler(error as Error, req, res);
@@ -112,8 +130,13 @@ export class SignOutController {
     constructor( private logoutUseCase: SignOutInputPort) {}
     async do(req: Request, res: Response) {
         try {
-            const id = decode(req.cookies.id);
+            const id = readSessionCookie(req);
+            if (!id) {
+                sendUnauthorized(res);
+                return;
+            }
             await this.logoutUseCase.exe(id);
+            clearSessionCookie(res, ENV);
             res.status(200).json('Session closed');
         } catch (error) {
             errorHandler(error as Error, req, res);
@@ -130,19 +153,13 @@ export class SignOutController {
 
 
 
-/**
- * @description: decode the token to get the id
- * @param token - the token to decode
- * @returns the id of the session
- */
-export function decode(token: string | null): number{
-    if (!token) {
-        return 0;
-    }
-    const s: string = Buffer.from(token, "base64").toString("ascii");
-    const r: number = JSON.parse(s).id*1;
-    console.log(`decode: ${token} ${s} ${r}`); 
-    return r ;   
+function sendUnauthorized(response: Response): void {
+    response.status(401).json({
+        error: {
+            code: "SESSION_INVALID",
+            message: "Workspace session is invalid or expired.",
+        },
+    });
 }
 
 

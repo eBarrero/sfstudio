@@ -1,11 +1,10 @@
 
 enum ErrorType {
-    SESSION_EXPIRED = 401,
-    SESSION_INVALID = 500
+    SESSION_INVALID = 401
 }
 
 export enum ErrorMessages {
-    USER_NOT_FOUND = "User not found",
+    SESSION_INVALID = "Session expired or invalid",
 }    
 
 export class SessionError extends Error {
@@ -14,8 +13,6 @@ export class SessionError extends Error {
     constructor(message: string) {
         super(message);
         this.name = "SessionError";
-        if (message.includes("Session expired or invalid")) this.errorNumber = ErrorType.SESSION_EXPIRED;
-        console.error(`[${this.name}]: [${this.message}]`);
     }
     getErrorNumber(): number {  return this.errorNumber; }  
 }
