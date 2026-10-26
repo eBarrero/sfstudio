@@ -50,12 +50,15 @@ export default class Proxy {
                 mapFields: new Map(),
                 metadataFieldDownloaded: null,
             }));
-            cache.set(orgSfName, {
-                name: orgSfName,
-                sobjects,
-                indexMap: new Map(sobjects.map(sobject => [sobject.name, sobject.sObjectLocalId])),
-            });
-            cacheFetchedAt.set(orgSfName, metadataStatus(orgSfName).fetchedAt ?? 0);
+            const fetchedAt = metadataStatus(orgSfName).fetchedAt ?? 0;
+            if (!cache.has(orgSfName) || (cacheFetchedAt.get(orgSfName) ?? 0) < fetchedAt) {
+                cache.set(orgSfName, {
+                    name: orgSfName,
+                    sobjects,
+                    indexMap: new Map(sobjects.map(sobject => [sobject.name, sobject.sObjectLocalId])),
+                });
+                cacheFetchedAt.set(orgSfName, fetchedAt);
+            }
         } 
 
         const sobjects = cache.get(orgSfName)?.sobjects;
@@ -105,9 +108,9 @@ export default class Proxy {
         if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
-            const sobject =  cache.get(orgSfName)!.sobjects[objectIndex];
+            let sobject = cache.get(orgSfName)!.sobjects[objectIndex];
             
-            if (sobject.fields===undefined) {
+            if (sobject.fields == null) {
                 const name = cache.get(orgSfName)?.sobjects[objectIndex]?.name;
                 const response = await loadObject(orgSfName, name!);
                 const data: SObject = { ...response, orgSfName, sObjectLocalId: objectIndex,
@@ -135,8 +138,11 @@ export default class Proxy {
                             field.referenceToLocalId[0] = (tmp===null)?-1:tmp;
                         }
                     });
+                    const current = cache.get(orgSfName)?.sobjects[objectIndex];
+                    if (!current || current.name !== name) throw new Error('Object context changed');
+                    sobject = current;
                     sobject.childRelationships = structuredClone(data.childRelationships);
-                    sobject.fields =  structuredClone(data.fields);
+                    sobject.fields = structuredClone(data.fields);
                     sobject.mapFields = structuredClone(data.mapFields);
                     
                 }
@@ -240,25 +246,6 @@ export default class Proxy {
         return (result===null || result===undefined)? null: result.sObjectLocalId!;
     }
 
-
-/*
-    public static getReferenceSObjectId(orgSfName: string, sObjectIndex: number, fieldIndex: number): SObjectReferenceId {
-        console.log(`getReferenceSObjectId orgSfName: "${orgSfName}" sObjectIndex: "${sObjectIndex}" fieldIndex: "${fieldIndex}"`);
-        if (!cache.has(orgSfName)) {
-            throw new Error(`Invalid orgSfName: "${orgSfName}"`);
-        }
-        const sobject = cache.get(orgSfName)?.sobjects[sObjectIndex];
-        if (!sobject) {
-            throw new Error(`Invalid orgSfName: "${orgSfName}"`);
-        }
-        const field = sobject.fields![fieldIndex];
-        if (field.type !== 'reference') {
-            throw new Error(`Invalid fieldIndex: "${fieldIndex}" type: "${field.type}"`);
-        }
-        return {...Proxy.getSobjectIdByName(orgSfName, field.referenceTo[0]), referenceName: field.relationshipName!};
-        
-    }
-*/
 
     /**
      * @description get metadata of the fields' object and update the object cache

@@ -3,6 +3,7 @@ import {create} from 'zustand';
 import { addCommand, searchCommand, readCommand, CONTEXT_LEVEL,APP_CMD } from '../core/commandManager';
 import { parseWorkspaceCommand, WORKSPACE_COMMAND_HELP } from '../core/workspaceCommandParser';
 import { dispatchWorkspaceAction } from './sessionState';
+import { dispatchExplorerAction, parseExplorerCommand } from '../core/explorerActions';
 
 
 
@@ -82,6 +83,16 @@ const applicationState = create<ApplicationState>((set, get) => {
         exeCommand: (newCommand: string) => {
             const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined, commandConfirmed: undefined};
             const workspaceCommand = parseWorkspaceCommand(newCommand);
+            const explorerAction = parseExplorerCommand(newCommand);
+            if (explorerAction) {
+                newState.commandConfirmed = {
+                    command: newCommand, description: 'Abrir objeto',
+                    actionId: explorerAction.id, context: get().context_level,
+                    action: () => { void dispatchExplorerAction(explorerAction); },
+                };
+                set(newState);
+                return;
+            }
             if (workspaceCommand) {
                 if (workspaceCommand.kind === 'error') {
                     newState.errorState = 'Comando de workspace no válido.';

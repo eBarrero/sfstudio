@@ -1,6 +1,6 @@
 import { AuthorizationCode, ModuleOptions } from 'simple-oauth2';
 import jsforce, { Connection } from 'jsforce';
-import { CALLBACK_URL, CLIENT_ID, CLIENT_SECRET } from '../../../../config/environment';
+import { API_SF_VERSION, CALLBACK_URL, CLIENT_ID, CLIENT_SECRET } from '../../../../config/environment';
 import { SalesforceLoginHost } from '../../../domain/entities/salesforceLoginHost';
 
 export interface SalesforceLoginResult {
@@ -43,7 +43,7 @@ export class LiveSalesforceOAuthClient implements SalesforceOAuthClient {
             clientSecret: CLIENT_SECRET,
             redirectUri: CALLBACK_URL,
         });
-        const connection = new jsforce.Connection({ oauth2 });
+        const connection = new jsforce.Connection({ oauth2, version: API_SF_VERSION });
         await connection.authorize(code);
         const identity = await connection.identity();
         return {

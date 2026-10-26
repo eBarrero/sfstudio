@@ -7,6 +7,7 @@ import modelState from "./modelState";
 import sessionState from "./sessionState";
 import viewState from "./viewState";
 import sqlExecutionState from './sqlExecutionState';
+import { cancelObjectOpen } from '../core/explorerActions';
 
 
 
@@ -28,16 +29,22 @@ const useApplication = () => {
     useEffect(() => { 
         try {
             if (session.publicSession.activeOrgKey===null || session.publicSession.connections.length===0) {
+                cancelObjectOpen();
                 model.clearOrg();
                 data.clearSchema();
+                application.setObjectName('');
                 sqlExecutionState.getState().resetForOrg();
                 view.setCurrentView('INIT');
                 application.setContextLevel(CONTEXT_LEVEL.INIT);
                 return;
             }
             const orgKey = session.publicSession.activeOrgKey;
+            cancelObjectOpen();
             sqlExecutionState.getState().resetForOrg();
             model.setOrg(orgKey);
+            data.activateOrg(orgKey);
+            application.setObjectName(dataState.getState().sObjectsFilter.searchText);
+            application.setCommand(null);
             data.loadSchema(orgKey);
             view.setCurrentView(CONTEXT_LEVEL.ORG);
             application.setContextLevel(CONTEXT_LEVEL.ORG);
@@ -47,21 +54,6 @@ const useApplication = () => {
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [session.publicSession.activeOrgKey]);
-
-
-    useEffect(() => {
-        if (filter==='') return;
-        if (context_level === CONTEXT_LEVEL.ORG) {
-            sethistory(filter! + '\n' + history);  
-            data.loadFieldsByName(model.state.orgSfName, application.filter!, (sObjectLocalId: SObjectLocalId) => {
-                application.setContextLevel(CONTEXT_LEVEL.OBJECT);
-                view.setCurrentView('sobject');
-                model.setSObject(sObjectLocalId);
-                data.loadChildRelationships(model.state.orgSfName, sObjectLocalId);    
-            });  
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }   , [application.filter]);
 
 
     useEffect(() => {

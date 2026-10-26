@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const { describe, it } = require('node:test');
 const express = require('express');
 const { createApp } = require('../build/app');
+const { API_SF_VERSION } = require('../build/config/environment');
 const { Sessions } = require('../build/sessionManager/domain/entities/sessions');
 const { ConnectionRegistry } = require('../build/sessionManager/infrastructure/output_adapter/connectionServices/connectionRegistry');
 const { OAuthStateStore } = require('../build/sessionManager/domain/entities/oauthStateStore');
@@ -161,7 +162,8 @@ for (const run of [1, 2]) {
             const uat = keyOf(fixtures.uat);
             const other = keyOf(fixtures.other);
             try {
-                assert.deepEqual(await first.workspace(), { version: 1, connections: [], activeOrgKey: null },
+                assert.deepEqual(await first.workspace(), { version: 1, connections: [], activeOrgKey: null,
+                    apiVersion: API_SF_VERSION },
                     'step 1: new workspace');
                 let workspace = await first.connect('integration');
                 assert.equal(workspace.activeOrgKey, integration, 'step 2: Integration is active');

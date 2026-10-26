@@ -7,13 +7,12 @@ import applicationState      from '../../../store/applicationState';
 import ObjectFilter             from '../objectFilter/objectFilter';
 import sessionState, { dispatchWorkspaceAction } from '../../../store/sessionState';
 import { metadataStatus, subscribeMetadata } from '../../../services/salesforceSchema/snapshotAdapter';
+import { dispatchExplorerAction, OBJECT_OPEN_ACTION_ID } from '../../../core/explorerActions';
 
 const statusText = { EMPTY: 'Sin metadata', FRESH: 'Vigente', STALE: 'Obsoleta',
     REFRESHING: 'Actualizando', ERROR: 'Error al actualizar' } as const;
 
 export default function SObjectsPanel() {
-    const {setObjectName} = applicationState();
-
     const {componentShowed} = viewState();
     const {sobjects } = dataState();
     const orgKey = sessionState(state => state.publicSession.activeOrgKey);
@@ -24,7 +23,7 @@ export default function SObjectsPanel() {
     }, [orgKey, status.fetchedAt, status.state]);
  
     function setObject(sObjectApiNameobject: SObjectApiName) {
-        setObjectName(sObjectApiNameobject)
+        void dispatchExplorerAction({ id: OBJECT_OPEN_ACTION_ID, objectName: sObjectApiNameobject });
         
     }
 
@@ -48,10 +47,11 @@ export default function SObjectsPanel() {
             </section>                
             <section className={css.PanelSObjectsList}>
                 {sobjects.map((sobject) => (
-                    <div className={css.PanelSObjectItem} key={sobject.sObjectLocalId} 
+                    <button type="button" data-action-id={OBJECT_OPEN_ACTION_ID}
+                        className={css.PanelSObjectItem} key={sobject.name}
                         onClick={()=>setObject(sobject.name)}>
                         {sobject.name}
-                    </div>))}
+                    </button>))}
             </section>
         </article>
 

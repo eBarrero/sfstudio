@@ -1,11 +1,21 @@
 import {create} from 'zustand';
 import  Proxy  from '../services/salesforceSchema/proxy';
-import { addCommand,deleteCommand,CONTEXT_LEVEL } from '../core/commandManager';
+import { addCommand,removeCommand,CONTEXT_LEVEL } from '../core/commandManager';
 import { objectFilterOptions, fieldFilterOptions } from '../core/constants/filters';
 import { Dialog } from '../components/constants'
 import { SFFieldTypesEnum } from '../core/constants/fields';
 
 let schemaRequestVersion = 0;
+let fieldRequestVersion = 0;
+const filtersByOrg = new Map<string, { objects: SObjectsFilter; fields: FieldsFilter }>();
+const fieldCommands = new Set<string>();
+const lookupCommands = new Set<string>();
+const childCommands = new Set<string>();
+function clearDynamicCommands(): void {
+    for (const command of [...fieldCommands, ...lookupCommands, ...childCommands])
+        removeCommand(command, CONTEXT_LEVEL.OBJECT);
+    fieldCommands.clear(); lookupCommands.clear(); childCommands.clear();
+}
 
 
 function objectsFilterInit(): SObjectsFilter {
@@ -61,6 +71,7 @@ function fieldFilterInit(): FieldsFilter {
 const dataState = create<DataState>((set, get) => {
     return  {
         action: 'GET_SCHEMA',
+        activeOrgKey: null,
         sobjects:[],
         sObjectFields:[],
         childRelationships:[],
@@ -68,8 +79,30 @@ const dataState = create<DataState>((set, get) => {
         fieldsFilter: fieldFilterInit(),
         dataLastErrorMessage: '',
         clearSchema: () => {
+            clearDynamicCommands();
+            const previous = get().activeOrgKey;
+            if (previous) filtersByOrg.set(previous, {
+                objects: { ...get().sObjectsFilter }, fields: { ...get().fieldsFilter },
+            });
             schemaRequestVersion += 1;
-            set({ sobjects: [], sObjectFields: [], childRelationships: [], dataLastErrorMessage: '' });
+            fieldRequestVersion += 1;
+            set({ activeOrgKey: null, sobjects: [], sObjectFields: [], childRelationships: [], dataLastErrorMessage: '' });
+        },
+        activateOrg: (orgKey: string) => {
+            const previous = get().activeOrgKey;
+            if (previous === orgKey) return;
+            clearDynamicCommands();
+            if (previous) filtersByOrg.set(previous, {
+                objects: { ...get().sObjectsFilter }, fields: { ...get().fieldsFilter },
+            });
+            const stored = filtersByOrg.get(orgKey);
+            schemaRequestVersion += 1;
+            fieldRequestVersion += 1;
+            set({ activeOrgKey: orgKey,
+                sObjectsFilter: stored ? { ...stored.objects } : objectsFilterInit(),
+                fieldsFilter: stored ? { ...stored.fields } : fieldFilterInit(),
+                sobjects: [], sObjectFields: [], childRelationships: [],
+                dataLastErrorMessage: '' });
         },
         refreshMetadata: async (orgKey: string) => {
             try {
@@ -81,52 +114,54 @@ const dataState = create<DataState>((set, get) => {
             }
         },
         loadSchema: (orgSfName: SchemaName) => {
+            if (orgSfName !== get().activeOrgKey) return;
             const version = ++schemaRequestVersion;
             set({ sobjects: [], sObjectFields: [], childRelationships: [], dataLastErrorMessage: '' });
             const f = get().sObjectsFilter;
             Proxy.getSObjectsAdapter(orgSfName, f).then((data) => {
-                if (version === schemaRequestVersion && data!==null) {
+                if (version === schemaRequestVersion && orgSfName === get().activeOrgKey && data!==null) {
                     set({sobjects: structuredClone(data), dataLastErrorMessage: data.length>0?'':"#CMD.NO_OBJECTS"});
                 }
             }).catch(() => {
-                if (version === schemaRequestVersion) set({ dataLastErrorMessage: 'No se pudo cargar el esquema.' });
+                if (version === schemaRequestVersion && orgSfName === get().activeOrgKey) set({ dataLastErrorMessage: 'No se pudo cargar el esquema.' });
             });
         },
         setObjectFilterText: (orgSfName: SchemaName, searchText: string) => {
-            console.log('setObjectFilterText', searchText);
-            const filter = get().sObjectsFilter;
-            filter.searchText = searchText;
-            set({sObjectsFilter: filter});
+            set({sObjectsFilter: { ...get().sObjectsFilter, searchText }});
             get().loadSchema(orgSfName);
         },
         setObjectFilter: (orgSfName: SchemaName, attrib: string, value: boolean|null) => {
-            console.log('setObjectFilter', attrib, value);
             set({sObjectsFilter: {...get().sObjectsFilter, [attrib] :value    }} );
             get().loadSchema(orgSfName);
         },
         loadFields: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
-            console.log('loadFields', orgSfName, sObjectIndex);
+            if (orgSfName !== get().activeOrgKey) return;
+            const version = ++fieldRequestVersion;
             if (sObjectIndex===undefined || sObjectIndex===null) throw new Error('sObjectIndex is undefined or null');
             const filter = get().fieldsFilter;
             Proxy.getFieldsAdapter(orgSfName, sObjectIndex, filter).then((data) => {
-                if (data!==null) {
+                if (version === fieldRequestVersion && orgSfName === get().activeOrgKey && data!==null) {
                     set({
                          sObjectFields:  structuredClone(data), 
                          dataLastErrorMessage: '' 
                     });
-                } else {
-                    console.log('#CMD.Object_not_found', sObjectIndex);
+                } else if (version === fieldRequestVersion && orgSfName === get().activeOrgKey) {
                     set({dataLastErrorMessage: `#CMD.Object_not_found|${sObjectIndex}`});
                 }
-            });       
+            }).catch(() => {
+                if (version === fieldRequestVersion && orgSfName === get().activeOrgKey)
+                    set({ dataLastErrorMessage: 'No se pudieron cargar los campos.' });
+            });
         },
         loadMetadataFields: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
-            console.log('loadMetadataFields', orgSfName, sObjectIndex);
+            if (orgSfName !== get().activeOrgKey) return;
             Proxy.getFieldsMetadata(orgSfName,  sObjectIndex);
             get().loadFields(orgSfName, sObjectIndex);
             
         },
         loadFieldsByName: (orgSfName: SchemaName, sObjectName: string, callBack: (sObjectLocalId: SObjectLocalId) => void)  => {
+            if (orgSfName !== get().activeOrgKey) return;
+            const version = ++fieldRequestVersion;
             const id = Proxy.getSobjectIdByName(orgSfName, sObjectName);
             if (id===null) { 
                 set({dataLastErrorMessage: `#CMD.Object_not_found|${sObjectName}`});
@@ -134,54 +169,53 @@ const dataState = create<DataState>((set, get) => {
             }
 
             Proxy.getFieldsAdapter(orgSfName,  id, null).then((data) => {
-                if (data!==null) { 
+                if (data!==null && version === fieldRequestVersion && orgSfName === get().activeOrgKey) {
                     set({sObjectFields:  structuredClone(data), dataLastErrorMessage: ''});
                     callBack(id);
                     get().createLookuoCommands(data);
                     get().createFieldsCommands(data);
-                } else {
-                    console.log('#CMD.Object_not_found', sObjectName);
+                } else if (version === fieldRequestVersion && orgSfName === get().activeOrgKey) {
                     set({dataLastErrorMessage: `#CMD.Object_not_found|${sObjectName}`}); 
                 }
-            }).catch((e) => { set({dataLastErrorMessage: `#CMD.generalError|${(e as Error).message}`}) }); 
+            }).catch(() => {
+                if (version === fieldRequestVersion && orgSfName === get().activeOrgKey)
+                    set({dataLastErrorMessage: 'No se pudo cargar el objeto.'});
+            });
         },
         setFieldFilterText: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchText: string) => {
-            console.log('setFieldFilterText', searchText);
-            const filter = get().fieldsFilter;
-            filter.searchText = searchText;
-            set({fieldsFilter: filter});
+            set({fieldsFilter: { ...get().fieldsFilter, searchText }});
             get().loadFields(orgSfName, sObjectIndex);
         },    
         setFieldFilterType: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchType: SalesforceFieldTypes) => {
-            console.log('setFieldFilterType', searchType);
-            const filter = get().fieldsFilter;
-            filter.type = searchType;
-            set({fieldsFilter: filter});
+            set({fieldsFilter: { ...get().fieldsFilter, type: searchType }});
             get().loadFields(orgSfName, sObjectIndex);
         },            
         setFieldFilter: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, attrib: string, value: boolean|null) => {  
-            console.log('setFieldFilter', attrib, value);
             set({fieldsFilter: {...get().fieldsFilter, [attrib] :value    }} );
             get().loadFields(orgSfName, sObjectIndex);
         },
         loadFieldsFromLookup: (field: GetFieldsIndex) => {
-            console.log('loadFieldsFromLookup');
             const {orgSfName, referenceToLocalId} = field;
+            if (orgSfName !== get().activeOrgKey) return;
+            const version = ++fieldRequestVersion;
             Proxy.getFieldsAdapter(orgSfName, referenceToLocalId![0], null).then((data) => {
-                if (data!==null) { 
+                if (data!==null && version === fieldRequestVersion && orgSfName === get().activeOrgKey) {
                     set({sObjectFields:  structuredClone(data), fieldsFilter: fieldFilterInit(), dataLastErrorMessage: ''});
                     get().createLookuoCommands(data);
                 }
-            });       
+            }).catch(() => {
+                if (version === fieldRequestVersion && orgSfName === get().activeOrgKey)
+                    set({ dataLastErrorMessage: 'No se pudieron cargar los campos relacionados.' });
+            });
         },
         loadFieldsFromChild: (child: GetChildRelationships) => {
-            console.log('loadFieldsFromChild');
             const {orgSfName, sObjectLocalId} = child;
+            if (orgSfName !== get().activeOrgKey) return;
             set({fieldsFilter: fieldFilterInit()});
             get().loadFields(orgSfName, sObjectLocalId);
         },
         loadChildRelationships: (orgSfName: SchemaName, objectIndex: SObjectLocalId) => {
-            console.log('loadChildRelationships', orgSfName, objectIndex);
+            if (orgSfName !== get().activeOrgKey) return;
             const data = Proxy.getChildRelationships(orgSfName, objectIndex);
             if (data!==null) {
                 get().createChildRelationshipsCommands(data);
@@ -221,9 +255,11 @@ const dataState = create<DataState>((set, get) => {
             }
         },
         createFieldsCommands: (data: GetFieldsIndex[]): void => {
-            deleteCommand('._');
+            for (const command of fieldCommands) removeCommand(command, CONTEXT_LEVEL.OBJECT);
+            fieldCommands.clear();
             for (const field of data) {
                 const cmdText = field.fieldApiName;
+                fieldCommands.add(cmdText);
                 addCommand({command: cmdText, description: 'field.config', context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams) => {
                         const {model, view} = actionParams;
@@ -234,10 +270,12 @@ const dataState = create<DataState>((set, get) => {
             }
         },
         createLookuoCommands: (data: GetFieldsIndex[]): void => {
-            deleteCommand('.lookup');
+            for (const command of lookupCommands) removeCommand(command, CONTEXT_LEVEL.OBJECT);
+            lookupCommands.clear();
             for (const field of data) {
                 const cmdText = 'lookup_'+field.fieldApiName;
                 if (field.type!==SFFieldTypesEnum.Reference) continue;
+                lookupCommands.add(cmdText);
                 addCommand({menuItem:'Goto', menuOption:'Related object', command: cmdText, menuCaption: field.fieldApiName,  description: 'field.go.lookup', context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams) => {
                         const {model} = actionParams;
@@ -248,9 +286,11 @@ const dataState = create<DataState>((set, get) => {
             }
         },
         createChildRelationshipsCommands: (childs: GetChildRelationships[]): void => {
-            deleteCommand('.child_');
+            for (const command of childCommands) removeCommand(command, CONTEXT_LEVEL.OBJECT);
+            childCommands.clear();
             for (const child of childs) {
                 const cmdText = 'child_'+ child.childSObject;
+                childCommands.add(cmdText);
                 addCommand({menuItem:'Goto', menuOption:'Child objects',command: cmdText, menuCaption: child.childSObject, description: 'field.go.child', context:CONTEXT_LEVEL.OBJECT, 
                     action: (actionParams: AcctionParams ) => {
                         const {model} = actionParams;
@@ -268,7 +308,6 @@ const dataState = create<DataState>((set, get) => {
 
 
 function extractValue(commandText: string): boolean|null {
-    console.log('extractValue', commandText);
     if (commandText===null) throw Error("#Error.Command_is_null");
     const [, valueString] = commandText.split(' ');
     if (valueString===undefined || valueString==='on') return true; 

@@ -3,6 +3,9 @@
 `app/src/services/salesforceSchema/metadataSnapshot.ts` define el contrato JSON de la primera fase.
 La clave combina `schemaVersion`, `organizationId`, `userId`, versión de la API de
 Salesforce y locale. `orgKey` debe ser exactamente `organizationId:userId`.
+`GET /api/v1/workspace` expone `apiVersion` desde `API_SF_VERSION`; el cliente
+jsforce usa esa misma versión para los describes. Si el servidor cambia de
+versión, la clave de caché cambia y las entradas anteriores no se reutilizan.
 
 Un snapshot contiene `fetchedAt` y `expiresAt` como milisegundos Unix, y un
 diccionario de objetos por API name. Cada objeto contiene diccionarios de campos
@@ -31,3 +34,9 @@ descarga, la última copia permanece disponible y el estado indica el fallo.
 El botón «Actualizar metadata» y `metadata refresh <OrgKey>` ejecutan la misma
 acción. La UI muestra estado y fecha de obtención. Los snapshots capturados
 para una comparación se clonan y congelan hasta cerrar esa comparación.
+
+El explorador utiliza `OrgKey` en cada petición de global, objeto y metadata.
+Los filtros de objetos y campos se mantienen en memoria por org y se restauran
+al volver a ella; no se mezclan con la lista o selección de otra org. Abrir un
+objeto desde su botón o con `object open <APIName>` ejecuta la misma acción
+`object.open`. Una respuesta tardía de una org anterior se descarta.

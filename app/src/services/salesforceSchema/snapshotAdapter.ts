@@ -4,11 +4,11 @@ import { metadataCache } from './metadataCache';
 import { getDescribe, getDescribeObject } from './controller';
 import sessionState from '../../store/sessionState';
 
-const API_VERSION = 'jsforce-default';
 const TTL_MS = 24 * 60 * 60 * 1000;
 export type MetadataFreshness = 'EMPTY' | 'FRESH' | 'STALE' | 'REFRESHING' | 'ERROR';
 export interface MetadataStatus { state: MetadataFreshness; fetchedAt: number | null; }
 const statuses = new Map<string, MetadataStatus>();
+const objectStatuses = new Map<string, MetadataStatus>();
 const emptyStatus: MetadataStatus = { state: 'EMPTY', fetchedAt: null };
 const listeners = new Set<() => void>();
 const pending = new Map<string, Promise<MetadataSnapshot>>();
@@ -19,6 +19,19 @@ export function subscribeMetadata(listener: () => void): () => void {
 }
 export function metadataStatus(orgKey: string): MetadataStatus {
   return statuses.get(orgKey) ?? emptyStatus;
+}
+const objectStatusKey = (orgKey: string, objectName: string) =>
+  JSON.stringify([orgKey, objectName]);
+export function metadataObjectStatus(orgKey: string, objectName: string): MetadataStatus {
+  return objectStatuses.get(objectStatusKey(orgKey, objectName)) ?? emptyStatus;
+}
+function setObjectStatus(orgKey: string, objectName: string,
+  state: MetadataFreshness, fetchedAt: number | null): void {
+  const key = objectStatusKey(orgKey, objectName);
+  const previous = objectStatuses.get(key);
+  if (previous?.state === state && previous.fetchedAt === fetchedAt) return;
+  objectStatuses.set(key, { state, fetchedAt });
+  listeners.forEach(listener => listener());
 }
 function setStatus(orgKey: string, state: MetadataFreshness, fetchedAt: number | null): void {
   const previous = statuses.get(orgKey);
@@ -39,7 +52,14 @@ function fetchSnapshot(orgKey: string, objectName?: string): Promise<MetadataSna
     const now = Date.now();
     const snapshot = normalizeSnapshot(identity, response, now, now + TTL_MS);
     await metadataCache.put(identity, objectName ? 'object' : 'global', snapshot, objectName);
-    if (!objectName) await metadataCache.clearObjects(identity);
+    if (!objectName) {
+      await metadataCache.clearObjects(identity);
+      for (const key of objectStatuses.keys()) {
+        const parsed = JSON.parse(key) as [string, string];
+        if (parsed[0] === orgKey) objectStatuses.delete(key);
+      }
+      listeners.forEach(listener => listener());
+    }
     return snapshot;
   })();
   pending.set(key, request);
@@ -48,11 +68,12 @@ function fetchSnapshot(orgKey: string, objectName?: string): Promise<MetadataSna
 }
 
 export function identityForOrg(orgKey: string): MetadataIdentity {
-  const connection = sessionState.getState().publicSession.connections
+  const workspace = sessionState.getState().publicSession;
+  const connection = workspace.connections
     .find(item => item.orgKey === orgKey);
   if (!connection) throw new Error('Organization is not part of the workspace');
   return { orgKey, organizationId: connection.organizationId, userId: connection.userId,
-    apiVersion: API_VERSION, locale: navigator.language || 'es-ES' };
+    apiVersion: workspace.apiVersion ?? 'unknown', locale: navigator.language || 'es-ES' };
 }
 
 export function toLegacyObject(object: SnapshotObject): Salesforce_SObject {
@@ -106,11 +127,29 @@ export async function loadObject(orgKey: string, objectName: string): Promise<Sa
   const identity = identityForOrg(orgKey);
   let snapshot: MetadataSnapshot | null = await metadataCache.get(identity, 'object', objectName);
   if (!snapshot) {
-    snapshot = await fetchSnapshot(orgKey, objectName);
+    setObjectStatus(orgKey, objectName, 'REFRESHING', null);
+    try { snapshot = await fetchSnapshot(orgKey, objectName); }
+    catch (error) { setObjectStatus(orgKey, objectName, 'ERROR', null); throw error; }
   } else if (snapshot.expiresAt <= Date.now()) {
-    void fetchSnapshot(orgKey, objectName).catch(() => {});
+    setObjectStatus(orgKey, objectName, 'STALE', snapshot.fetchedAt);
+    void refreshObject(orgKey, objectName).catch(() => {});
+    return toLegacyObject(snapshot.objects[objectName]);
   }
+  setObjectStatus(orgKey, objectName, 'FRESH', snapshot.fetchedAt);
   return toLegacyObject(snapshot.objects[objectName]);
+}
+
+async function refreshObject(orgKey: string, objectName: string): Promise<void> {
+  const identity = identityForOrg(orgKey);
+  const previous = await metadataCache.get(identity, 'object', objectName);
+  setObjectStatus(orgKey, objectName, 'REFRESHING', previous?.fetchedAt ?? null);
+  try {
+    const snapshot = await fetchSnapshot(orgKey, objectName);
+    setObjectStatus(orgKey, objectName, 'FRESH', snapshot.fetchedAt);
+  } catch (error) {
+    setObjectStatus(orgKey, objectName, 'ERROR', previous?.fetchedAt ?? null);
+    throw error;
+  }
 }
 
 export function freezeComparisonSnapshots(source: MetadataSnapshot,

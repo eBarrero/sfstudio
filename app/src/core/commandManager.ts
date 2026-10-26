@@ -51,6 +51,10 @@ export function addCommand(newCommand: CommandImplementation) : void{
     allCommandsList.set(newCommand.command.toUpperCase() + ' ' +  newCommand.context, newCommand); 
 }
 
+export function removeCommand(command: string, context: CONTEXT_LEVEL): void {
+    allCommandsList.delete(command.toUpperCase() + ' ' + context);
+}
+
 /**
  * Searches for a command based on the provided search string and context level.
  * 

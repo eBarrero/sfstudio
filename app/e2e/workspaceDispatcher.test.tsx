@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
 import DBConnectionManager from '../src/components/organisms/dbConnectionManager/dbConnectionManager';
 import { CONTEXT_LEVEL, getAllCommands, getMenus } from '../src/core/commandManager';
 import { createWorkspaceActionDispatcher } from '../src/core/workspaceActions';
@@ -74,8 +74,10 @@ it('routes button, menu and console through the same ActionId and OrgKey', async
   expect(applicationState.getState().helpOnLine).toContain('org use <OrgKey>');
   expect(selectOrganization).toHaveBeenCalledTimes(3);
 
-  sessionState.getState().setWorkspace(workspace);
-  sessionState.getState().setWorkspace(workspace);
+  act(() => {
+    sessionState.getState().setWorkspace(workspace);
+    sessionState.getState().setWorkspace(workspace);
+  });
   expect(getAllCommands(CONTEXT_LEVEL.ORG).filter(command => command.command === commandName)).toHaveLength(1);
   view.unmount();
 });
