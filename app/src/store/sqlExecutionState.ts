@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { addCommand, CONTEXT_LEVEL, SOQL_CMD } from '../core/commandManager';
 import Proxy from '../services/salesforceSchema/proxy';
-import { salesforceJsontoInlineJson } from '../utils/inlineJson';
 import sessionState from './sessionState';
 
 type QueryStatus = 'INIT' | 'LOADING' | 'PARTIAL' | 'DONE' | 'ERROR';
@@ -11,9 +10,10 @@ interface SqlExecutionState {
     targetOrgKey: string | null;
     cursor: string | null;
     records: Record<string, unknown>[];
-    selectResponse: InlineJsonArray;
     executeSql: (orgKey: SchemaName, query: string) => void;
     nextPage: () => void;
+    cancel: () => void;
+    clear: () => void;
     resetForOrg: () => void;
     initializeSqlExecution: () => void;
 }
@@ -26,13 +26,19 @@ const sqlExecutionState = create<SqlExecutionState>((set, get) => ({
     targetOrgKey: null,
     cursor: null,
     records: [],
-    selectResponse: { captions: [], rows: [] },
-    resetForOrg: () => {
+    resetForOrg: () => get().clear(),
+    clear: () => {
         requestVersion++;
         activeRequest?.abort();
         activeRequest = null;
-        set({ sqlExecutionStatus: 'INIT', targetOrgKey: null, cursor: null, records: [],
-            selectResponse: { captions: [], rows: [] } });
+        set({ sqlExecutionStatus: 'INIT', targetOrgKey: null, cursor: null, records: [] });
+    },
+    cancel: () => {
+        if (get().sqlExecutionStatus !== 'LOADING') return;
+        requestVersion++;
+        activeRequest?.abort();
+        activeRequest = null;
+        set({ sqlExecutionStatus: get().records.length ? 'DONE' : 'INIT', cursor: null });
     },
     executeSql: (orgKey, query) => {
         const workspace = sessionState.getState().publicSession;
@@ -43,13 +49,11 @@ const sqlExecutionState = create<SqlExecutionState>((set, get) => ({
         const version = ++requestVersion;
         const controller = new AbortController();
         activeRequest = controller;
-        set({ sqlExecutionStatus: 'LOADING', targetOrgKey: orgKey, cursor: null, records: [],
-            selectResponse: { captions: [], rows: [] } });
+        set({ sqlExecutionStatus: 'LOADING', targetOrgKey: orgKey, cursor: null, records: [] });
         void Proxy.sendSoqlAdapter(orgKey, query, controller.signal).then(page => {
             if (version !== requestVersion) return;
             activeRequest = null;
             set({ records: page.records, cursor: page.cursor ?? null,
-                selectResponse: salesforceJsontoInlineJson({ records: page.records }),
                 sqlExecutionStatus: page.cursor ? 'PARTIAL' : 'DONE' });
         }).catch(() => {
             if (version !== requestVersion) return;
@@ -71,7 +75,6 @@ const sqlExecutionState = create<SqlExecutionState>((set, get) => ({
             activeRequest = null;
             const allRecords = [...records, ...page.records];
             set({ records: allRecords, cursor: page.cursor ?? null,
-                selectResponse: salesforceJsontoInlineJson({ records: allRecords }),
                 sqlExecutionStatus: page.cursor ? 'PARTIAL' : 'DONE' });
         }).catch(() => {
             if (version !== requestVersion) return;
@@ -81,6 +84,8 @@ const sqlExecutionState = create<SqlExecutionState>((set, get) => ({
     },
     initializeSqlExecution: () => {
         addCommand({ ...SOQL_CMD.NEXT_PAGE, actionId: 'query.next', action: () => get().nextPage() });
+        addCommand({ ...SOQL_CMD.CANCEL, actionId: 'query.cancel', action: () => get().cancel() });
+        addCommand({ ...SOQL_CMD.CLEAR, actionId: 'query.clear', action: () => get().clear() });
         addCommand({ ...SOQL_CMD.RUN_SOQL, actionId: 'query.run',
             action: (actionParams: AcctionParams) => {
                 const { model, view, application } = actionParams;

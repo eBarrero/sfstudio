@@ -202,6 +202,8 @@ La ruta `GET /api/soql/:orgKey/:soql` se retiró. `POST /api/v1/query` recibe `{
 
 Una primera página incompleta incluye `cursor`, nunca `nextRecordsUrl`. `POST /api/v1/query/next` recibe `{ "orgKey": "organizationId:userId", "cursor": "..." }`; el cursor expira a los cinco minutos, se usa una sola vez y solo funciona con el workspace y la org que iniciaron la consulta. Salesforce entrega páginas de hasta 100 registros y el servidor respeta el límite total. Al cambiar de org, el navegador aborta la petición en curso y descarta su resultado tardío.
 
+Los resultados y la tabla viven en memoria de Zustand; no se envían a IndexedDB, localStorage ni MongoDB. `query run`, `query next`, `query cancel` y `query clear` son los comandos gemelos de los botones y menús de consulta. Al cerrar el workspace se descartan resultados, petición activa y cursores del servidor. Recargar la página descarta los resultados.
+
 El frontend también intenta llamar a `GET /api/getObjectmetadata/:dbName/:sobject`, pero esa ruta no existe en el router.
 
 ## 5. Flujos

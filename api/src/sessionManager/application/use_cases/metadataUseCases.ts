@@ -22,6 +22,12 @@ export class MetadataRequestUseCase implements HttpMetadataInputPort {
         locator: string; limit: number; remaining: number; expiresAt: number }>();
     constructor(private readonly sessions: Sessions, private readonly registry: ConnectionRegistryPort) {}
 
+    clearWorkspace(sessionId: SessionId): void {
+        for (const [token, entry] of this.cursors) {
+            if (entry.sessionId === sessionId) this.cursors.delete(token);
+        }
+    }
+
     private queryOrgKey(sessionId: SessionId, orgKey: unknown): OrgKey {
         if (typeof orgKey !== 'string') throw new QueryRequestError('ORG_KEY_INVALID', 400);
         try { return ownedOrgKey(this.sessions, sessionId, orgKey); }

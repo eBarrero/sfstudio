@@ -59,6 +59,13 @@ const applicationState = create<ApplicationState>((set, get) => {
             }
 
             const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined, commandConfirmed: undefined};
+            if (/^query(?:\s|$)/i.test(newCommand.trimStart())) {
+                newState.helpOnLine = 'query run | query next | query cancel | query clear';
+                const exact = readCommand(newCommand.trim(), newState.context_level);
+                if (exact) newState.command = exact;
+                set(newState);
+                return;
+            }
             if (/^(org|workspace|metadata)(\s|$)/i.test(newCommand.trimStart())) {
                 newState.helpOnLine = WORKSPACE_COMMAND_HELP;
                 set(newState);
@@ -84,6 +91,13 @@ const applicationState = create<ApplicationState>((set, get) => {
             const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined, commandConfirmed: undefined};
             const workspaceCommand = parseWorkspaceCommand(newCommand);
             const explorerAction = parseExplorerCommand(newCommand);
+            const queryCommand = /^query\s+(run|next|cancel|clear)$/i.test(newCommand.trim())
+                ? readCommand(newCommand.trim(), get().context_level) : undefined;
+            if (queryCommand) {
+                newState.commandConfirmed = queryCommand;
+                set(newState);
+                return;
+            }
             if (explorerAction) {
                 newState.commandConfirmed = {
                     command: newCommand, description: 'Abrir objeto',
@@ -121,7 +135,7 @@ const applicationState = create<ApplicationState>((set, get) => {
             const c = newCommand.trim();
             const firstWord = c.split(' ')[0];
             const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: c, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined, commandConfirmed: undefined};
-            const command = readCommand(firstWord, newState.context_level);                     
+            const command = readCommand(c, newState.context_level) ?? readCommand(firstWord, newState.context_level);
             if (command !== undefined) {
                 newState.commandConfirmed = command;
             } else {

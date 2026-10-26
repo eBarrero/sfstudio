@@ -51,7 +51,8 @@ async function harness(options = {}) {
             return user.getSessionStatus();
         }, getStatus: () => 'ok',
     });
-    const metadata = new HttpMetadataControllers(new MetadataRequestUseCase(sessions, registry), options.timeoutMs ?? 100,
+    const queryUseCase = new MetadataRequestUseCase(sessions, registry);
+    const metadata = new HttpMetadataControllers(queryUseCase, options.timeoutMs ?? 100,
         options.rateLimit ?? 60);
     const router = express.Router();
     router.post('/api/v1/query', signIn.setUser.bind(signIn), metadata.postQuery.bind(metadata));
@@ -65,7 +66,7 @@ async function harness(options = {}) {
         method: 'POST', headers: { Cookie: `${SESSION_COOKIE_NAME}=${id}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
-    return { post, calls, owner, other, registry, server, close: () => new Promise(resolve => server.close(resolve)) };
+    return { post, calls, owner, other, registry, queryUseCase, server, close: () => new Promise(resolve => server.close(resolve)) };
 }
 
 describe('POST /api/v1/query', () => {
@@ -141,6 +142,17 @@ describe('POST /api/v1/query', () => {
             assert.equal(h.calls[1], 'more:01gAAA-100');
             const reused = await h.post({ orgKey, cursor: first.cursor }, undefined, 'query/next');
             assert.equal((await reused.json()).error.code, 'QUERY_CURSOR_INVALID');
+        } finally { await h.close(); }
+    });
+
+    it('invalidates pending cursors when the workspace closes', async () => {
+        const h = await harness({ paginated: true });
+        try {
+            const first = await (await h.post({ orgKey, query: 'SELECT Id FROM Account', limit: 2 })).json();
+            h.queryUseCase.clearWorkspace(h.owner.getSessionId());
+            const response = await h.post({ orgKey, cursor: first.cursor }, undefined, 'query/next');
+            assert.equal((await response.json()).error.code, 'QUERY_CURSOR_INVALID');
+            assert.equal(h.calls.length, 1);
         } finally { await h.close(); }
     });
 });
