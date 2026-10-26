@@ -9,16 +9,26 @@ interface SqlExecutionState {
     sqlExecutionStatus: string;
     selectResponse: InlineJsonArray;
     executeSql: (orgSfName: SchemaName, query: string) => void;
+    resetForOrg: () => void;
     initializeSqlExecution: () => void;
 }
+
+let queryRequestVersion = 0;
 
 const sqlExecutionState = create<SqlExecutionState>((set, get) => {
     return  {
         sqlExecutionStatus: 'INIT',
         selectResponse: ({captions:[], rows:[]}),
+        resetForOrg: () => {
+            queryRequestVersion += 1;
+            set({ sqlExecutionStatus: 'INIT', selectResponse: { captions: [], rows: [] } });
+        },
         executeSql: (orgSfName: SchemaName, query: string) => {
+            const version = ++queryRequestVersion;
             Proxy.sendSoqlAdapter(orgSfName, query).then((data) => {
-                set({selectResponse: salesforceJsontoInlineJson(data)});
+                if (version === queryRequestVersion) set({selectResponse: salesforceJsontoInlineJson(data)});
+            }).catch(() => {
+                if (version === queryRequestVersion) set({ sqlExecutionStatus: 'ERROR' });
             });
         },
         initializeSqlExecution: () => {

@@ -9,10 +9,10 @@ const { ReauthRequiredError } = require('../build/sessionManager/domain/exceptio
 const { SessionError, ErrorMessages } = require('../build/sessionManager/domain/exceptions/sessionError');
 const { ConnectionDriverDTO, Technology } = require('../build/sessionManager/application/dtos/connectionDriverDTO');
 const { UserDTO } = require('../build/sessionManager/application/dtos/userDTO');
-const { SignInUseCase, DisconnectOrgUseCase, SignOutUseCase, RequestedConnectionUseCase } =
+const { SignInUseCase, DisconnectOrgUseCase, SignOutUseCase, RequestedConnectionUseCase, SelectActiveOrgUseCase } =
     require('../build/sessionManager/application/use_cases/connectionUseCases');
 const { MetadataRequestUseCase } = require('../build/sessionManager/application/use_cases/metadataUseCases');
-const { SignInController, DisconnectOrgController, SignOutController } =
+const { SignInController, DisconnectOrgController, SignOutController, SelectActiveOrgController } =
     require('../build/sessionManager/infrastructure/input_adapter/httpControllers');
 const { HttpMetadataControllers } = require('../build/sessionManager/infrastructure/input_adapter/httpMetadataControllers');
 const { SESSION_COOKIE_NAME } = require('../build/sessionManager/infrastructure/input_adapter/sessionCookie');
@@ -75,6 +75,8 @@ async function startApi(harness) {
     const signIn = new SignInController(harness.signIn, 'TESTING');
     const disconnect = new DisconnectOrgController(
         new DisconnectOrgUseCase(harness.sessions, harness.registry));
+    const selectActiveOrg = new SelectActiveOrgController(
+        new SelectActiveOrgUseCase(harness.sessions, harness.registry));
     const signOut = new SignOutController(
         new SignOutUseCase(harness.repository, harness.sessions, harness.registry), 'TESTING');
     const metadata = new HttpMetadataControllers(
@@ -83,6 +85,7 @@ async function startApi(harness) {
     router.get('/api/v1/workspace', signIn.workspace.bind(signIn));
     router.delete('/api/v1/workspace/orgs/:orgKey', signIn.setUser.bind(signIn), disconnect.do.bind(disconnect));
     router.delete('/api/v1/workspace', signIn.setUser.bind(signIn), signOut.do.bind(signOut));
+    router.post('/api/v1/workspace/active-org', signIn.setUser.bind(signIn), selectActiveOrg.do.bind(selectActiveOrg));
     router.get('/api/describeGlobal/:orgKey', signIn.setUser.bind(signIn), metadata.getDescribeGlobal.bind(metadata));
     const app = createApp({ apiRouter: router, readinessProbe: { isReady: async () => true }, environment: 'TESTING' });
     const server = await new Promise(resolve => {
@@ -138,6 +141,47 @@ describe('workspace disconnection HTTP', () => {
             assert.equal(response.status, 404);
             assert.equal((await response.json()).error.code, 'ORG_NOT_FOUND');
             assert.deepEqual(harness.registry.listOrgKeys(harness.id), [orgA, orgB]);
+        } finally {
+            await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+        }
+    });
+});
+
+describe('active org selection HTTP', () => {
+    it('switches by OrgKey without replacing either active driver', async () => {
+        const harness = createHarness();
+        const { base, server } = await startApi(harness);
+        const headers = { Cookie: `${SESSION_COOKIE_NAME}=${harness.id}`, 'Content-Type': 'application/json' };
+        try {
+            const selected = await fetch(`${base}/api/v1/workspace/active-org`, {
+                method: 'POST', headers, body: JSON.stringify({ orgKey: orgB }),
+            });
+            assert.equal(selected.status, 200);
+            const workspace = await selected.json();
+            assert.equal(workspace.activeOrgKey, orgB);
+            assert.deepEqual(workspace.connections.map(row => row.status), ['CONNECTED', 'CONNECTED']);
+            assert.equal(harness.first.disposed, false);
+            assert.equal(harness.second.disposed, false);
+            const read = await fetch(`${base}/api/v1/workspace`, { headers });
+            assert.equal((await read.json()).activeOrgKey, orgB);
+            const unknown = await fetch(`${base}/api/v1/workspace/active-org`, {
+                method: 'POST', headers,
+                body: JSON.stringify({ orgKey: '00D000000000003:005000000000003' }),
+            });
+            assert.equal(unknown.status, 404);
+            assert.equal((await unknown.json()).error.code, 'ORG_NOT_FOUND');
+            const invalid = await fetch(`${base}/api/v1/workspace/active-org`, {
+                method: 'POST', headers, body: JSON.stringify({ orgKey: 'Shared alias' }),
+            });
+            assert.equal(invalid.status, 400);
+            assert.equal((await invalid.json()).error.code, 'ORG_KEY_INVALID');
+            harness.registry.removeConnection(harness.id, orgA);
+            const disconnected = await fetch(`${base}/api/v1/workspace/active-org`, {
+                method: 'POST', headers, body: JSON.stringify({ orgKey: orgA }),
+            });
+            assert.equal(disconnected.status, 401);
+            assert.equal((await disconnected.json()).error.code, 'REAUTH_REQUIRED');
+            assert.equal(harness.user.getSessionStatus().toJSON().activeOrgKey, orgB);
         } finally {
             await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
         }

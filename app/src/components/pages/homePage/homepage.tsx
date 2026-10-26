@@ -2,6 +2,7 @@ import css from './style.module.css'
 import {t} from '../../../utils/utils';
 //import parse from 'html-react-parser';
 import DBConnectionManager from '../../organisms/dbConnectionManager/dbConnectionManager'; 
+import ActiveOrgContext from '../../organisms/dbConnectionManager/activeOrgContext';
 import SOQLPath from '../../organisms/SOQLPath/soqlPath';
 import SchemaPanel from '../../organisms/schemaPanel/schemaPanel';
 import SObjectPanel from '../../organisms/sObjectPanel/sObjectPanel';
@@ -22,12 +23,14 @@ const HomePage = () => {
                         <DBConnectionManager/>
                     </section>                    
                     <section className={css.frame_explorer}>
+                        <ActiveOrgContext/>
                         <SOQLPath/>
                         <Console/>
                     </section>
                 </nav>
                 <section className={css.panel_container}>
                     <section className={css.frame_editor}>
+                        <ActiveOrgContext/>
                         {currentView==='INIT' && <AppIntro/> }
                         {currentView==='org' && <SchemaPanel/> }
                         {currentView==='sobject' && <SObjectPanel/> }     

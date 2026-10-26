@@ -29,3 +29,7 @@ export interface SignOutInputPort {
 export interface DisconnectOrgInputPort {
     exe(id: SessionId, orgKey: OrgKey): Promise<SessionDTO>;
 }
+
+export interface SelectActiveOrgInputPort {
+    exe(id: SessionId, orgKey: OrgKey): Promise<SessionDTO>;
+}

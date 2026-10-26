@@ -69,6 +69,8 @@ Vite abre normalmente `http://localhost:5173` y proxyfica `/api` a `http://local
 
 El cliente del navegador usa `/api/v1` en el mismo host. Las rutas de metadata y SOQL que todavía no tienen contrato v1 pasan por el mismo cliente usando `/api`; sus contratos se renovarán en sprints posteriores. Solo se permite cambiar la base con `VITE_API_BASE_URL` al compilar la app: debe terminar en `/api/v1`, usar HTTPS si es absoluta y no contener credenciales, query ni fragmento. En desarrollo se acepta HTTP para `localhost` y `127.0.0.1`. El cliente envía la cookie y `X-Correlation-Id`; la API valida y devuelve ese identificador en cabecera y errores.
 
+El gestor de conexiones distingue las orgs por `OrgKey`, incluso cuando comparten alias. **Usar** selecciona una org conectada mediante `POST /api/v1/workspace/active-org`; el comando equivalente es `Select_org_<organizationId>_<userId>`. El destino visible junto al explorador y al panel de consulta se actualiza al alternar. El estado de consulta anterior se limpia para que nunca aparezca bajo la identidad nueva. Los comandos `Login_to_Prod` y `Login_to_Sandbox` también están disponibles desde cualquier contexto.
+
 ## Compilación verificada
 
 ```powershell

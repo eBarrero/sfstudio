@@ -1,4 +1,4 @@
-import { getWorkspace, deleteOrg, deleteWorkspace } from './controller';
+import { getWorkspace, deleteOrg, deleteWorkspace, selectActiveOrg } from './controller';
 import { apiClient } from '../http/apiClient';
 import type { PublicWorkspaceDefinition } from './types';
 
@@ -27,6 +27,10 @@ import type { PublicWorkspaceDefinition } from './types';
 
   export async function closeWorkspace(): Promise<void> {
     await deleteWorkspace();
+  }
+
+  export async function selectOrganization(orgKey: string): Promise<PublicWorkspaceDefinition> {
+    return selectActiveOrg(orgKey);
   }
 
 

@@ -11,6 +11,7 @@ interface AcctionParams {
 }
 
 interface CommandDefinition  {
+    actionId?: string;
     menuItem?: string;
     menuOption?: string;
     menuCaption?: string;
