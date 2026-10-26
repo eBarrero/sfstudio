@@ -10,6 +10,7 @@ export interface MetadataIdentity {
 }
 
 export interface SnapshotField {
+  properties: Record<string, unknown>;
   name: string;
   label: string;
   type: string;
@@ -24,7 +25,8 @@ export interface SnapshotField {
   description: string | null;
   referenceTo: string[];
   relationshipName: string | null;
-  picklistValues: { value: string; label: string; active: boolean; defaultValue: boolean }[];
+  picklistValues: { value: string; label: string; active: boolean;
+    defaultValue: boolean; validFor: string | null }[];
 }
 
 export interface SnapshotRelationship {
@@ -37,6 +39,7 @@ export interface SnapshotRelationship {
 }
 
 export interface SnapshotObject {
+  properties: Record<string, unknown>;
   name: string;
   label: string;
   labelPlural: string;
@@ -58,6 +61,33 @@ export interface MetadataSnapshot extends MetadataIdentity {
 }
 
 const byName = (left: string, right: string) => left.localeCompare(right, 'en');
+const objectPropertyKeys = [
+  'activateable', 'createable', 'custom', 'customSetting', 'deletable',
+  'deprecatedAndHidden', 'feedEnabled', 'hasSubtypes', 'isSubtype', 'keyPrefix',
+  'label', 'labelPlural', 'layoutable', 'mergeable', 'mruEnabled', 'name',
+  'queryable', 'replicateable', 'retrieveable', 'searchable', 'triggerable',
+  'undeletable', 'updateable',
+] as const;
+const fieldPropertyKeys = [
+  'aggregatable', 'autoNumber', 'byteLength', 'calculated', 'calculatedFormula',
+  'cascadeDelete', 'caseSensitive', 'compoundFieldName', 'controllerName',
+  'createable', 'custom', 'defaultValue', 'defaultValueFormula',
+  'defaultedOnCreate', 'dependentPicklist', 'deprecatedAndHidden', 'digits',
+  'displayLocationInDecimal', 'encrypted', 'externalId', 'extraTypeInfo',
+  'filterable', 'filteredLookupInfo', 'groupable', 'highScaleNumber',
+  'htmlFormatted', 'idLookup', 'inlineHelpText', 'label', 'length', 'mask',
+  'maskType', 'name', 'nameField', 'namePointing', 'nillable', 'permissionable',
+  'polymorphicForeignKey', 'precision', 'queryByDistance',
+  'referenceTargetField', 'relationshipName', 'relationshipOrder',
+  'restrictedDelete', 'restrictedPicklist', 'scale', 'searchPrefilterable',
+  'soapType', 'sortable', 'type', 'unique', 'updateable',
+  'writeRequiresMasterRead', 'description',
+] as const;
+
+function selectProperties(value: object, keys: readonly string[]): Record<string, unknown> {
+  const source = value as Record<string, unknown>;
+  return Object.fromEntries(keys.filter(key => key in source).map(key => [key, source[key]]));
+}
 
 export function metadataCacheKey(identity: MetadataIdentity): string {
   if (identity.orgKey !== `${identity.organizationId}:${identity.userId}`) {
@@ -73,6 +103,7 @@ export function normalizeObject(raw: Salesforce_SObject): SnapshotObject {
   const fields: Record<string, SnapshotField> | null = raw.fields == null ? null : {};
   for (const field of [...(raw.fields ?? [])].sort((a, b) => byName(a.name, b.name))) {
     fields![field.name] = {
+      properties: selectProperties(field, fieldPropertyKeys),
       name: field.name, label: field.label, type: field.type,
       length: field.length, precision: field.precision, scale: field.scale,
       nillable: field.nillable, custom: field.custom, createable: field.createable,
@@ -82,7 +113,8 @@ export function normalizeObject(raw: Salesforce_SObject): SnapshotObject {
       relationshipName: field.relationshipName ?? null,
       picklistValues: [...(field.picklistValues ?? [])]
         .map(value => ({ value: value.value, label: value.label,
-          active: value.active, defaultValue: value.defaultValue }))
+          active: value.active, defaultValue: value.defaultValue,
+          validFor: value.validFor ?? null }))
         .sort((a, b) => byName(a.value, b.value)),
     };
   }
@@ -100,6 +132,7 @@ export function normalizeObject(raw: Salesforce_SObject): SnapshotObject {
     };
   }
   return {
+    properties: selectProperties(raw, objectPropertyKeys),
     name: raw.name, label: raw.label, labelPlural: raw.labelPlural,
     keyPrefix: raw.keyPrefix, custom: raw.custom, queryable: raw.queryable,
     createable: raw.createable, updateable: raw.updateable, deletable: raw.deletable,

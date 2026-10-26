@@ -1,6 +1,7 @@
-import { getDescribe, getDescribeObject, sendQuery, getMetadataObject  } from './controller'
+import { sendQuery, getMetadataObject  } from './controller'
 import type { SalesforceQueryResponse } from './controller'
 import { ModelReader } from './modelReader'
+import { loadGlobal, loadObject } from './snapshotAdapter'
 
 
 const cache: Map<SchemaName, Schema> = new Map(); 
@@ -27,8 +28,8 @@ export default class Proxy {
         }
 
         if (!cache.has(orgSfName)) {
-            const response = await getDescribe(orgSfName);
-            const sobjects: SObject[] = response.sobjects.map((sobject, index) => ({
+            const response = await loadGlobal(orgSfName);
+            const sobjects: SObject[] = response.map((sobject, index) => ({
                 ...sobject,
                 orgSfName,
                 sObjectLocalId: index,
@@ -93,7 +94,7 @@ export default class Proxy {
             
             if (sobject.fields===undefined) {
                 const name = cache.get(orgSfName)?.sobjects[objectIndex]?.name;
-                const response = await getDescribeObject(orgSfName, name!);
+                const response = await loadObject(orgSfName, name!);
                 const data: SObject = { ...response, orgSfName, sObjectLocalId: objectIndex,
                     mapFields: new Map(), metadataFieldDownloaded: null };
                 
