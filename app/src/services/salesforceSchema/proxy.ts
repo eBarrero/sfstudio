@@ -107,7 +107,7 @@ export default class Proxy {
         }
             const sobject =  cache.get(orgSfName)!.sobjects[objectIndex];
             
-            if (sobject.fields===undefined) {
+            if (sobject.fields == null) {
                 const name = cache.get(orgSfName)?.sobjects[objectIndex]?.name;
                 const response = await loadObject(orgSfName, name!);
                 const data: SObject = { ...response, orgSfName, sObjectLocalId: objectIndex,
@@ -240,25 +240,6 @@ export default class Proxy {
         return (result===null || result===undefined)? null: result.sObjectLocalId!;
     }
 
-
-/*
-    public static getReferenceSObjectId(orgSfName: string, sObjectIndex: number, fieldIndex: number): SObjectReferenceId {
-        console.log(`getReferenceSObjectId orgSfName: "${orgSfName}" sObjectIndex: "${sObjectIndex}" fieldIndex: "${fieldIndex}"`);
-        if (!cache.has(orgSfName)) {
-            throw new Error(`Invalid orgSfName: "${orgSfName}"`);
-        }
-        const sobject = cache.get(orgSfName)?.sobjects[sObjectIndex];
-        if (!sobject) {
-            throw new Error(`Invalid orgSfName: "${orgSfName}"`);
-        }
-        const field = sobject.fields![fieldIndex];
-        if (field.type !== 'reference') {
-            throw new Error(`Invalid fieldIndex: "${fieldIndex}" type: "${field.type}"`);
-        }
-        return {...Proxy.getSobjectIdByName(orgSfName, field.referenceTo[0]), referenceName: field.relationshipName!};
-        
-    }
-*/
 
     /**
      * @description get metadata of the fields' object and update the object cache

@@ -276,6 +276,8 @@ interface InlineJsonArray {
 
 interface DataState {  
     clearSchema: () => void;
+    activeOrgKey: string | null;
+    activateOrg: (orgKey: string) => void;
     refreshMetadata: (orgKey: string) => Promise<void>;
     action: string;                                // It indicates the action to be performed or it being performed
     sobjects: GetSObjectsIndex[];                  // It contains the list of sObjects. Loaded from getSchema()

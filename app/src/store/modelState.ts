@@ -60,14 +60,12 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             });
         },
         setField: (field: GetFieldsIndex) => {
-            console.log('setField', );
             const state = get().state;
             state.currentField = field;
             state.action = 'field';
             set({state});
         },
         gotoLookup: (field: GetFieldsIndex) => {
-            console.log('addReference');
             const orgSfName = get().state.orgSfName;
             
                   
@@ -77,7 +75,6 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             const newlevel = (parentQuery as ReletedObject).level + 1;         // the new level is the parent level + 1 (max. 5) 
             const parentPath = (parentQuery as ReletedObject).path; // the new path is the parent path + fieldApiName + '.'
             const path = ((parentPath)?parentPath:'') + field.relationshipName + '.'; 
-            console.log('path', path);
             
             
             const sObjectLocalId = field.referenceToLocalId![0];
@@ -136,7 +133,6 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
         },
 
         showByqueryElemntsIndex(index: number) {
-            console.log('showByqueryElemntsIndex', index);
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement = index;
             const query = queryState.queryElemnts[currentElement];
@@ -192,7 +188,6 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             set({queryState, sqlState: sqlState(queryState), currentSOQLFieldSelection});
         },
         setSelectAllFields: (value:SelectAllFields) => {
-            console.log('setSelectAllFields');
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement;
             const query = queryState.queryElemnts[currentElement];  
@@ -214,7 +209,6 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             });
         },
         addWhere: (SimpleCondition: SimpleCondition | pairCondition) => {
-            console.log('addWhere',SimpleCondition);
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement;
             const query = queryState.queryElemnts[currentElement];  
@@ -249,7 +243,6 @@ export default modelState;
 
 
 function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFieldSelectionState> {
-    console.log('createSOQLFieldSelection');
     const map = new Map<FieldLocalId, SOQLFieldSelectionState>();
 
 

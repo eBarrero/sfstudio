@@ -10,7 +10,7 @@ import { createSessionId } from "../../domain/entities/workspaceSession";
 import { parseOrgKey, OrgKey } from '../../domain/entities/orgKey';
 import { salesforceLoginHost, validateSalesforceLoginHost } from '../../domain/entities/salesforceLoginHost';
 import { errorHandler } from "../../../infrastructure/frameworks/errorHandler";
-import { ENV, REDIRECT_URI, RuntimeEnvironment } from "../../../config/environment";
+import { API_SF_VERSION, ENV, REDIRECT_URI, RuntimeEnvironment } from "../../../config/environment";
 import { logger, StructuredLogger } from "../../../infrastructure/frameworks/structuredLogger";
 import {
     clearOAuthFlowCookie,
@@ -95,13 +95,14 @@ export class SignInController {
                 clearSessionCookie(res, this.environment);
                 sendUnauthorized(res, req.correlationId);
             } else {
-                res.status(200).json({ version: 1, connections: [], activeOrgKey: null });
+                res.status(200).json({ version: 1, connections: [], activeOrgKey: null,
+                    apiVersion: API_SF_VERSION });
             }
             return;
         }
         try {
             const sessionDTO = await this.useCase.getSessionStatus(sessionId);
-            res.status(200).json(sessionDTO.toJSON());
+            res.status(200).json({ ...sessionDTO.toJSON(), apiVersion: API_SF_VERSION });
         } catch (error) {
             if (error instanceof SessionError) {
                 clearSessionCookie(res, this.environment);

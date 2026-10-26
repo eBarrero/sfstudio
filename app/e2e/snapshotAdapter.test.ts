@@ -1,9 +1,9 @@
 import 'fake-indexeddb/auto';
 import { getDescribe, getDescribeObject } from '../src/services/salesforceSchema/controller';
 import { metadataCache } from '../src/services/salesforceSchema/metadataCache';
-import { freezeComparisonSnapshots, loadGlobal, loadObject, metadataStatus,
+import { freezeComparisonSnapshots, identityForOrg, loadGlobal, loadObject, metadataStatus,
   refreshGlobal } from '../src/services/salesforceSchema/snapshotAdapter';
-import { normalizeSnapshot } from '../src/services/salesforceSchema/metadataSnapshot';
+import { metadataCacheKey, normalizeSnapshot } from '../src/services/salesforceSchema/metadataSnapshot';
 import sessionState from '../src/store/sessionState';
 
 jest.mock('../src/services/salesforceSchema/controller', () => ({
@@ -76,4 +76,13 @@ test('comparison snapshots stay frozen after source data changes', () => {
   expect(lockedSource.objects.Account.label).toBe('Cuenta');
   expect(Object.isFrozen(lockedSource.objects.Account)).toBe(true);
   expect(lockedDestination.organizationId).toBe('00D000000000002');
+});
+
+test('server API version changes the cache identity', () => {
+  const workspace = sessionState.getState().publicSession;
+  sessionState.setState({ publicSession: { ...workspace, apiVersion: '58.0' } });
+  const before = metadataCacheKey(identityForOrg(orgKey));
+  sessionState.setState({ publicSession: { ...workspace, apiVersion: '61.0' } });
+  const after = metadataCacheKey(identityForOrg(orgKey));
+  expect(after).not.toBe(before);
 });

@@ -14,6 +14,7 @@ export interface PublicConnectionDefinition {
 
 export interface PublicWorkspaceDefinition {
   version: 1;
+  apiVersion?: string;
   connections: PublicConnectionDefinition[];
   activeOrgKey: string | null;
 }

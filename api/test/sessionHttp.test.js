@@ -3,6 +3,7 @@ const { randomUUID } = require("node:crypto");
 const { afterEach, describe, it } = require("node:test");
 const express = require("express");
 const { createApp } = require("../build/app");
+const { API_SF_VERSION } = require("../build/config/environment");
 const { SessionDTO } = require("../build/sessionManager/domain/dtos/sessionDTO");
 const { OAuthStateStore } = require("../build/sessionManager/domain/entities/oauthStateStore");
 const {
@@ -93,7 +94,8 @@ describe("workspace session HTTP contract", () => {
         const baseUrl = await startApplication(createSignInRouter(useCase));
         const response = await fetch(`${baseUrl}/api/v1/workspace`);
         assert.equal(response.status, 200);
-        assert.deepEqual(await response.json(), { version: 1, connections: [], activeOrgKey: null });
+        assert.deepEqual(await response.json(), { version: 1, connections: [], activeOrgKey: null,
+            apiVersion: API_SF_VERSION });
     });
 
     it("returns the public JSON contract for an authenticated workspace", async () => {
@@ -104,7 +106,8 @@ describe("workspace session HTTP contract", () => {
             headers: { Cookie: `${SESSION_COOKIE_NAME}=${sessionId}` },
         });
         assert.equal(response.status, 200);
-        assert.deepEqual(await response.json(), { version: 1, connections: [], activeOrgKey: null });
+        assert.deepEqual(await response.json(), { version: 1, connections: [], activeOrgKey: null,
+            apiVersion: API_SF_VERSION });
     });
 
     it("returns a new workspace marker when the cookie is absent", async () => {

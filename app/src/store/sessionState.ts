@@ -5,6 +5,10 @@ import type { PublicWorkspaceDefinition } from '../services/session/types';
 import { ApiError } from '../services/http/apiClient';
 import { createWorkspaceActionDispatcher, type WorkspaceAction, type ActionResult } from '../core/workspaceActions';
 import dataState from './dataState';
+import modelState from './modelState';
+import viewState from './viewState';
+import applicationState from './applicationState';
+import { CONTEXT_LEVEL as ExplorerContext } from '../core/commandManager';
 
 
 interface SessionState {
@@ -80,7 +84,8 @@ const sessionState = create<SessionState>((set, get) => {
                     });
                 }
             }
-            set({ publicSession: workspace, lastError: null });
+            set({ publicSession: { ...workspace,
+                apiVersion: workspace.apiVersion ?? get().publicSession.apiVersion }, lastError: null });
         },
         createSession: () => {
             createSession().then((s) => {
@@ -154,7 +159,14 @@ const workspaceDispatcher = createWorkspaceActionDispatcher({
     connectOrg: environment => environment === 'PRODUCTION'
         ? sessionState.getState().loginSFDC() : sessionState.getState().loginSandBox(),
     closeWorkspace: () => sessionState.getState().closeWorkspace(),
-    refreshMetadata: orgKey => dataState.getState().refreshMetadata(orgKey),
+    refreshMetadata: async orgKey => {
+        await dataState.getState().refreshMetadata(orgKey);
+        if (sessionState.getState().publicSession.activeOrgKey === orgKey) {
+            modelState.getState().setOrg(orgKey);
+            viewState.getState().setCurrentView(ExplorerContext.ORG);
+            applicationState.getState().setContextLevel(ExplorerContext.ORG);
+        }
+    },
 });
 
 export async function dispatchWorkspaceAction(action: WorkspaceAction, context: CONTEXT_LEVEL): Promise<ActionResult> {
