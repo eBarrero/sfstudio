@@ -1,5 +1,6 @@
 import css from './style.module.css';
-import sessionState, { ORG_USE_ACTION_ID } from '../../../store/sessionState';
+import sessionState, { ORG_USE_ACTION_ID, dispatchWorkspaceAction } from '../../../store/sessionState';
+import applicationState from '../../../store/applicationState';
 import type { ConnectionStatus } from '../../../services/session/types';
 
 const statusLabel: Record<ConnectionStatus, string> = {
@@ -16,19 +17,21 @@ export function shortOrganizationId(value: string): string {
 export default function DBConnectionManager() {
   const workspace = sessionState(state => state.publicSession);
   const lastError = sessionState(state => state.lastError);
-  const selectOrganization = sessionState(state => state.selectOrganization);
-  const disconnectOrg = sessionState(state => state.disconnectOrg);
-  const loginOrganization = sessionState(state => state.loginOrganization);
-  const loginSFDC = sessionState(state => state.loginSFDC);
-  const loginSandBox = sessionState(state => state.loginSandBox);
-  const closeWorkspace = sessionState(state => state.closeWorkspace);
+  const dispatch = (action: Parameters<typeof dispatchWorkspaceAction>[0]) =>
+    dispatchWorkspaceAction(action, applicationState.getState().context_level);
 
   return (
     <section aria-label="Organizaciones" className={css.manager}>
       <h2>Organizaciones</h2>
       <div className={css.connectActions}>
-        <button type="button" onClick={loginSFDC}>Conectar producción</button>
-        <button type="button" onClick={loginSandBox}>Conectar sandbox</button>
+        <button type="button" data-action-id="org.connect"
+          onClick={() => { void dispatch({ id: 'org.connect', environment: 'PRODUCTION' }); }}>
+          Conectar producción
+        </button>
+        <button type="button" data-action-id="org.connect"
+          onClick={() => { void dispatch({ id: 'org.connect', environment: 'SANDBOX' }); }}>
+          Conectar sandbox
+        </button>
       </div>
       <ul className={css.connectionList}>
         {workspace.connections.map(connection => {
@@ -52,21 +55,24 @@ export default function DBConnectionManager() {
                 {connection.status === 'CONNECTED' && (
                   <>
                     <button type="button" aria-pressed={active} data-action-id={ORG_USE_ACTION_ID}
-                      onClick={() => { void selectOrganization(connection.orgKey); }}>
+                      onClick={() => { void dispatch({ id: 'org.use', orgKey: connection.orgKey }); }}>
                       Usar {connection.alias} ({shortId})
                     </button>
-                    <button type="button" onClick={() => { void disconnectOrg(connection.orgKey); }}>
+                    <button type="button" data-action-id="org.close"
+                      onClick={() => { void dispatch({ id: 'org.close', orgKey: connection.orgKey }); }}>
                       Desconectar
                     </button>
                   </>
                 )}
                 {connection.status === 'REAUTH_REQUIRED' && (
-                  <button type="button" onClick={() => loginOrganization(connection.orgKey)}>
+                  <button type="button" data-action-id="org.reconnect"
+                    onClick={() => { void dispatch({ id: 'org.reconnect', orgKey: connection.orgKey }); }}>
                     Reautenticar
                   </button>
                 )}
                 {connection.status === 'ERROR' && (
-                  <button type="button" onClick={() => loginOrganization(connection.orgKey)}>
+                  <button type="button" data-action-id="org.reconnect"
+                    onClick={() => { void dispatch({ id: 'org.reconnect', orgKey: connection.orgKey }); }}>
                     Reintentar conexión
                   </button>
                 )}
@@ -77,7 +83,8 @@ export default function DBConnectionManager() {
         })}
       </ul>
       {workspace.connections.length > 0 && (
-        <button type="button" onClick={() => { void closeWorkspace(); }}>Cerrar workspace</button>
+        <button type="button" data-action-id="workspace.close"
+          onClick={() => { void dispatch({ id: 'workspace.close' }); }}>Cerrar workspace</button>
       )}
       {lastError && <p role="alert">{lastError}</p>}
     </section>

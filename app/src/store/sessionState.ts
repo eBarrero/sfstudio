@@ -3,11 +3,13 @@ import { addCommand, deleteCommand, SESSION_CMD, CONTEXT_LEVEL } from '../core/c
 import { createSession, loginSFDC, loginSandBox, loginOrganization, disconnectOrg, closeWorkspace, selectOrganization } from '../services/session/model';
 import type { PublicWorkspaceDefinition } from '../services/session/types';
 import { ApiError } from '../services/http/apiClient';
+import { createWorkspaceActionDispatcher, type WorkspaceAction, type ActionResult } from '../core/workspaceActions';
 
 
 interface SessionState {
     publicSession: PublicWorkspaceDefinition;
     lastError: string | null;
+    lastActionFeedback: string | null;
     setWorkspace: (workspace: PublicWorkspaceDefinition) => void;
     createSession: () => void;
     loginSFDC: () => void;
@@ -26,6 +28,7 @@ const sessionState = create<SessionState>((set, get) => {
     return  {
         publicSession: { version: 1, activeOrgKey: null, connections: [] },
         lastError: null,
+        lastActionFeedback: null,
         setWorkspace: (workspace) => {
             deleteCommand('Disconnect_org_');
             deleteCommand('Reconnect_org_');
@@ -40,21 +43,26 @@ const sessionState = create<SessionState>((set, get) => {
                             command: `Select_org_${key}`,
                             description: `Usar ${conn.alias} (${conn.organizationId})`,
                             actionId: ORG_USE_ACTION_ID,
+                            menuItem: 'Org', menuCaption: `Usar ${conn.alias} (${conn.organizationId})`,
                             context,
-                            action: () => { void get().selectOrganization(conn.orgKey); },
+                            action: () => { void dispatchWorkspaceAction({ id: 'org.use', orgKey: conn.orgKey }, context); },
                         });
                         addCommand({
                             command: `Disconnect_org_${key}`,
                             description: `Desconectar ${conn.alias}`,
+                            actionId: 'org.close',
+                            menuItem: 'Org', menuCaption: `Desconectar ${conn.alias} (${conn.organizationId})`,
                             context,
-                            action: () => { void get().disconnectOrg(conn.orgKey); },
+                            action: () => { void dispatchWorkspaceAction({ id: 'org.close', orgKey: conn.orgKey }, context); },
                         });
-                    } else {
+                    } else if (conn.status === 'REAUTH_REQUIRED' || conn.status === 'ERROR') {
                         addCommand({
                             command: `Reconnect_org_${key}`,
                             description: `Reautenticar ${conn.alias}`,
+                            actionId: 'org.reconnect',
+                            menuItem: 'Org', menuCaption: `Reautenticar ${conn.alias} (${conn.organizationId})`,
                             context,
-                            action: () => { get().loginOrganization(conn.orgKey); },
+                            action: () => { void dispatchWorkspaceAction({ id: 'org.reconnect', orgKey: conn.orgKey }, context); },
                         });
                     }
                 }
@@ -64,8 +72,10 @@ const sessionState = create<SessionState>((set, get) => {
                     addCommand({
                         command: 'Close_workspace',
                         description: 'Cerrar el workspace',
+                        actionId: 'workspace.close',
+                        menuItem: 'Workspace', menuCaption: 'Cerrar workspace',
                         context,
-                        action: () => { void get().closeWorkspace(); },
+                        action: () => { void dispatchWorkspaceAction({ id: 'workspace.close' }, context); },
                     });
                 }
             }
@@ -101,27 +111,32 @@ const sessionState = create<SessionState>((set, get) => {
                     ? 'Reautentica la organización antes de usarla.'
                     : 'No se pudo seleccionar la organización.';
                 set({ lastError: message });
+                throw error;
             }
         },
         disconnectOrg: async (orgKey: string) => {
             try {
                 get().setWorkspace(await disconnectOrg(orgKey));
-            } catch {
+            } catch (error) {
                 set({ lastError: 'No se pudo desconectar la organización.' });
+                throw error;
             }
         },
         closeWorkspace: async () => {
             try {
                 await closeWorkspace();
                 get().setWorkspace({ version: 1, connections: [], activeOrgKey: null });
-            } catch {
+            } catch (error) {
                 set({ lastError: 'No se pudo cerrar el workspace.' });
+                throw error;
             }
         },
         initializeSession: () => {
             for (const context of Object.values(CONTEXT_LEVEL)) {
-                addCommand({...SESSION_CMD.PROD, context, action: () => { get().loginSFDC();}});
-                addCommand({...SESSION_CMD.SANDBOX, context, action: () => { get().loginSandBox();}});
+                addCommand({...SESSION_CMD.PROD, context, actionId: 'org.connect',
+                    action: () => { void dispatchWorkspaceAction({ id: 'org.connect', environment: 'PRODUCTION' }, context); }});
+                addCommand({...SESSION_CMD.SANDBOX, context, actionId: 'org.connect',
+                    action: () => { void dispatchWorkspaceAction({ id: 'org.connect', environment: 'SANDBOX' }, context); }});
             }
         }
     }   
@@ -129,5 +144,24 @@ const sessionState = create<SessionState>((set, get) => {
 
 
 export default sessionState;
+
+const workspaceDispatcher = createWorkspaceActionDispatcher({
+    getWorkspace: () => sessionState.getState().publicSession,
+    selectOrganization: orgKey => sessionState.getState().selectOrganization(orgKey),
+    disconnectOrg: orgKey => sessionState.getState().disconnectOrg(orgKey),
+    reconnectOrg: orgKey => sessionState.getState().loginOrganization(orgKey),
+    connectOrg: environment => environment === 'PRODUCTION'
+        ? sessionState.getState().loginSFDC() : sessionState.getState().loginSandBox(),
+    closeWorkspace: () => sessionState.getState().closeWorkspace(),
+});
+
+export async function dispatchWorkspaceAction(action: WorkspaceAction, context: CONTEXT_LEVEL): Promise<ActionResult> {
+    const result = await workspaceDispatcher(action, context);
+    sessionState.setState({
+        lastActionFeedback: result.message,
+        lastError: result.ok ? null : result.message,
+    });
+    return result;
+}
 
 

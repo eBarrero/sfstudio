@@ -15,7 +15,8 @@ import css from './style.module.css';
  Goal: This component allows the user to interact to other components by typing commands, for exemple, to filter the data in the table.
 */
 const Console = () => {
-    const { setCommand, sendFilter, exeCommand, filter, lastError,  currentCommand, helpOnLine, history, context_level, suggestions } = useApplication();
+    const { setCommand, sendFilter, exeCommand, filter, lastError, currentCommand, helpOnLine,
+        actionFeedback, history, context_level, suggestions } = useApplication();
     const { exeCommandFromUI } = applicationState();
 
     const handleCommandChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,7 +71,7 @@ const Console = () => {
             </datalist>
             
             <div className={css.warningOrError}>{lastError}</div>
-            <div className={css.commendOrHelp}>{helpOnLine}</div>
+            <div className={css.commendOrHelp} role="status">{actionFeedback || helpOnLine}</div>
             <textarea rows={5}  defaultValue={history} className={css.consoleHistory}  aria-multiline={true} aria-label={"Console History"} id={"consoleHistory"}/>
         </section>
     )    

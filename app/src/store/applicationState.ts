@@ -1,6 +1,8 @@
 
 import {create} from 'zustand';
 import { addCommand, searchCommand, readCommand, CONTEXT_LEVEL,APP_CMD } from '../core/commandManager';
+import { parseWorkspaceCommand, WORKSPACE_COMMAND_HELP } from '../core/workspaceCommandParser';
+import { dispatchWorkspaceAction } from './sessionState';
 
 
 
@@ -38,7 +40,8 @@ const applicationState = create<ApplicationState>((set, get) => {
                     helpOnLine:'',  
                     filter: '', 
                     errorState: undefined, 
-                    suggestions:[], 
+                    suggestions:[],
+                    commandConfirmed: undefined,
                     command: undefined};
                 set(newState);
             }
@@ -48,17 +51,18 @@ const applicationState = create<ApplicationState>((set, get) => {
             set({filter: newFilter});
         },
         setCommand: (newCommand: string | null) => {
-            console.log('setCommand', newCommand);
-
             if (newCommand === null) newCommand = '';
             if (newCommand === '' || (get().currentCommand.startsWith(newCommand) && get().currentCommand !== newCommand))  {
                 set({currentCommand: newCommand, errorState: undefined, commandConfirmed: undefined,helpOnLine:'',  suggestions:[]});
                 return;
             }
 
-            console.log('setCommand:'+ newCommand + ':');  
-
-            const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined};            
+            const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined, commandConfirmed: undefined};
+            if (/^(org|workspace)(\s|$)/i.test(newCommand.trimStart())) {
+                newState.helpOnLine = WORKSPACE_COMMAND_HELP;
+                set(newState);
+                return;
+            }
             const firstWord = newCommand.split(' ')[0];
             const secondWord = newCommand.split(' ')[1] ?? '';
             const {commandNameList, commandImplementation} = searchCommand(firstWord, newState.context_level);
@@ -76,9 +80,25 @@ const applicationState = create<ApplicationState>((set, get) => {
             set(newState);
         },
         exeCommand: (newCommand: string) => {
-
-
-            const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined};            
+            const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined, commandConfirmed: undefined};
+            const workspaceCommand = parseWorkspaceCommand(newCommand);
+            if (workspaceCommand) {
+                if (workspaceCommand.kind === 'error') {
+                    newState.errorState = 'Comando de workspace no válido.';
+                    newState.helpOnLine = workspaceCommand.help;
+                    newState.commandConfirmed = undefined;
+                } else {
+                    const action = workspaceCommand.action;
+                    const context = get().context_level;
+                    newState.commandConfirmed = {
+                        command: newCommand, description: WORKSPACE_COMMAND_HELP,
+                        actionId: action.id, context,
+                        action: () => { void dispatchWorkspaceAction(action, context); },
+                    };
+                }
+                set(newState);
+                return;
+            }
             if (get().command !== undefined) {
                 newState.commandConfirmed = get().command;
             } else {
@@ -87,10 +107,9 @@ const applicationState = create<ApplicationState>((set, get) => {
             set(newState);              
         },
         exeCommandFromUI: (newCommand: string) => {
-            console.log('exeCommandFromUI', newCommand);
             const c = newCommand.trim();
             const firstWord = c.split(' ')[0];
-            const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: c, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined};   
+            const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: c, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined, commandConfirmed: undefined};
             const command = readCommand(firstWord, newState.context_level);                     
             if (command !== undefined) {
                 newState.commandConfirmed = command;
