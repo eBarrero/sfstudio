@@ -14,11 +14,13 @@ import {
 import { createOrgKey } from '../../../domain/entities/orgKey';
 import { migrateConnections } from './connectionMigration';
 import { removeObsoleteWorkspaceOwnerIndex } from './workspaceIndexMigration';
+import { removeObsoleteUserConnectionIndexes } from './userConnectionIndexMigration';
 
 export class MongoDBUserRepository  implements UserRepositoryPort {
     private userModel: Model<IUser>;
     private workspaceSessionModel: Model<IWorkspaceSession>;
     private workspaceIndexMigration?: Promise<void>;
+    private userIndexMigration?: Promise<void>;
     
     constructor(mongoDB: MongoDBService) {
         const connection = mongoDB.getConnection();
@@ -66,6 +68,7 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
         const configDriverDTOs:  ConnectionDriverDTO[] = [];
         const migration = migrateConnections(user.connections);
         if (migration.changed) {
+            await this.ensureUserConnectionIndexes();
             await this.userModel.updateOne({ _id: user._id }, { $set: { connections: migration.connections } });
         }
         migration.connections.forEach(connection => {
@@ -96,6 +99,7 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
 
     public async createUserAndFirstConnection(sessionId: SessionId, expiresAt: Date, configDriverDTO: ConnectionDriverDTO): Promise<void> {
         await this.ensureWorkspaceIndex();
+        await this.ensureUserConnectionIndexes();
         const user = new this.userModel({
             sessionId: createSessionId(),
             name: 'userName',
@@ -109,6 +113,7 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
         }).save();
     }   
     public async addNewConnectionToUser(sessionId: SessionId, configDriverDTO: ConnectionDriverDTO): Promise<UserDTO> {
+        await this.ensureUserConnectionIndexes();
         const workspaceSession = await this.findActiveSession(sessionId);
         const user = await this.userModel.findById(workspaceSession.user);
         if (!user) {
@@ -174,5 +179,16 @@ export class MongoDBUserRepository  implements UserRepositoryPort {
             });
         }
         await this.workspaceIndexMigration;
+    }
+
+    /** Remove only historical unique indexes on individual connection fields. */
+    private async ensureUserConnectionIndexes(): Promise<void> {
+        if (!this.userIndexMigration) {
+            this.userIndexMigration = removeObsoleteUserConnectionIndexes(this.userModel).catch(error => {
+                this.userIndexMigration = undefined;
+                throw error;
+            });
+        }
+        await this.userIndexMigration;
     }
 }
