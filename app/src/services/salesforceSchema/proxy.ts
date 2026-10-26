@@ -1,4 +1,4 @@
-import { sendQuery, getMetadataObject  } from './controller'
+import { sendQuery, nextQueryPage, getMetadataObject  } from './controller'
 import type { SalesforceQueryResponse } from './controller'
 import { ModelReader } from './modelReader'
 import { loadGlobal, loadObject, metadataStatus, refreshGlobal } from './snapshotAdapter'
@@ -290,8 +290,12 @@ export default class Proxy {
     }
 
 
-    public static async sendSoqlAdapter(orgSfName: string, query: string): Promise<SalesforceQueryResponse> {
-        return await sendQuery(orgSfName, query);   
+    public static async sendSoqlAdapter(orgSfName: string, query: string, signal?: AbortSignal): Promise<SalesforceQueryResponse> {
+        return await sendQuery(orgSfName, query, 200, signal);
+    }
+
+    public static async nextSoqlPage(orgSfName: string, cursor: string, signal?: AbortSignal): Promise<SalesforceQueryResponse> {
+        return await nextQueryPage(orgSfName, cursor, signal);
     }
 }
 

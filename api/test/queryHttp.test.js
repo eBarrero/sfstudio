@@ -23,17 +23,27 @@ async function harness(options = {}) {
     const config = new ConnectionDriverDTO({ tech: Technology.SF_Test, dbId: '00D000000000001',
         userId: '005000000000001', userName: 'fixture', dbName: 'integration', alias: 'Integration',
         instanceUrl: 'https://integration.my.salesforce.com' });
+    const secondConfig = new ConnectionDriverDTO({ tech: Technology.SF_Test, dbId: '00D000000000002',
+        userId: '005000000000002', userName: 'fixture', dbName: 'uat', alias: 'UAT',
+        instanceUrl: 'https://uat.my.salesforce.com' });
     const owner = sessions.addNewUser();
     const other = sessions.addNewUser();
-    for (const user of [owner, other]) user.loadConnections(new UserDTO(user.getSessionId(), 'fixture', new Date(), user.getExpiresAt(), [config]));
+    for (const user of [owner, other]) user.loadConnections(new UserDTO(user.getSessionId(), 'fixture', new Date(), user.getExpiresAt(),
+        options.secondOrg && user === owner ? [config, secondConfig] : [config]));
     const calls = [];
     const driver = { dispose() {}, doSOQL: async query => {
         calls.push(query);
         if (options.expired) throw new ReauthRequiredError();
         if (options.pending) return new Promise(() => {});
-        return { done: true, totalSize: 1, records: [{ Id: 'fixture-id' }] };
+        return options.paginated ? { done: false, totalSize: 2, records: [{ Id: 'fixture-id' }],
+            nextRecordsUrl: '/services/data/v65.0/query/01gAAA-100' }
+            : { done: true, totalSize: 1, records: [{ Id: 'fixture-id' }] };
+    }, queryMore: async locator => {
+        calls.push(`more:${locator}`);
+        return { done: true, totalSize: 2, records: [{ Id: 'fixture-id-2' }] };
     } };
     if (!options.disconnected) registry.addConnection(owner.getSessionId(), orgKey, driver, owner.getExpiresAt());
+    if (options.secondOrg) registry.addConnection(owner.getSessionId(), otherKey, driver, owner.getExpiresAt());
     const signIn = new SignInController({
         getSessionStatus: async id => {
             const user = sessions.getUser(id);
@@ -45,12 +55,13 @@ async function harness(options = {}) {
         options.rateLimit ?? 60);
     const router = express.Router();
     router.post('/api/v1/query', signIn.setUser.bind(signIn), metadata.postQuery.bind(metadata));
+    router.post('/api/v1/query/next', signIn.setUser.bind(signIn), metadata.postNextQueryPage.bind(metadata));
     const app = createApp({ apiRouter: router, readinessProbe: { isReady: async () => true }, environment: 'TESTING' });
     const server = await new Promise(resolve => {
         const candidate = app.listen(0, '127.0.0.1', () => resolve(candidate));
     });
     const base = `http://127.0.0.1:${server.address().port}`;
-    const post = (body, id = owner.getSessionId()) => fetch(`${base}/api/v1/query`, {
+    const post = (body, id = owner.getSessionId(), path = 'query') => fetch(`${base}/api/v1/${path}`, {
         method: 'POST', headers: { Cookie: `${SESSION_COOKIE_NAME}=${id}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
@@ -111,6 +122,26 @@ describe('POST /api/v1/query', () => {
         try {
             assert.equal((await (await expired.post({ orgKey, query: 'SELECT Id FROM Account' })).json()).error.code, 'REAUTH_REQUIRED');
         } finally { await expired.close(); }
+    });
+
+    it('keeps continuation opaque, single-use and bound to workspace and org', async () => {
+        const h = await harness({ paginated: true, secondOrg: true });
+        try {
+            const first = await (await h.post({ orgKey, query: 'SELECT Id FROM Account', limit: 2 })).json();
+            assert.equal(first.done, false);
+            assert.match(first.cursor, /^[0-9a-f-]{36}$/);
+            assert.equal(JSON.stringify(first).includes('01gAAA'), false);
+            const otherOrg = await h.post({ orgKey: otherKey, cursor: first.cursor }, undefined, 'query/next');
+            assert.equal((await otherOrg.json()).error.code, 'QUERY_CURSOR_INVALID');
+            const foreign = await h.post({ orgKey, cursor: first.cursor }, h.other.getSessionId(), 'query/next');
+            assert.equal((await foreign.json()).error.code, 'QUERY_CURSOR_INVALID');
+            const second = await (await h.post({ orgKey, cursor: first.cursor }, undefined, 'query/next')).json();
+            assert.deepEqual(second.records, [{ Id: 'fixture-id-2' }]);
+            assert.equal(second.done, true);
+            assert.equal(h.calls[1], 'more:01gAAA-100');
+            const reused = await h.post({ orgKey, cursor: first.cursor }, undefined, 'query/next');
+            assert.equal((await reused.json()).error.code, 'QUERY_CURSOR_INVALID');
+        } finally { await h.close(); }
     });
 });
 

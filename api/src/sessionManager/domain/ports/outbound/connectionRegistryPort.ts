@@ -6,6 +6,7 @@ export interface ActiveConnectionPort {
     getDescribeGlobal(): Promise<string>;
     describeSObject(sobject: string): Promise<string>;
     doSOQL(query: string): Promise<QueryPage>;
+    queryMore(locator: string): Promise<QueryPage>;
     revoke(): Promise<void>;
     dispose(): void;
 }

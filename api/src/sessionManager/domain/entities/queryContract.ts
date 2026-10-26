@@ -10,6 +10,7 @@ export interface PublicQueryPage {
     totalSize: number;
     records: Record<string, unknown>[];
     limit: number;
+    cursor?: string;
 }
 
 export class QueryRequestError extends Error {
