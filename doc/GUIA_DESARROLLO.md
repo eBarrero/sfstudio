@@ -87,6 +87,10 @@ npm run audit
 
 `npm run audit` valida las dependencias de producción con severidad alta o crítica. Para revisar también el toolchain de desarrollo se puede ejecutar `npm run audit:all`.
 
+## Cierre de una PBI
+
+Desde `feature/PBI-NNN`, ejecuta `./gitMergePBI.sh PBI-NNN "Mensaje de commit" "Cuerpo del PR"`. El script valida, crea el commit y el PR hacia `dev`, espera a que aparezca y pase el job `CI / validate` del evento `pull_request` y fusiona con un merge commit. Comprueba que el commit de la rama y la base `dev` no hayan cambiado mientras corría la CI. Si la CI falla, no aparece en cinco minutos o `dev` avanza, deja el PR abierto sin fusionar para revisar y volver a validar.
+
 ## Calidad
 
 ### Lint
