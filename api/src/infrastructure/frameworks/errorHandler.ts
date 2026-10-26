@@ -4,11 +4,25 @@ import { OAuthContextError } from '../../sessionManager/domain/entities/salesfor
 import { SalesforceOAuthError } from '../../sessionManager/domain/exceptions/salesforceOAuthError';
 import { ReauthRequiredError } from '../../sessionManager/domain/exceptions/reauthRequiredError';
 import { logger } from './structuredLogger';
+import { QueryRequestError } from '../../sessionManager/domain/entities/queryContract';
 
 
 
 export function errorHandler(error: Error, req: Request, res: Response) {
-    if (error instanceof OAuthContextError) {
+    if (error instanceof QueryRequestError) {
+        const messages: Record<string, string> = {
+            QUERY_INVALID: 'La consulta no es válida.',
+            QUERY_NOT_READ_ONLY: 'Solo se permiten consultas SELECT.',
+            QUERY_LIMIT_INVALID: 'El límite de consulta no es válido.',
+            QUERY_RATE_LIMITED: 'Demasiadas consultas. Inténtalo más tarde.',
+            QUERY_TIMEOUT: 'La consulta agotó el tiempo disponible.',
+            QUERY_FAILED: 'Salesforce no pudo completar la consulta.',
+            ORG_KEY_INVALID: 'La organización indicada no es válida.',
+            ORG_NOT_FOUND: 'La organización no pertenece al workspace.',
+        };
+        res.status(error.status).json({ error: { code: error.code,
+            message: messages[error.code] ?? 'La consulta no se pudo completar.', correlationId: req.correlationId } });
+    } else if (error instanceof OAuthContextError) {
         res.status(400).json({ error: {
             code: 'OAUTH_CONTEXT_INVALID',
             message: 'La configuración OAuth no es válida.',

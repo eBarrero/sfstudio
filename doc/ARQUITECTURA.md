@@ -195,7 +195,9 @@ Los documentos `User.connections` antiguos se normalizan al leerlos: se conserva
 | `DELETE /api/v1/workspace` | Cerrar todo el workspace, borrar la sesión y expirar la cookie. |
 | `GET /api/describeGlobal/:orgKey` | Obtener objetos de la organización. |
 | `GET /api/describe/:orgKey/:sobject` | Obtener campos y relaciones. |
-| `GET /api/soql/:orgKey/:soql` | Ejecutar SOQL codificado en Base64 URL-safe; pendiente de sustitución por POST en Sprint 05. |
+| `POST /api/v1/query` | Ejecutar SOQL SELECT en la org indicada por `orgKey`, con `query` y `limit` en JSON. |
+
+La ruta `GET /api/soql/:orgKey/:soql` se retiró. `POST /api/v1/query` recibe `{ "orgKey": "organizationId:userId", "query": "SELECT ...", "limit": 200 }`. El límite por defecto es 200 y el máximo 2000; el servidor añade `LIMIT` cuando falta y rechaza un límite mayor que el solicitado. La respuesta es `{ "done": true, "totalSize": 1, "records": [], "limit": 200 }`. Los errores llevan `error.code`, `error.message` y `error.correlationId`. El cuerpo máximo JSON es 32 KiB, cada workspace admite 60 peticiones por minuto y cada petición tiene un plazo de 15 segundos. No se registra el texto de la consulta ni se transmite en URL.
 
 El frontend también intenta llamar a `GET /api/getObjectmetadata/:dbName/:sobject`, pero esa ruta no existe en el router.
 

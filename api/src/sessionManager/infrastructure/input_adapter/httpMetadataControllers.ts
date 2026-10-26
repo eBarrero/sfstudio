@@ -1,10 +1,13 @@
 import { Request, Response } from "express";
 import { HttpMetadataInputPort } from "./../../domain/ports/inbound/httpMetadataPorts";
 import { errorHandler } from "../../../infrastructure/frameworks/errorHandler";
+import { QueryRequestError } from '../../domain/entities/queryContract';
 
 
 export class HttpMetadataControllers {
-    constructor(private metadataRequestUseClase: HttpMetadataInputPort) {}
+    private readonly requests = new Map<string, { count: number; windowStart: number }>();
+    constructor(private metadataRequestUseClase: HttpMetadataInputPort,
+        private readonly timeoutMs = 15_000, private readonly maxRequestsPerMinute = 60) {}
 
     async getDescribeGlobal(req: Request, res: Response) {
         try {
@@ -24,34 +27,30 @@ export class HttpMetadataControllers {
         }
     }
 
-    public async getSOQL(req: Request, res: Response) {
+    public async postQuery(req: Request, res: Response) {
         try {
-            const rows = await this.metadataRequestUseClase.doSOQL(req.appSessionId!, req.params.orgKey,fromBase64UrlSafe(req.params.soql as string));
-            res.send(rows);
+            if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body))
+                throw new QueryRequestError('QUERY_INVALID', 400);
+            const bucketKey = req.appSessionId!;
+            const now = Date.now();
+            const previous = this.requests.get(bucketKey);
+            const bucket = !previous || now - previous.windowStart >= 60_000
+                ? { count: 0, windowStart: now } : previous;
+            if (++bucket.count > this.maxRequestsPerMinute) throw new QueryRequestError('QUERY_RATE_LIMITED', 429);
+            this.requests.set(bucketKey, bucket);
+            const { orgKey, query, limit } = req.body as Record<string, unknown>;
+            let timer: ReturnType<typeof setTimeout> | undefined;
+            try {
+                const rows = await Promise.race([
+                    this.metadataRequestUseClase.runQuery(req.appSessionId!, orgKey, query, limit),
+                    new Promise<never>((_resolve, reject) => {
+                        timer = setTimeout(() => reject(new QueryRequestError('QUERY_TIMEOUT', 504)), this.timeoutMs);
+                    }),
+                ]);
+                res.json(rows);
+            } finally { if (timer) clearTimeout(timer); }
         } catch (error) {
-        errorHandler(error as Error, req, res);
+            errorHandler(error as Error, req, res);
         }
     }
-}
-
-
-
-/**
- * @description Convert Base64 URL Safe to standard Base64
- * @param base64UrlSafe String Base64 URL Safe
- * @returns string Base64
- */
-function fromBase64UrlSafe(base64UrlSafe: string): string {
-    let base64 = base64UrlSafe
-        .replace(/-/g, '+') // Replace - con +
-        .replace(/_/g, '/'); // Rreplace _ con /
-    
-    // add padding with '='
-    const padding = base64.length % 4;
-    if (padding > 0) {
-        base64 += '='.repeat(4 - padding);
-    }
-    const buffer = Buffer.from(base64, 'base64');
-
-    return  buffer.toString('ascii');
 }

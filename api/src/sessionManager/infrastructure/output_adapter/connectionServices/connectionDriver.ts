@@ -1,4 +1,5 @@
 import { ConnectionDriverDTO } from '../../../application/dtos/connectionDriverDTO';
+import { QueryPage } from '../../../domain/entities/queryContract';
 
 export abstract class ConnectionDriver {
     protected isConnected: boolean = false;
@@ -8,7 +9,7 @@ export abstract class ConnectionDriver {
     abstract login(): Promise<ConnectionDriverDTO>; 
     abstract getDescribeGlobal(): Promise<string>; 
     abstract describeSObject(sobject: string): Promise<string>;
-    abstract doSOQL(decodedQuery: string): Promise<string>
+    abstract doSOQL(query: string): Promise<QueryPage>
     abstract revoke(): Promise<void>;
     abstract dispose(): void;
 }
