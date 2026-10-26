@@ -150,6 +150,8 @@ MongoDB dispone de una colección mínima `WorkspaceSession` con referencia al u
 
 `WorkspaceSession.user` ya no es único: el mismo usuario puede abrir dos workspaces independientes. En el primer alta de sesión tras actualizar, el repositorio elimina solo el índice único heredado `user_1` de esa colección. La cuenta MongoDB necesita permiso para `dropIndex` durante esta migración; si no lo tiene, el operador debe retirar ese índice antes de usar sesiones concurrentes. Se conservan el índice único de `sessionId` y el TTL de `expiresAt`.
 
+Los despliegues antiguos también pueden conservar los índices únicos `users.connections.userId_1` y `users.connections.userName_1`. El repositorio comprueba sus claves y unicidad y retira solo esos dos índices antes de escribir conexiones en `User`; así, una identidad Salesforce conocida puede conectarse desde otro workspace. Se conserva `users.sessionId_1` y cualquier índice compuesto. Esta migración también necesita permiso `dropIndex`. Si la cuenta de la aplicación carece de él, el operador puede comprobar `db.users.getIndexes()` y retirar manualmente únicamente los dos índices heredados que coincidan en nombre, clave y unicidad.
+
 ## Seguridad OAuth y trazabilidad
 
 Cada autorización crea un `state` aleatorio de 256 bits, válido durante diez minutos y consumible una sola vez. Se asocia en memoria al workspace, al destino solicitado y al `correlationId`. Durante el primer login, la cookie temporal `sfstudio_oauth_flow` enlaza el navegador con ese intento; es `HttpOnly`, `SameSite=Lax`, limitada a `/api` y `Secure` en producción.

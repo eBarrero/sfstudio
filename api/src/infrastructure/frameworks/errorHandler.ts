@@ -41,7 +41,6 @@ export function errorHandler(error: Error, req: Request, res: Response) {
         logger.error("http.unhandled_error", {
             correlationId: req.correlationId,
             errorName: error.name,
-            errorMessage: error.message,
         });
         res.status(500).json({
             error: {
