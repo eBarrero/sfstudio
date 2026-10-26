@@ -103,7 +103,8 @@ const useApplication = () => {
     
     
     const helpOnLine = application.helpOnLine && t(application.helpOnLine);
-    return {setCommand, sendFilter, exeCommand, filter, currentCommand, history, lastError, helpOnLine, context_level, suggestions};
+    return {setCommand, sendFilter, exeCommand, filter, currentCommand, history, lastError,
+        helpOnLine, actionFeedback: session.lastActionFeedback, context_level, suggestions};
 }
 
 export default useApplication;

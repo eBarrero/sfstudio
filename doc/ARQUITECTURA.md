@@ -161,6 +161,8 @@ La página principal combina:
 
 La consola funciona como una «command palette» contextual. Los comandos se registran al inicializar cada store y algunos se generan dinámicamente a partir del esquema.
 
+Las acciones del workspace (`org.list`, `org.use`, `org.close`, `org.reconnect`, `org.connect`, `workspace.close`) tienen parámetros tipados y un único dispatcher en `app/src/core/workspaceActions.ts`. El parser de `app/src/core/workspaceCommandParser.ts`, los botones y los menús producen el mismo `ActionId`; el dispatcher valida contexto, pertenencia al workspace y estado de conexión antes de invocar el caso de uso del store. El registro dinámico de comandos de org se reemplaza al actualizar el workspace para evitar duplicados. Las acciones del editor SOQL conservan su registro anterior hasta su migración en los sprints siguientes.
+
 ## 4. API HTTP actual
 
 ### Contrato multi-org v1
