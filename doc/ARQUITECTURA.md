@@ -72,7 +72,7 @@ El contenedor es sencillo y suficiente para el tamaño actual. No hace falta int
 - `SignInUseCase` reconstruye una sesión desde memoria o MongoDB.
 - `RequestConnectionUseCase` inicia OAuth para una conexión nueva o conocida.
 - `RequestedConnectionUseCase` procesa el callback, persiste la organización y registra el driver activo.
-- `SignOutUseCase` elimina la sesión persistida, revoca las conexiones disponibles y cierra el workspace.
+- `SignOutUseCase` debería cerrar la sesión, pero actualmente `UserEntity.signOut()` no está implementado.
 - `MetadataRequestUseCase` delega describe y SOQL en el driver activo.
 
 #### Adaptadores
@@ -263,7 +263,7 @@ sequenceDiagram
 
 ## 7. Evolución necesaria para multi-org
 
-El dominio y el frontend usan `OrgKey` para la org activa; `ConnectionRegistry` puede contener varias conexiones en el mismo workspace. La selección visual completa de orgs se aborda en Sprint 03.
+El dominio y el frontend usan `OrgKey` para la org activa; el pool puede contener varias conexiones en el mismo workspace. La selección visual completa de orgs se aborda en Sprint 03.
 
 El modelo recomendado es:
 
