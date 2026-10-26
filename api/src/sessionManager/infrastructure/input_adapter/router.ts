@@ -42,6 +42,12 @@ export function createApiRouter(container: AppContainer): express.Router {
         container.signOutCtrl.do.bind(container.signOutCtrl),
     );
 
+    router.post(
+        "/api/v1/workspace/active-org",
+        container.signInCtrl.setUser.bind(container.signInCtrl),
+        container.selectActiveOrgCtrl.do.bind(container.selectActiveOrgCtrl),
+    );
+
     router.get(
         "/api/describeGlobal/:orgKey",
         container.signInCtrl.setUser.bind(container.signInCtrl),

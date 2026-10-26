@@ -135,6 +135,7 @@ interface ModelState {
     sqlState: SQLState;    // It contains the SQL statement to be executed
     rankQueryElements?: RankQueryElements[]; // It ranks the query elements to be displayed in the SOQLPath component
     setOrg: (orgSfName: SchemaName) => void; 
+    clearOrg: () => void;
     setSObject: (sObjectLocalId:SObjectLocalId) => void;
     setField: (field: GetFieldsIndex) => void;
     gotoLookup: (field: GetFieldsIndex) => void; 
@@ -144,4 +145,4 @@ interface ModelState {
     setSelectAllFields: (value: SelectAllFields) => void;
     addWhere: (SimpleCondition: SimpleCondition) => void;
     initializeModel: () => void;
-  } 
+  }

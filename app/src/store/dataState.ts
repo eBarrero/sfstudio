@@ -5,6 +5,8 @@ import { objectFilterOptions, fieldFilterOptions } from '../core/constants/filte
 import { Dialog } from '../components/constants'
 import { SFFieldTypesEnum } from '../core/constants/fields';
 
+let schemaRequestVersion = 0;
+
 
 function objectsFilterInit(): SObjectsFilter {
     return {
@@ -65,10 +67,20 @@ const dataState = create<DataState>((set, get) => {
         sObjectsFilter: objectsFilterInit(),
         fieldsFilter: fieldFilterInit(),
         dataLastErrorMessage: '',
+        clearSchema: () => {
+            schemaRequestVersion += 1;
+            set({ sobjects: [], sObjectFields: [], childRelationships: [], dataLastErrorMessage: '' });
+        },
         loadSchema: (orgSfName: SchemaName) => {
+            const version = ++schemaRequestVersion;
+            set({ sobjects: [], sObjectFields: [], childRelationships: [], dataLastErrorMessage: '' });
             const f = get().sObjectsFilter;
             Proxy.getSObjectsAdapter(orgSfName, f).then((data) => {
-                if (data!==null) set({sobjects: structuredClone(data), dataLastErrorMessage: data.length>0?'':"#CMD.NO_OBJECTS"});
+                if (version === schemaRequestVersion && data!==null) {
+                    set({sobjects: structuredClone(data), dataLastErrorMessage: data.length>0?'':"#CMD.NO_OBJECTS"});
+                }
+            }).catch(() => {
+                if (version === schemaRequestVersion) set({ dataLastErrorMessage: 'No se pudo cargar el esquema.' });
             });
         },
         setObjectFilterText: (orgSfName: SchemaName, searchText: string) => {

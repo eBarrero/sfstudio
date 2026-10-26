@@ -20,8 +20,22 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
 
         setOrg: (orgSfName: SchemaName)  => {
             if (orgSfName === '') return;
-            set({state: {orgSfName, action:'INI', sObjectApiName:'',  sObjectLocalId: -1, currentField: null, currentPath: ''}});
+            set({state: {orgSfName, action:'INI', sObjectApiName:'',  sObjectLocalId: -1, currentField: null, currentPath: ''},
+                queryState: { queryElemnts: [], indexCurrentElement: 0 },
+                sqlState: { sql: '', isValid: false },
+                currentSOQLFieldSelection: new Map(),
+                rankQueryElements: [],
+            });
         },  
+        clearOrg: () => {
+            set({state: {orgSfName: '', action: '', sObjectApiName: '', sObjectLocalId: -1,
+                currentField: null, currentPath: ''},
+                queryState: { queryElemnts: [], indexCurrentElement: 0 },
+                sqlState: { sql: '', isValid: false },
+                currentSOQLFieldSelection: new Map(),
+                rankQueryElements: [],
+            });
+        },
                                                
             
         /*

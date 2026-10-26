@@ -6,6 +6,7 @@ import dataState from "./dataState";
 import modelState from "./modelState";
 import sessionState from "./sessionState";
 import viewState from "./viewState";
+import sqlExecutionState from './sqlExecutionState';
 
 
 
@@ -27,10 +28,15 @@ const useApplication = () => {
     useEffect(() => { 
         try {
             if (session.publicSession.activeOrgKey===null || session.publicSession.connections.length===0) {
+                model.clearOrg();
+                data.clearSchema();
+                sqlExecutionState.getState().resetForOrg();
+                view.setCurrentView('INIT');
                 application.setContextLevel(CONTEXT_LEVEL.INIT);
                 return;
             }
             const orgKey = session.publicSession.activeOrgKey;
+            sqlExecutionState.getState().resetForOrg();
             model.setOrg(orgKey);
             data.loadSchema(orgKey);
             view.setCurrentView(CONTEXT_LEVEL.ORG);
@@ -40,7 +46,7 @@ const useApplication = () => {
             setLastError((e as Error).message);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [session.publicSession]);
+    }, [session.publicSession.activeOrgKey]);
 
 
     useEffect(() => {

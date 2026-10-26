@@ -10,6 +10,11 @@ export const deleteOrg = (orgKey: string) =>
 export const deleteWorkspace = () =>
   apiClient.request<void>('workspace', { method: 'DELETE' });
 
+export const selectActiveOrg = (orgKey: string) =>
+  apiClient.request<PublicWorkspaceDefinition>('workspace/active-org', {
+    method: 'POST', body: { orgKey },
+  });
+
 
 
 
