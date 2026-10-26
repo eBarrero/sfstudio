@@ -2,6 +2,7 @@ import {create} from 'zustand';
 import { addCommand, deleteCommand, SESSION_CMD, CONTEXT_LEVEL } from '../core/commandManager';
 import { createSession, loginSFDC, loginSandBox, loginOrganization, disconnectOrg, closeWorkspace } from '../services/session/model';
 import type { PublicWorkspaceDefinition } from '../services/session/types';
+import { ApiError } from '../services/http/apiClient';
 
 
 interface SessionState {
@@ -15,6 +16,7 @@ interface SessionState {
     initializeSession: () => void;
     disconnectOrg: (orgKey: string) => Promise<void>;
     closeWorkspace: () => Promise<void>;
+    expireWorkspace: () => void;
 }
 
 const sessionState = create<SessionState>((set, get) => {
@@ -61,7 +63,15 @@ const sessionState = create<SessionState>((set, get) => {
         createSession: () => {
             createSession().then((s) => {
                 get().setWorkspace(s);
-            }).catch(() => set({ lastError: 'No se pudo cargar el workspace.' }));
+            }).catch((error: unknown) => {
+                if (error instanceof ApiError && error.code === 'SESSION_INVALID') {
+                    get().expireWorkspace();
+                } else set({ lastError: 'No se pudo cargar el workspace.' });
+            });
+        },
+        expireWorkspace: () => {
+            get().setWorkspace({ version: 1, activeOrgKey: null, connections: [] });
+            set({ lastError: 'La sesión caducó. Conecta de nuevo la organización.' });
         },
         loginSFDC: () => {
             loginSFDC();

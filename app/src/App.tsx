@@ -24,7 +24,9 @@ const { initializeView, dialogStack, msgbox, popDialog } = viewState();
 const { initializeApp } = applicationState();
 useEffect(() => {
   const refreshConnections = () => createSession();
+  const expireWorkspace = () => sessionState.getState().expireWorkspace();
   window.addEventListener('sfstudio:reauth-required', refreshConnections);
+  window.addEventListener('sfstudio:workspace-expired', expireWorkspace);
   initializeSession();
   initializeData();
   initializeModel();
@@ -32,7 +34,10 @@ useEffect(() => {
   initializeSqlExecution();
   initializeApp();
   createSession();
-  return () => window.removeEventListener('sfstudio:reauth-required', refreshConnections);
+  return () => {
+    window.removeEventListener('sfstudio:reauth-required', refreshConnections);
+    window.removeEventListener('sfstudio:workspace-expired', expireWorkspace);
+  };
 // eslint-disable-next-line react-hooks/exhaustive-deps
 },[]);
 

@@ -67,7 +67,7 @@ npm --workspace app run dev
 
 Vite abre normalmente `http://localhost:5173` y proxyfica `/api` a `http://localhost:3000`.
 
-Hay una excepción importante: `app/src/services/session/controller.ts` contiene `http://localhost:3000/api/` de forma fija. Debe sustituirse por `/api/` o por una variable de entorno antes de confiar en producción.
+El cliente del navegador usa `/api/v1` en el mismo host. Las rutas de metadata y SOQL que todavía no tienen contrato v1 pasan por el mismo cliente usando `/api`; sus contratos se renovarán en sprints posteriores. Solo se permite cambiar la base con `VITE_API_BASE_URL` al compilar la app: debe terminar en `/api/v1`, usar HTTPS si es absoluta y no contener credenciales, query ni fragmento. En desarrollo se acepta HTTP para `localhost` y `127.0.0.1`. El cliente envía la cookie y `X-Correlation-Id`; la API valida y devuelve ese identificador en cabecera y errores.
 
 ## Compilación verificada
 
@@ -225,10 +225,10 @@ Verificaciones después del deploy:
 | --- | --- |
 | `OAUTH_CONTEXT_INVALID` al conectar | La tecnología o el host guardado no corresponde al entorno Salesforce. |
 | `SALESFORCE_AUTH_FAILED` | Revisa callback, permisos y credenciales de la app OAuth en Salesforce sin registrar el código ni el token. |
-| En producción el navegador intenta conectar a tu PC | `URL_PATH` está fijado a `localhost`. |
+| En producción el navegador intenta conectar a otro host | Revisa el valor de `VITE_API_BASE_URL` usado en el build; sin override se usa el mismo host. |
 | `REAUTH_REQUIRED` tras deploy/reinicio o expiración del token | El registro de drivers vive solo en memoria; usa **Reautenticar** en la org afectada. La misma identidad Salesforce conserva su `OrgKey`. |
 | Metadatos de descripción de campos fallan con 404 | Falta la ruta `/api/getObjectmetadata/...`. |
-| Esquema obsoleto | `localStorage` no tiene TTL ni clave de versión. |
+| Esquema obsoleto | La caché actual de metadata vive solo en memoria; vuelve a cargar el workspace para refrescarla. |
 | Quieres desconectar una org sin cerrar las otras | Usa **Desconectar** o el comando `Disconnect_org_<organizationId>_<userId>`; la org queda como `REAUTH_REQUIRED`. |
 | Quieres cerrar la sesión completa | Usa **Cerrar workspace** o `Close_workspace`; `DELETE /api/v1/workspace` revoca los tokens disponibles, elimina los drivers y la cookie. |
 | `FIELDS(ALL)` produce SOQL inválido | El generador concatena un segundo `SELECT`. |
