@@ -17,7 +17,11 @@ const db = new MongoDBService(MONGO_URL);
 const mongoDBUserRepository  = new MongoDBUserRepository(db);
 const connectionRegistry = new ConnectionRegistry();
 const createDriver = ConnectionDriverFactory.createDriver;
-const sessions = new Sessions(id => connectionRegistry.deleteSession(id));
+const sessions = new Sessions(id => {
+    connectionRegistry.deleteSession(id);
+    metadataUseCase.clearWorkspace(id);
+});
+const metadataUseCase = new MetadataRequestUseCase(sessions, connectionRegistry);
 const cleanupTimer = setInterval(() => {
     sessions.sweepExpired();
     connectionRegistry.sweepExpired();
@@ -40,7 +44,7 @@ const container = {
     signOutCtrl: new SignOutController(new SignOutUseCase(mongoDBUserRepository, sessions, connectionRegistry)),
     disconnectOrgCtrl: new DisconnectOrgController(new DisconnectOrgUseCase(sessions, connectionRegistry)),
     selectActiveOrgCtrl: new SelectActiveOrgController(new SelectActiveOrgUseCase(sessions, connectionRegistry)),
-    httpMetadataCtrl: new HttpMetadataControllers(new MetadataRequestUseCase(sessions, connectionRegistry)),
+    httpMetadataCtrl: new HttpMetadataControllers(metadataUseCase),
     readinessProbe: db,
 };
 

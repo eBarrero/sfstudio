@@ -111,6 +111,9 @@ const sessionState = create<SessionState>((set, get) => {
         },
         selectOrganization: async (orgKey: string) => {
             try {
+                if (get().publicSession.activeOrgKey !== orgKey) {
+                    (await import('./sqlExecutionState')).default.getState().resetForOrg();
+                }
                 get().setWorkspace(await selectOrganization(orgKey));
             } catch (error) {
                 const message = error instanceof ApiError && error.code === 'REAUTH_REQUIRED'
@@ -122,6 +125,9 @@ const sessionState = create<SessionState>((set, get) => {
         },
         disconnectOrg: async (orgKey: string) => {
             try {
+                if (get().publicSession.activeOrgKey === orgKey) {
+                    (await import('./sqlExecutionState')).default.getState().resetForOrg();
+                }
                 get().setWorkspace(await disconnectOrg(orgKey));
             } catch (error) {
                 set({ lastError: 'No se pudo desconectar la organización.' });
@@ -131,6 +137,7 @@ const sessionState = create<SessionState>((set, get) => {
         closeWorkspace: async () => {
             try {
                 await closeWorkspace();
+                (await import('./sqlExecutionState')).default.getState().clear();
                 get().setWorkspace({ version: 1, connections: [], activeOrgKey: null });
             } catch (error) {
                 set({ lastError: 'No se pudo cerrar el workspace.' });

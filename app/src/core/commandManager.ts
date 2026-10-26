@@ -36,9 +36,14 @@ export const NODEL_CMD : { [key: string]: CommandDefinition } = {
   };
 
 export const SOQL_CMD : { [key: string]: CommandDefinition } = {
-    RUN_SOQL:               { command: 'Run_SQOL',               description: '#CMD.soql', iconSymbol: '🗲',    context: CONTEXT_LEVEL.OBJECT, menuItem:'SOQL',      menuCaption:'Run SOQL',             } as const,
-    NEXT_PAGE:              { command: 'Query_next', description: 'Cargar siguiente página', context: CONTEXT_LEVEL.SQL_EXECUTION,
+    RUN_SOQL:               { command: 'query run', description: '#CMD.soql', iconSymbol: '🗲', context: CONTEXT_LEVEL.OBJECT,
+        menuItem:'SOQL', menuCaption:'Run SOQL' } as const,
+    NEXT_PAGE:              { command: 'query next', description: 'Cargar siguiente página', context: CONTEXT_LEVEL.SQL_EXECUTION,
         menuItem: 'SOQL', menuCaption: 'Siguiente página' } as const,
+    CANCEL:                 { command: 'query cancel', description: 'Cancelar consulta', context: CONTEXT_LEVEL.SQL_EXECUTION,
+        menuItem: 'SOQL', menuCaption: 'Cancelar consulta' } as const,
+    CLEAR:                  { command: 'query clear', description: 'Limpiar resultados', context: CONTEXT_LEVEL.SQL_EXECUTION,
+        menuItem: 'SOQL', menuCaption: 'Limpiar resultados' } as const,
   };
 
 

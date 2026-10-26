@@ -16,7 +16,7 @@ export default function SOQLPanel() {
             <p>Destino: {target ? `${target.alias} · ${target.orgKey}` : 'sin organización conectada'}</p>
             <p>Límite de ejecución: 200 filas</p>
             <pre>{sql}</pre>
-            <button type="button" disabled={!target || !sql}
+            <button type="button" data-action-id="query.run" disabled={!target || !sql}
                 onClick={() => applicationState.getState().exeCommandFromUI(SOQL_CMD.RUN_SOQL.command)}>
                 Ejecutar en {target?.alias ?? 'organización'}
             </button>

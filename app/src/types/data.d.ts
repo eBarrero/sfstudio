@@ -257,23 +257,6 @@ type typeInputDates = 'date' | 'time' | 'datetime-local' | 'month' | 'week' | 'y
 
 
 
-interface Rows {
-    col: string[];
-}
-
-interface Captions{
-    objectName?: string;
-    fieldName: string;
-    quantity: number;
-}
-
-interface InlineJsonArray {
-    captions: Captions[];
-    rows: Rows[];
-}
-
-
-
 interface DataState {  
     clearSchema: () => void;
     activeOrgKey: string | null;
