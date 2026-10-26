@@ -73,6 +73,8 @@ El gestor de conexiones distingue las orgs por `OrgKey`, incluso cuando comparte
 
 La consola acepta `org list`, `org use <OrgKey>`, `org close <OrgKey>`, `org reconnect <OrgKey>`, `org connect production|sandbox` y `workspace close`. `OrgKey` tiene la forma `organizationId:userId`. Los botones, menús y comandos del workspace envían el mismo `ActionId` al dispatcher. La consola muestra el resultado o ayuda para comandos de workspace inválidos. Los nombres anteriores (`Select_org_...`, `Disconnect_org_...`, `Reconnect_org_...`, `Login_to_Prod`, `Login_to_Sandbox`, `Close_workspace`) siguen disponibles temporalmente por compatibilidad.
 
+La suite del Sprint 03 se ejecuta con `npm test`. `api/test/sprint03Journey.test.js` abre un servidor local y usa un driver Salesforce falso y repositorios en memoria; `app/e2e/multiOrgJourney.test.tsx` compara el resultado de las acciones de ratón y consola. No necesita credenciales ni acceso a Salesforce. Si el entorno restringe puertos locales, permite loopback para las pruebas HTTP.
+
 ## Compilación verificada
 
 ```powershell
