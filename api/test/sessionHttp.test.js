@@ -11,6 +11,7 @@ const {
 } = require("../build/sessionManager/domain/exceptions/sessionError");
 const {
     RequestedConnectionController,
+    RequestConnectionController,
     SignInController,
 } = require("../build/sessionManager/infrastructure/input_adapter/httpControllers");
 const {
@@ -20,7 +21,7 @@ const {
 const openServers = new Set();
 
 function emptySession() {
-    return new SessionDTO({ connections: [], currentConnection: null });
+    return new SessionDTO({ version: 1, connections: [], activeOrgKey: null });
 }
 
 async function startApplication(router, environment = "TESTING") {
@@ -42,6 +43,7 @@ function createSignInRouter(useCase, environment = "TESTING") {
     const controller = new SignInController(useCase, environment);
     const router = express.Router();
     router.get("/api/init", controller.login.bind(controller));
+    router.get("/api/v1/workspace", controller.workspace.bind(controller));
     return router;
 }
 
@@ -53,6 +55,58 @@ afterEach(async () => {
 });
 
 describe("workspace session HTTP contract", () => {
+    it("uses OrgKey rather than an array index for reauthorization", async () => {
+        const sessionId = randomUUID();
+        const orgKey = '00D000000000001:005000000000001';
+        const requested = [];
+        const useCase = {
+            getConfiguredOAuthContext: (_sessionId, key) => {
+                if (key !== orgKey) throw new SessionError('Connection not found in workspace');
+                requested.push(key);
+                return { technology: 'SF_Test', loginHost: 'https://test.salesforce.com' };
+            },
+            toConfiguredConnection: (_sessionId, key) => {
+                requested.push(key);
+                return 'https://example.invalid/oauth';
+            },
+        };
+        const controller = new RequestConnectionController(useCase, {}, new OAuthStateStore());
+        const router = express.Router();
+        router.get('/api/v1/connections/:orgKey/authorize', (req, _res, next) => {
+            req.appSessionId = sessionId;
+            next();
+        }, controller.getUrlConnection.bind(controller));
+        const baseUrl = await startApplication(router);
+        const invalid = await fetch(`${baseUrl}/api/v1/connections/0/authorize`, { redirect: 'manual' });
+        assert.equal(invalid.status, 400);
+        assert.equal((await invalid.json()).error.code, 'ORG_KEY_INVALID');
+        const unknown = await fetch(`${baseUrl}/api/v1/connections/00D000000000002:005000000000001/authorize`, { redirect: 'manual' });
+        assert.equal(unknown.status, 404);
+        assert.equal((await unknown.json()).error.code, 'ORG_NOT_FOUND');
+        const valid = await fetch(`${baseUrl}/api/v1/connections/${orgKey}/authorize`, { redirect: 'manual' });
+        assert.equal(valid.status, 302);
+        assert.deepEqual(requested, [orgKey, orgKey]);
+    });
+
+    it("returns a versioned JSON workspace without a session cookie", async () => {
+        const useCase = { getSessionStatus: async () => emptySession(), getStatus: () => "ok" };
+        const baseUrl = await startApplication(createSignInRouter(useCase));
+        const response = await fetch(`${baseUrl}/api/v1/workspace`);
+        assert.equal(response.status, 200);
+        assert.deepEqual(await response.json(), { version: 1, connections: [], activeOrgKey: null });
+    });
+
+    it("returns the public JSON contract for an authenticated workspace", async () => {
+        const sessionId = randomUUID();
+        const useCase = { getSessionStatus: async () => emptySession(), getStatus: () => "ok" };
+        const baseUrl = await startApplication(createSignInRouter(useCase));
+        const response = await fetch(`${baseUrl}/api/v1/workspace`, {
+            headers: { Cookie: `${SESSION_COOKIE_NAME}=${sessionId}` },
+        });
+        assert.equal(response.status, 200);
+        assert.deepEqual(await response.json(), { version: 1, connections: [], activeOrgKey: null });
+    });
+
     it("returns a new workspace marker when the cookie is absent", async () => {
         const useCase = {
             getSessionStatus: async () => emptySession(),
@@ -83,7 +137,7 @@ describe("workspace session HTTP contract", () => {
         const publicSession = JSON.parse(Buffer.from(await response.json(), "base64").toString("utf8"));
 
         assert.equal(response.status, 200);
-        assert.deepEqual(publicSession, { connections: [], currentConnection: null });
+        assert.deepEqual(publicSession, { version: 1, connections: [], activeOrgKey: null });
         assert.equal("sessionId" in publicSession, false);
     });
 
@@ -152,7 +206,7 @@ describe("workspace session HTTP contract", () => {
         const oauthStateStore = new OAuthStateStore();
         const state = oauthStateStore.issue(
             previousId,
-            { type: "new", technology: "SF_Prod" },
+            { type: "new", technology: "SF_Prod", loginHost: "https://login.salesforce.com" },
             randomUUID(),
         );
         const controller = new RequestedConnectionController(useCase, oauthStateStore, "PROD");

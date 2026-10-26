@@ -9,6 +9,8 @@ export interface IConnection {
   dbName: string;
   instanceUrl: string;
   alias: string;
+  loginHost?: string;
+  contractVersion?: number;
 }
 
 export interface IUser extends Document {
@@ -32,13 +34,15 @@ const UserSchema = new Schema({
   createdAt: {    type: Date,    default: Date.now,  },
   connections: [{    
     tech:       { type: String, required: true,  },
-    userId:     { type: String, required: true,  unique: true,    },
-    userName:   { type: String, required: true,  unique: true,    },
+    userId:     { type: String, required: true },
+    userName:   { type: String, required: true },
     email:      { type: String, required: false   },
     dbName:     { type: String, required: true,   },
     dbId:       { type: String, required: false,  },
     instanceUrl:{ type: String, required: false,  },
-    alias:      { type: String, required: true,   }
+    alias:      { type: String, required: true },
+    loginHost:  { type: String, required: false },
+    contractVersion: { type: Number, required: false }
   }]
 
 

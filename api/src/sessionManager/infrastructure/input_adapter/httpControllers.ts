@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort } from "../../domain/ports/inbound/httpInputPorts";
+import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort, DisconnectOrgInputPort } from "../../domain/ports/inbound/httpInputPorts";
 import { ConnectionDriverDTO, stringToTechnology } from "../../application/dtos/connectionDriverDTO";
 import { SessionError } from "../../domain/exceptions/sessionError";
 import {
@@ -7,6 +7,8 @@ import {
     OAuthStateStore,
 } from "../../domain/entities/oauthStateStore";
 import { createSessionId } from "../../domain/entities/workspaceSession";
+import { parseOrgKey, OrgKey } from '../../domain/entities/orgKey';
+import { salesforceLoginHost, validateSalesforceLoginHost } from '../../domain/entities/salesforceLoginHost';
 import { errorHandler } from "../../../infrastructure/frameworks/errorHandler";
 import { ENV, REDIRECT_URI, RuntimeEnvironment } from "../../../config/environment";
 import { logger, StructuredLogger } from "../../../infrastructure/frameworks/structuredLogger";
@@ -86,6 +88,28 @@ export class SignInController {
         }
     }
 
+    async workspace(req: Request, res: Response) {
+        const sessionId = readSessionCookie(req);
+        if (!sessionId) {
+            if (hasSessionCookie(req)) {
+                clearSessionCookie(res, this.environment);
+                sendUnauthorized(res, req.correlationId);
+            } else {
+                res.status(200).json({ version: 1, connections: [], activeOrgKey: null });
+            }
+            return;
+        }
+        try {
+            const sessionDTO = await this.useCase.getSessionStatus(sessionId);
+            res.status(200).json(sessionDTO.toJSON());
+        } catch (error) {
+            if (error instanceof SessionError) {
+                clearSessionCookie(res, this.environment);
+                sendUnauthorized(res, req.correlationId);
+            } else errorHandler(error as Error, req, res);
+        }
+    }
+
 }
 
 export class RequestConnectionController {     
@@ -103,6 +127,7 @@ export class RequestConnectionController {
                 throw new Error('Tech is required');
             }
             const tech = req.params.tech;
+            const loginHost = salesforceLoginHost(tech);
             const sessionId = readSessionCookie(req);
 
             if (sessionId) {
@@ -119,14 +144,14 @@ export class RequestConnectionController {
 
             const state = this.oauthStateStore.issue(
                 workspaceBinding,
-                { type: "new", technology: tech },
+                { type: "new", technology: tech, loginHost },
                 req.correlationId!,
             );
             let url: string;
 
             try {
                 url = this.requestConnectionUseCase.toNewConnection(
-                    new ConnectionDriverDTO({tech: stringToTechnology(tech)}),
+                    new ConnectionDriverDTO({ tech: stringToTechnology(tech), loginHost }),
                     state,
                 );
             } catch (error) {
@@ -145,19 +170,32 @@ export class RequestConnectionController {
         }
     }    
     getUrlConnection(req: Request, res: Response) {
+        let orgKey: OrgKey;
+        try {
+            orgKey = req.params.orgKey as OrgKey;
+            parseOrgKey(orgKey);
+        } catch {
+            res.status(400).json({
+                error: {
+                    code: 'ORG_KEY_INVALID',
+                    message: 'La identidad de la organización no es válida.',
+                    correlationId: req.correlationId,
+                },
+            });
+            return;
+        }
         try {
             const sessionId = req.appSessionId!;
-            const connectionId = parseInt(req.params.connectionId);
-            const technology = this.requestConnectionUseCase.getConfiguredTechnology(sessionId, connectionId);
+            const { technology, loginHost } = this.requestConnectionUseCase.getConfiguredOAuthContext(sessionId, orgKey);
             const state = this.oauthStateStore.issue(
                 sessionId,
-                { type: "configured", connectionId, technology },
+                { type: "configured", orgKey, technology, loginHost },
                 req.correlationId!,
             );
             let url: string;
 
             try {
-                url = this.requestConnectionUseCase.toConfiguredConnection(sessionId, connectionId, state);
+                url = this.requestConnectionUseCase.toConfiguredConnection(sessionId, orgKey, state);
             } catch (error) {
                 this.oauthStateStore.discard(state);
                 throw error;
@@ -170,7 +208,15 @@ export class RequestConnectionController {
             });
             res.redirect(url);
         } catch (error) {
-            errorHandler(error as Error, req, res);
+            if (error instanceof SessionError) {
+                res.status(404).json({
+                    error: {
+                        code: 'ORG_NOT_FOUND',
+                        message: 'La organización no pertenece al workspace.',
+                        correlationId: req.correlationId,
+                    },
+                });
+            } else errorHandler(error as Error, req, res);
         }
     }        
 }
@@ -208,6 +254,10 @@ export class RequestedConnectionController {
 
         try {
             const consumedState = this.oauthStateStore.consume(state, workspaceBinding);
+            const loginHost = validateSalesforceLoginHost(
+                consumedState.destination.technology,
+                consumedState.destination.loginHost,
+            );
             const technology = stringToTechnology(consumedState.destination.technology);
             this.requestLogger.info("oauth.callback_validated", {
                 correlationId: consumedState.correlationId,
@@ -216,8 +266,10 @@ export class RequestedConnectionController {
                 technology,
             });
 
-            const configDriverDTO = new ConnectionDriverDTO({ code, tech: technology });
-            const sessionId = await this.requestedUseCase.exe(workspaceSessionId, configDriverDTO);
+            const configDriverDTO = new ConnectionDriverDTO({ code, tech: technology, loginHost });
+            const expectedOrgKey = consumedState.destination.type === 'configured'
+                ? consumedState.destination.orgKey : undefined;
+            const sessionId = await this.requestedUseCase.exe(workspaceSessionId, configDriverDTO, expectedOrgKey);
             setSessionCookie(res, sessionId, this.environment);
             clearOAuthFlowCookie(res, this.environment);
             res.redirect(REDIRECT_URI);
@@ -245,19 +297,48 @@ export class RequestedConnectionController {
 
 
 export class SignOutController {
-    constructor( private logoutUseCase: SignOutInputPort) {}
+    constructor(
+        private readonly logoutUseCase: SignOutInputPort,
+        private readonly environment: RuntimeEnvironment = ENV,
+    ) {}
     async do(req: Request, res: Response) {
         try {
-            const id = readSessionCookie(req);
-            if (!id) {
-                sendUnauthorized(res, req.correlationId);
-                return;
-            }
-            await this.logoutUseCase.exe(id);
-            clearSessionCookie(res, ENV);
-            res.status(200).json('Session closed');
+            await this.logoutUseCase.exe(req.appSessionId!);
+            clearSessionCookie(res, this.environment);
+            res.status(204).end();
         } catch (error) {
             errorHandler(error as Error, req, res);
+        }
+    }
+}
+
+export class DisconnectOrgController {
+    constructor(private readonly disconnectUseCase: DisconnectOrgInputPort) {}
+
+    async do(req: Request, res: Response) {
+        let orgKey: OrgKey;
+        try {
+            orgKey = req.params.orgKey as OrgKey;
+            parseOrgKey(orgKey);
+        } catch {
+            res.status(400).json({ error: {
+                code: 'ORG_KEY_INVALID',
+                message: 'La identidad de la organización no es válida.',
+                correlationId: req.correlationId,
+            } });
+            return;
+        }
+        try {
+            const workspace = await this.disconnectUseCase.exe(req.appSessionId!, orgKey);
+            res.status(200).json(workspace.toJSON());
+        } catch (error) {
+            if (error instanceof SessionError) {
+                res.status(404).json({ error: {
+                    code: 'ORG_NOT_FOUND',
+                    message: 'La organización no pertenece al workspace.',
+                    correlationId: req.correlationId,
+                } });
+            } else errorHandler(error as Error, req, res);
         }
     }
 }

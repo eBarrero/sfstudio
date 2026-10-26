@@ -2,32 +2,41 @@
 import css from './style.module.css';
 import sessionState from "../../../store/sessionState";
 import { IconCharacter } from "../../constants";
+import type { PublicConnectionDefinition } from '../../../services/session/types';
 
 const DBConnectionManager = () => {
-    const { publicSession } = sessionState();
+    const { publicSession, lastError, loginOrganization, disconnectOrg, closeWorkspace } = sessionState();
   
     const getStatusClass = (connection: PublicConnectionDefinition) => {
-      if (connection.isOnError) return css['status-error'];
-      if (connection.isConnected) return css['status-connected'];
+      if (connection.status === 'ERROR') return css['status-error'];
+      if (connection.status === 'CONNECTED') return css['status-connected'];
       return css['status-closed'];
     };
   
     return (
       <div>
-        {publicSession.connections && publicSession.connections.map((c, i) => (
-          <div key={i} className={css.connectionItem}>
-            {/* tools */}
-            <span 
-                className={css.buttonLike} 
-                role="button" 
-                aria-label="connection tools">
-                {IconCharacter.GEAR_WHEEl}
-            </span>
+        {publicSession.connections && publicSession.connections.map((c) => (
+          <div key={c.orgKey} className={css.connectionItem}>
             <span className={`${css['status-indicator']} ${getStatusClass(c)}`} />          {/* status connection */}
-            {i === publicSession.currentConnection && <span>{IconCharacter.CHECK} </span>}  {/* is active? */} 
-            <span>{c.alias} - {c.dbName}</span>                                              {/* Technology and database name */}
+            {c.orgKey === publicSession.activeOrgKey && <span>{IconCharacter.CHECK} </span>}
+            <span>{c.alias} - {c.organizationId} - {c.userName} - {c.environmentKind} - {c.status}</span>
+            {c.status === 'CONNECTED' ? (
+              <button className={css.buttonLike} onClick={() => { void disconnectOrg(c.orgKey); }}>
+                Desconectar
+              </button>
+            ) : (
+              <button className={css.buttonLike} onClick={() => loginOrganization(c.orgKey)}>
+                Reautenticar
+              </button>
+            )}
           </div>
         ))}
+        {publicSession.connections.length > 0 && (
+          <button className={css.buttonLike} onClick={() => { void closeWorkspace(); }}>
+            Cerrar workspace
+          </button>
+        )}
+        {lastError && <p role="alert">{lastError}</p>}
       </div>
     );
   };

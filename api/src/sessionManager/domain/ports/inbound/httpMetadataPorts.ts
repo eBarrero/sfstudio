@@ -6,7 +6,7 @@
 import { SessionId } from '../../entities/workspaceSession';
 
 export interface HttpMetadataInputPort {
-    getDescribeGlobal(sessionId: SessionId, dbName: string): Promise<string>;
-    describeSObject(sessionId: SessionId, dbName: string, sobject: string): Promise<string>;
-    doSOQL(sessionId: SessionId, dbName: string, soql: string): Promise<string>;
+    getDescribeGlobal(sessionId: SessionId, orgKey: string): Promise<string>;
+    describeSObject(sessionId: SessionId, orgKey: string, sobject: string): Promise<string>;
+    doSOQL(sessionId: SessionId, orgKey: string, soql: string): Promise<string>;
 }

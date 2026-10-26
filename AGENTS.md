@@ -97,12 +97,13 @@ Cada sprint contiene:
 Al implementar una PBI:
 
 1. Leer la guía del sprint, la PBI y sus dependencias.
-2. No ampliar silenciosamente el alcance.
-3. Implementar todos sus criterios de aceptación.
-4. Añadir las pruebas exigidas.
-5. Actualizar documentación y contratos afectados.
-6. Informar qué criterios quedaron demostrados.
-7. Después de implementar y validar la PBI, crear un commit específico que incluya únicamente sus cambios.
+2. Al iniciar la implementación, ejecutar desde la raíz `./gitStartPBI.sh PBI-NNN`, con el nombre de la PBI como único parámetro. Por ejemplo: `./gitStartPBI.sh PBI-009`.
+3. No ampliar silenciosamente el alcance.
+4. Implementar todos sus criterios de aceptación.
+5. Añadir las pruebas exigidas.
+6. Actualizar documentación y contratos afectados.
+7. Informar qué criterios quedaron demostrados.
+8. Al finalizar la PBI, revisar que los cambios correspondan únicamente a ella y ejecutar desde la raíz `./gitMergePBI.sh PBI-NNN "Mensaje de commit" "Cuerpo del PR"`, pasando siempre los tres parámetros. El script realiza las validaciones, crea el commit, publica la rama y abre el Pull Request; no sustituir este paso por un commit manual.
 
 `doc/PLAN_DE_SPRINTS.md` contiene la secuencia y trazabilidad de los criterios de éxito.
 

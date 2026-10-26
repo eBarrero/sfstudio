@@ -5,7 +5,7 @@
 - Node.js 24 LTS. La revisión se realizó con `v24.22.1`.
 - npm. La revisión se realizó con `12.2.1`.
 - MongoDB accesible localmente o por URI.
-- Una Connected App de Salesforce.
+- Una Connected App o External Client App de Salesforce con OAuth Web Server Flow (authorization code) habilitado.
 
 La versión está fijada mediante `.node-version` y `engines.node`.
 
@@ -26,7 +26,7 @@ El script local busca `api/.env`:
 ```dotenv
 PORT=3000
 ENV=DEV
-CLIENT_ID=<consumer-key-de-la-connected-app>
+CLIENT_ID=<consumer-key-de-la-app-oauth>
 CLIENT_SECRET=<consumer-secret>
 REDIRECT_URI=http://localhost:3000
 API_SF_VERSION=<version-de-salesforce-probada>
@@ -43,11 +43,13 @@ Notas:
 - `ENCRYPTION_KEY` pertenece a un wrapper que actualmente no se usa.
 - Ajusta `API_SF_VERSION` a una versión soportada y probada; el valor por defecto del código es `58.0`.
 
-En Salesforce, la callback URL de la Connected App debe coincidir exactamente con:
+En Salesforce, la callback URL de la Connected App o External Client App debe coincidir exactamente con:
 
 ```text
 http://localhost:3000/api/callback
 ```
+
+Ambos tipos de app usan las mismas variables `CLIENT_ID` (consumer key) y `CLIENT_SECRET` (consumer secret); no se cambia la configuración de una Connected App existente para adoptar External Client App. Configura el flujo OAuth Web Server Flow y los scopes que usa SF Studio (`api`, `web`, `id`, `profile`, `email`). En producción, registra la callback HTTPS pública exacta. Si una External Client App exige PKCE, su configuración debe ajustarse antes de usarla con este flujo; SF Studio aún no genera un code challenge. Consulta la [configuración OAuth de External Client Apps](https://help.salesforce.com/s/articleView?id=sf.configure_external_client_app_oauth_settings.htm&language=en_US&type=5) y el [Web Server Flow de Salesforce](https://help.salesforce.com/s/articleView?id=sf.remoteaccess_oauth_web_server_flow.htm&language=en_US&type=5).
 
 ## Ejecución local
 
@@ -144,11 +146,15 @@ El UUID no aparece en el DTO público ni debe escribirse en logs. Una cookie aus
 
 MongoDB dispone de una colección mínima `WorkspaceSession` con referencia al usuario y un índice TTL sobre `expiresAt`. Al volver a autenticarse se crea esta sesión para los usuarios anteriores sin borrar sus organizaciones conocidas; las cookies numéricas/Base64 antiguas quedan invalidadas.
 
-`User.sessionId` se conserva temporalmente como clave heredada para mantener compatible el índice único ya desplegado. No se consulta para autenticar, no se envía al navegador y no coincide con el UUID de `WorkspaceSession`. Retirarlo exige una migración operativa explícita del índice de MongoDB; la aplicación no borra índices o campos automáticamente.
+`User.sessionId` se conserva temporalmente como clave heredada para mantener compatible el índice único ya desplegado. No se consulta para autenticar, no se envía al navegador y no coincide con el UUID de `WorkspaceSession`. Retirarlo exige una migración operativa explícita del índice de la colección `User`; la aplicación no borra ese índice ni el campo automáticamente.
+
+`WorkspaceSession.user` ya no es único: el mismo usuario puede abrir dos workspaces independientes. En el primer alta de sesión tras actualizar, el repositorio elimina solo el índice único heredado `user_1` de esa colección. La cuenta MongoDB necesita permiso para `dropIndex` durante esta migración; si no lo tiene, el operador debe retirar ese índice antes de usar sesiones concurrentes. Se conservan el índice único de `sessionId` y el TTL de `expiresAt`.
 
 ## Seguridad OAuth y trazabilidad
 
 Cada autorización crea un `state` aleatorio de 256 bits, válido durante diez minutos y consumible una sola vez. Se asocia en memoria al workspace, al destino solicitado y al `correlationId`. Durante el primer login, la cookie temporal `sfstudio_oauth_flow` enlaza el navegador con ese intento; es `HttpOnly`, `SameSite=Lax`, limitada a `/api` y `Secure` en producción.
+
+El contexto del `state` guarda también el host canónico: `https://login.salesforce.com` para `SF_Prod` y `https://test.salesforce.com` para `SF_Test`. La URL de autorización y el intercambio del código usan ese mismo host. La query del callback y `instanceUrl` nunca eligen el host de intercambio. El driver conserva un `OrgConnection` con el mismo contrato en ambos entornos; solo cambian `environmentKind` y `loginHost`.
 
 El callback valida y consume `state` antes de invocar Salesforce. Los rechazos tienen contratos estables:
 
@@ -157,10 +163,21 @@ El callback valida y consume `state` antes de invocar Salesforce. Los rechazos t
 | Falta `state` o `code` | 400 | `OAUTH_CALLBACK_INVALID` |
 | `state` desconocido, expirado o ya consumido | 400 | `OAUTH_STATE_INVALID` |
 | El intento pertenece a otro workspace | 401 | `OAUTH_STATE_MISMATCH` |
+| Tecnología u host OAuth no válidos | 400 | `OAUTH_CONTEXT_INVALID` |
+| Salesforce rechaza autorización, intercambio o identidad | 502 | `SALESFORCE_AUTH_FAILED` |
 
 Todos los errores incluyen un `correlationId` y la respuesta HTTP expone el mismo valor en `X-Correlation-Id`. Los logs son JSON y no deben registrar cookies, códigos OAuth, `state`, tokens, secretos, URLs completas de autorización, correo o nombre de usuario. El logger aplica redacción defensiva, pero los llamadores deben seguir enviando solo los campos mínimos.
 
 `OAuthStateStore` vive en memoria. Tras reiniciar la API o al saltar entre instancias, un callback pendiente se rechazará y habrá que iniciar de nuevo OAuth. En esta fase no se persisten refresh tokens.
+
+### Verificación manual controlada de PBI-006
+
+En orgs de prueba de producción y sandbox, con una app OAuth autorizada para cada una:
+
+1. Inicia `GET /api/auth/SF_Prod`; comprueba que la redirección va a `login.salesforce.com` y completa el login. Verifica `environmentKind: PRODUCTION`, `loginHost` y `status: CONNECTED` en `GET /api/v1/workspace`.
+2. Inicia `GET /api/auth/SF_Test` dentro del mismo workspace; comprueba `test.salesforce.com`, completa el login y verifica `environmentKind: SANDBOX`, `loginHost` y ambos `OrgKey` distintos.
+3. Reautentica cada conexión por `/api/v1/connections/:orgKey/authorize` y verifica que vuelve al host de su entorno. No copies cookies, códigos ni tokens a tickets o registros.
+4. Confirma que las dos conexiones pueden invocar el mismo endpoint de lectura y que un fallo OAuth muestra `SALESFORCE_AUTH_FAILED` sin detalles del proveedor.
 
 ### Auditoría npm
 
@@ -200,13 +217,14 @@ Verificaciones después del deploy:
 
 | Síntoma | Causa probable |
 | --- | --- |
-| «Driver not found» al entrar en producción | `isSalesforce()` no reconoce `SF_Prod`. |
-| OAuth de producción falla al intercambiar el code | `salesforceOAuth2.login()` fija `https://test.salesforce.com`. |
+| `OAUTH_CONTEXT_INVALID` al conectar | La tecnología o el host guardado no corresponde al entorno Salesforce. |
+| `SALESFORCE_AUTH_FAILED` | Revisa callback, permisos y credenciales de la app OAuth en Salesforce sin registrar el código ni el token. |
 | En producción el navegador intenta conectar a tu PC | `URL_PATH` está fijado a `localhost`. |
-| «Connection not found» tras deploy/reinicio | `ConnectionPool` vive solo en memoria. |
+| `REAUTH_REQUIRED` tras deploy/reinicio o expiración del token | El registro de drivers vive solo en memoria; usa **Reautenticar** en la org afectada. La misma identidad Salesforce conserva su `OrgKey`. |
 | Metadatos de descripción de campos fallan con 404 | Falta la ruta `/api/getObjectmetadata/...`. |
 | Esquema obsoleto | `localStorage` no tiene TTL ni clave de versión. |
-| Logout parece funcionar pero la sesión sigue abierta | `UserEntity.signOut()` es un TODO. |
+| Quieres desconectar una org sin cerrar las otras | Usa **Desconectar** o el comando `Disconnect_org_<organizationId>_<userId>`; la org queda como `REAUTH_REQUIRED`. |
+| Quieres cerrar la sesión completa | Usa **Cerrar workspace** o `Close_workspace`; `DELETE /api/v1/workspace` revoca los tokens disponibles, elimina los drivers y la cookie. |
 | `FIELDS(ALL)` produce SOQL inválido | El generador concatena un segundo `SELECT`. |
 
 ## Convenciones recomendadas para continuar

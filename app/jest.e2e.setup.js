@@ -8,6 +8,6 @@ if (!global.fetch) {
         ok: true,
         status: 200,
         statusText: 'OK',
-        json: async () => 'newsession'
+        json: async () => ({ version: 1, connections: [], activeOrgKey: null })
     });
 }

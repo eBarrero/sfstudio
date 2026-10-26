@@ -1,3 +1,6 @@
+import { createOrgKey } from '../../domain/entities/orgKey';
+import { salesforceLoginHost, validateSalesforceLoginHost } from '../../domain/entities/salesforceLoginHost';
+
 //type technology = "MongoDB" | "MySQL" | "PostgreSQL" | "SF_Prod" | "SF_Test" | "SalesforceAuth0";
 
 
@@ -34,6 +37,7 @@ export interface ConnectionDriverParams {
     userName?: string;
     email?: string;
     alias?: string;
+    loginHost?: string;
 }
 
 export class ConnectionDriverDTO {
@@ -47,10 +51,12 @@ export class ConnectionDriverDTO {
     public readonly userName: string = "";
     public readonly email: string = "";
     public readonly alias: string = "";
+    public readonly loginHost: string;
     
 
     constructor(params: ConnectionDriverParams | ConnectionDriverDTO) {
         this.tech = params.tech;
+        this.dbId = params.dbId ?? "";
         this.dbName = (params.dbName===undefined) ? params.tech : params.dbName;
         this.instanceUrl = params.instanceUrl;
         this.callbackUrl = params.callbackUrl;
@@ -59,6 +65,9 @@ export class ConnectionDriverDTO {
         this.userName = (params.userName===undefined) ? "" : params.userName;
         this.email = (params.email===undefined) ? "" : params.email;
         this.alias = (params.alias===undefined) ? "" : params.alias;
+        this.loginHost = this.isSalesforce()
+            ? validateSalesforceLoginHost(this.tech!, params.loginHost ?? salesforceLoginHost(this.tech!))
+            : '';
     
 
         if (!this.tech) {
@@ -81,6 +90,7 @@ export class ConnectionDriverDTO {
         if (!this.isWritable()) {
             throw new Error("Connection is not writable");
         }
+        createOrgKey(this.dbId, this.userId);
         return {
             tech: this.tech,
             dbId: this.dbId,
@@ -89,13 +99,15 @@ export class ConnectionDriverDTO {
             userName: this.userName,
             instanceUrl: this.instanceUrl,
             email: this.email,
-            alias: this.alias
+            alias: this.alias,
+            loginHost: this.loginHost,
+            contractVersion: 1
         }
     }
 
-    isSalesforce(): boolean         { return this.tech ? (this.tech.includes("SalesforceAuth0") || this.tech.includes("SF_Test") || this.tech.includes("SF_Prod")) : false; }
-    isSalesforceSandbox(): boolean  { return this.tech ? this.tech.includes("SF_Test") : false; }
-    isSalesforceProd(): boolean     { return this.tech ? this.tech.includes("SF_Prod") : false; }
+    isSalesforce(): boolean         { return this.tech === Technology.SF_Test || this.tech === Technology.SF_Prod; }
+    isSalesforceSandbox(): boolean  { return this.tech === Technology.SF_Test; }
+    isSalesforceProd(): boolean     { return this.tech === Technology.SF_Prod; }
     isMongoDB(): boolean            { return this.tech ? this.tech.includes("MongoDB") : false; }
     isMySQL(): boolean              { return this.tech ? this.tech.includes("MySQL") : false; }
     isPostgreSQL(): boolean         { return this.tech ? this.tech.includes("PostgreSQL") : false; }

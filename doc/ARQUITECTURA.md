@@ -30,7 +30,7 @@ flowchart TB
         Controllers[Controladores HTTP]
         UseCases[Casos de uso]
         Domain[Entidades Sessions/User]
-        Pool[ConnectionPool en memoria]
+        Pool[ConnectionRegistry en memoria]
         Repository[Repositorio MongoDB]
         Driver[SalesforceOAuth2 / jsforce]
 
@@ -63,9 +63,9 @@ El contenedor es sencillo y suficiente para el tamaño actual. No hace falta int
 #### Dominio
 
 - `Sessions` contiene un mapa en memoria de UUID de workspace a `UserEntity` y elimina entradas expiradas al consultarlas.
-- `UserEntity` contiene organizaciones configuradas, conexión actual y estado abierto/cerrado.
-- `configuredConnections` envuelve la configuración de una organización.
-- `SessionDTO` devuelve al cliente una vista pública codificada en Base64 que no contiene el identificador de sesión.
+- `UserEntity` contiene organizaciones configuradas, `activeOrgKey` y estados de conexión por `OrgKey`.
+- `configuredConnections` envuelve la configuración de una organización y obtiene su `OrgKey` de los IDs Salesforce.
+- `SessionDTO` devuelve la vista pública JSON versionada; `/api/init` conserva temporalmente la representación Base64 sin identificador de sesión.
 
 #### Aplicación
 
@@ -78,7 +78,7 @@ El contenedor es sencillo y suficiente para el tamaño actual. No hace falta int
 #### Adaptadores
 
 - Entrada: router y controladores Express.
-- Salida: `MongoDBUserRepository`, `ConnectionPool` y `SalesforceOAuth2`.
+- Salida: `MongoDBUserRepository`, `ConnectionRegistry` y `SalesforceOAuth2`.
 - `ConnectionDriverFactory` anticipa MongoDB, MySQL y PostgreSQL, pero lanza «not implemented» para ellos.
 
 ### Datos persistidos
@@ -95,11 +95,13 @@ La colección `WorkspaceSession` contiene únicamente:
 - referencia al usuario propietario;
 - fecha `expiresAt`, usada también como índice TTL de MongoDB.
 
-No se persiste el access token. Esto reduce el impacto de una fuga de MongoDB, pero obliga a reautenticar tras reinicios o cuando la conexión desaparece del pool.
+No se persiste el access token. Esto reduce el impacto de una fuga de MongoDB, pero obliga a reautenticar tras reinicios o cuando una conexión desaparece del registro en memoria.
 
-La cookie `sfstudio_workspace` contiene únicamente el UUID opaco. Es `HttpOnly`, `SameSite=Lax`, usa `Path=/`, expira a las ocho horas y añade `Secure` en producción. El identificador se rota después de completar OAuth; la rotación actualiza memoria, MongoDB y el pool de conexiones, por lo que el valor anterior deja de ser válido.
+La cookie `sfstudio_workspace` contiene únicamente el UUID opaco. Es `HttpOnly`, `SameSite=Lax`, usa `Path=/`, expira a las ocho horas y añade `Secure` en producción. El identificador se rota después de completar OAuth; la rotación actualiza memoria, MongoDB y el registro de conexiones, por lo que el valor anterior deja de ser válido.
 
 Los intentos OAuth se guardan temporalmente en `OAuthStateStore`. Cada `state` contiene 256 bits aleatorios y queda asociado en el servidor al workspace (o a un UUID temporal durante el primer login), al destino, a un `correlationId` y a una expiración de diez minutos. El callback lee `state` desde la query, comprueba su asociación y lo consume antes de intercambiar el `code` con Salesforce. Por tanto, un valor ausente, expirado, repetido o perteneciente a otro workspace no llega al driver externo.
+
+El destino validado incluye `loginHost`: `login.salesforce.com` para producción o `test.salesforce.com` para sandbox. El mismo host se usa en la autorización y el intercambio; `instanceUrl` solo describe la instancia recibida después del login. Connected Apps y External Client Apps comparten el flujo Web Server Flow con `CLIENT_ID`, `CLIENT_SECRET` y callback configurados en la API. El adapter OAuth traduce fallos del proveedor a `SALESFORCE_AUTH_FAILED` sin copiar sus mensajes a respuestas o logs.
 
 El store OAuth vive en memoria y no contiene tokens. Un reinicio o el uso de varias instancias invalida los intentos pendientes; el usuario debe iniciar de nuevo el login. Esta limitación es aceptada para la primera fase y deberá resolverse con un almacén temporal compartido antes de escalar horizontalmente.
 
@@ -163,18 +165,34 @@ La consola funciona como una «command palette» contextual. Los comandos se reg
 
 ## 4. API HTTP actual
 
+### Contrato multi-org v1
+
+`GET /api/v1/workspace` devuelve JSON tipado, versión 1, con una lista de conexiones conocidas y `activeOrgKey`. `OrgKey` concatena `organizationId:userId`; alias y hostname nunca identifican una conexión. Cada conexión expone identidad, alias, URL de instancia, host de login, entorno y estado. La ruta `GET /api/v1/connections/:orgKey/authorize` reautentica una org conocida del workspace. El callback comprueba la identidad devuelta por Salesforce antes de asociar el driver al workspace. `ConnectionRegistry` guarda `Map<WorkspaceId, Map<OrgKey, driver>>` en memoria. La API reconcilia sus claves con las orgs conocidas para mostrar `CONNECTED` o `REAUTH_REQUIRED`; nunca serializa el driver ni sus tokens.
+
+La expiración de cada workspace se comprueba al acceder al registro y mediante una limpieza periódica de un minuto. Al expirar o sustituir una conexión se llama a `dispose()` para soltar la referencia a jsforce. Al desconectar se intenta revocar el access token con Salesforce y se elimina el driver aunque la revocación remota falle. La rotación de sesión tras OAuth mueve todas las conexiones del workspace al nuevo ID. Una org conocida sin driver, o con token Salesforce expirado, devuelve `401 REAUTH_REQUIRED` en los endpoints de lectura; el cliente actualiza el workspace para mostrar la acción de reautenticación.
+
+`DELETE /api/v1/workspace/orgs/:orgKey` es idempotente para una org conocida: devuelve el contrato público del workspace con esa org en `REAUTH_REQUIRED`, sin afectar las otras. Una identidad desconocida devuelve `404 ORG_NOT_FOUND`, y una clave mal formada `400 ORG_KEY_INVALID`. `DELETE /api/v1/workspace` elimina los drivers y el documento de sesión `WorkspaceSession`, revoca los tokens disponibles y expira la cookie; responde `204`. Se conservan únicamente las identidades no secretas de las orgs conocidas en `User` para una futura reconexión explícita.
+
+La colección `WorkspaceSession` admite varias sesiones del mismo usuario. Al crear la primera sesión tras actualizar, el repositorio elimina únicamente el índice único heredado `user_1` si sigue presente; mantiene intactos `sessionId_1` y el TTL. La aplicación no almacena conexiones activas en MongoDB.
+
+Los documentos `User.connections` antiguos se normalizan al leerlos: se conserva una entrada solo si tiene ambos IDs Salesforce válidos. Se añade `contractVersion: 1` y el host de login; entradas sin identidad o duplicadas se descartan y requieren nueva conexión. El identificador heredado `dbName` se conserva únicamente en MongoDB por compatibilidad del documento. No se usa como clave de sesión o conexión.
+
+`/api/init` sigue disponible temporalmente para compatibilidad, con el mismo contenido público codificado en Base64. El frontend usa el JSON de `/api/v1/workspace`.
+
 | Método y ruta | Uso |
 | --- | --- |
 | `GET /health` | Liveness del proceso, independiente de MongoDB y Salesforce. |
 | `GET /ready` | Readiness basada en el estado de la conexión MongoDB. |
 | `GET /api/init` | Recuperar la sesión pública o indicar sesión nueva. |
 | `GET /api/auth/:tech` | Iniciar OAuth para producción o sandbox. |
-| `GET /api/connections/:connectionId` | Reautenticar una organización conocida. |
+| `GET /api/v1/workspace` | Obtener contrato público JSON versionado del workspace. |
+| `GET /api/v1/connections/:orgKey/authorize` | Reautenticar una organización conocida del workspace. |
 | `GET /api/callback` | Procesar el callback de Salesforce. |
-| `GET /api/logout/:dbName` | Cerrar sesión; hoy es incompleto. |
-| `GET /api/describeGlobal/:dbName` | Obtener objetos de la organización. |
-| `GET /api/describe/:dbName/:sobject` | Obtener campos y relaciones. |
-| `GET /api/soql/:dbName/:soql` | Ejecutar SOQL codificado en Base64 URL-safe. |
+| `DELETE /api/v1/workspace/orgs/:orgKey` | Desconectar una org conocida; devuelve el workspace actualizado. |
+| `DELETE /api/v1/workspace` | Cerrar todo el workspace, borrar la sesión y expirar la cookie. |
+| `GET /api/describeGlobal/:orgKey` | Obtener objetos de la organización. |
+| `GET /api/describe/:orgKey/:sobject` | Obtener campos y relaciones. |
+| `GET /api/soql/:orgKey/:soql` | Ejecutar SOQL codificado en Base64 URL-safe; pendiente de sustitución por POST en Sprint 05. |
 
 El frontend también intenta llamar a `GET /api/getObjectmetadata/:dbName/:sobject`, pero esa ruta no existe en el router.
 
@@ -199,7 +217,7 @@ sequenceDiagram
     API->>SF: Intercambio del code
     SF-->>API: Identidad y conexión
     API->>DB: Crear/actualizar usuario y org
-    API->>API: Guardar driver en ConnectionPool
+    API->>API: Guardar driver en ConnectionRegistry
     API-->>App: Cookie id + redirección
 ```
 
@@ -237,7 +255,7 @@ sequenceDiagram
 
 - Las sesiones y conexiones activas no son compartidas entre instancias.
 - Los intentos OAuth pendientes viven en memoria; un reinicio o cambio de instancia obliga a reiniciar el login.
-- Un reinicio del proceso invalida el pool aunque MongoDB conserve la organización.
+- Un reinicio del proceso invalida el registro en memoria aunque MongoDB conserve la organización.
 - La caché del navegador no tiene TTL ni versión de esquema.
 - Los tipos globales `.d.ts` acoplan muchas áreas del frontend.
 - El generador SOQL, los comandos y la navegación se coordinan mediante cadenas, lo que dificulta refactorizar.
@@ -245,7 +263,7 @@ sequenceDiagram
 
 ## 7. Evolución necesaria para multi-org
 
-La implementación ya contiene un mapa de conexiones por sesión, pero el frontend y parte del dominio siguen suponiendo una única `currentConnection`.
+El dominio y el frontend usan `OrgKey` para la org activa; el pool puede contener varias conexiones en el mismo workspace. La selección visual completa de orgs se aborda en Sprint 03.
 
 El modelo recomendado es:
 

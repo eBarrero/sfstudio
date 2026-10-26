@@ -1,38 +1,56 @@
 
-import { sessions }  from '../../domain/entities/sessions';
+import { Sessions } from '../../domain/entities/sessions';
 
 import { SessionDTO } from '../../domain/dtos/sessionDTO';
-import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort } from '../../domain/ports/inbound/httpInputPorts';
+import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort, DisconnectOrgInputPort } from '../../domain/ports/inbound/httpInputPorts';
 import { UserRepositoryPort } from '../../domain/ports/outbound/userRepositoryPort';
 import { SessionError } from '../../domain/exceptions/sessionError';
 import { ConnectionDriverDTO } from '../dtos/connectionDriverDTO';
-import ConnectionDriverFactory  from '../../infrastructure/output_adapter/connectionServices/connectionDriverFactory';
-import connectionPool from '../../infrastructure/output_adapter/connectionServices/connectionPool';
+import { ConnectionRegistryPort } from '../../domain/ports/outbound/connectionRegistryPort';
 import { SessionId } from '../../domain/entities/workspaceSession';
 import { UserEntity } from '../../domain/entities/UserEntity';
+import { createOrgKey, OrgKey } from '../../domain/entities/orgKey';
+import { validateSalesforceLoginHost } from '../../domain/entities/salesforceLoginHost';
+import { CreateDriver } from '../ports/connectionDriverFactoryPort';
+
+async function revokeAndRemove(
+    registry: ConnectionRegistryPort,
+    sessionId: SessionId,
+    orgKey: OrgKey,
+): Promise<void> {
+    if (!registry.listOrgKeys(sessionId).includes(orgKey)) return;
+    try {
+        await registry.getConnection(sessionId, orgKey).revoke();
+    } catch {
+        // A failed remote revoke must not keep a local credential available.
+    } finally {
+        registry.removeConnection(sessionId, orgKey);
+    }
+}
 
 
 export class SignInUseCase implements SignInInputPort {
-    constructor(private userRepository: UserRepositoryPort) {}
+    constructor(
+        private readonly userRepository: UserRepositoryPort,
+        private readonly sessions: Sessions,
+        private readonly registry: ConnectionRegistryPort,
+    ) {}
 
     async getSessionStatus(sessionId: SessionId): Promise<SessionDTO> {
-        const user = sessions.lookUpUserOnCache(sessionId);
+        let user = this.sessions.lookUpUserOnCache(sessionId);
         if (user) {
-            if (!user.getPendingToUpdate()) {
-                return user.getSessionStatus();
-            } else {
+            if (user.getPendingToUpdate()) {
                 const userDTO = await this.userRepository.findUserByTokenId(sessionId);
                 user.loadConnections(userDTO);
                 user.setPendingToUpdate(false);
-                return user.getSessionStatus();
             }
+        } else {
+            const userDTO = await this.userRepository.findUserByTokenId(sessionId);
+            user = this.sessions.rebuildUser(sessionId, userDTO.expiresAt);
+            user.loadConnections(userDTO);
         }
-        
-        const userDTO = await this.userRepository.findUserByTokenId(sessionId);
-        const newUer = sessions.rebuildUser(sessionId, userDTO.expiresAt);
-        
-        newUer.loadConnections(userDTO);
-        return newUer.getSessionStatus();
+        user.reconcileActiveConnections(new Set(this.registry.listOrgKeys(sessionId)));
+        return user.getSessionStatus();
     }
     getStatus(): string {
         return 'ok';
@@ -40,79 +58,129 @@ export class SignInUseCase implements SignInInputPort {
 }
 
 export class RequestConnectionUseCase implements RequestConnectionInputPort {
+    constructor(
+        private readonly sessions: Sessions,
+        private readonly createDriver: CreateDriver,
+    ) {}
+
     toNewConnection(configDriverDTO: ConnectionDriverDTO, state: string): string {
-        const driver = ConnectionDriverFactory.createDriver(configDriverDTO);
-        return driver.requestAuthorization(state);
-    }
-
-    getConfiguredTechnology(sessionId: SessionId, connectionId: number): string {
-        return sessions.getUser(sessionId).getConnection(connectionId).getTech();
-    }
-
-    toConfiguredConnection(sessionId: SessionId, connectionId: number, state: string): string {
-        const connection = sessions.getUser(sessionId).getConnection(connectionId);
-        if (connection) {
-            const driver = ConnectionDriverFactory.createDriver(connection.getConnectionDriverConfig());
+        const driver = this.createDriver(configDriverDTO);
+        try {
             return driver.requestAuthorization(state);
+        } finally {
+            driver.dispose();
         }
-        throw new SessionError(`Connection not found with id ${connectionId}`);
+    }
+
+    getConfiguredOAuthContext(sessionId: SessionId, orgKey: OrgKey) {
+        const config = this.sessions.getUser(sessionId).getConnection(orgKey).getConnectionDriverConfig();
+        return {
+            technology: config.tech!,
+            loginHost: validateSalesforceLoginHost(config.tech!, config.loginHost),
+        };
+    }
+
+    toConfiguredConnection(sessionId: SessionId, orgKey: OrgKey, state: string): string {
+        const connection = this.sessions.getUser(sessionId).getConnection(orgKey);
+        const driver = this.createDriver(connection.getConnectionDriverConfig());
+        try {
+            return driver.requestAuthorization(state);
+        } finally {
+            driver.dispose();
+        }
     }
 }
 
 export class RequestedConnectionUseCase implements RequestedConnectionInputPort {
-    constructor(private userRepository: UserRepositoryPort) {}
-    async exe(sessionId: SessionId | undefined, initialConfigDriverDTO: ConnectionDriverDTO): Promise<SessionId> {
-        const driver = ConnectionDriverFactory.createDriver(initialConfigDriverDTO);
-        const configDriverDTO = await driver.login();
-        
-        let user: UserEntity;
-        if (!sessionId) {
-            const userDTO = await this.userRepository.findUserByUserId(configDriverDTO);
-            if (userDTO) {
-                user = sessions.rebuildUser(userDTO.sessionId, userDTO.expiresAt);
-                user.loadConnections(userDTO);
+    constructor(
+        private readonly userRepository: UserRepositoryPort,
+        private readonly sessions: Sessions,
+        private readonly registry: ConnectionRegistryPort,
+        private readonly createDriver: CreateDriver,
+    ) {}
+    async exe(sessionId: SessionId | undefined, initialConfigDriverDTO: ConnectionDriverDTO, expectedOrgKey?: OrgKey): Promise<SessionId> {
+        const driver = this.createDriver(initialConfigDriverDTO);
+        try {
+            const configDriverDTO = await driver.login();
+            const orgKey = createOrgKey(configDriverDTO.dbId, configDriverDTO.userId);
+            if (expectedOrgKey && expectedOrgKey !== orgKey) {
+                throw new SessionError('Authenticated Salesforce identity does not match requested connection');
+            }
+
+            let user: UserEntity;
+            if (!sessionId) {
+                const userDTO = await this.userRepository.findUserByUserId(configDriverDTO);
+                if (userDTO) {
+                    user = this.sessions.rebuildUser(userDTO.sessionId, userDTO.expiresAt);
+                    user.loadConnections(userDTO);
+                } else {
+                    user = this.sessions.addNewUser();
+                    await this.userRepository.createUserAndFirstConnection(
+                        user.getSessionId(),
+                        user.getExpiresAt(),
+                        configDriverDTO,
+                    );
+                }
+                user.setPendingToUpdate(true);
             } else {
-                user = sessions.addNewUser();
-                await this.userRepository.createUserAndFirstConnection(
-                    user.getSessionId(),
-                    user.getExpiresAt(),
-                    configDriverDTO,
-                );
+                user = this.sessions.getUser(sessionId);
+                if (!user.checkConnectionExists(orgKey)) {
+                    const userDTO = await this.userRepository.addNewConnectionToUser(user.getSessionId(), configDriverDTO);
+                    user.loadConnections(userDTO);
+                }
             }
-            user.setPendingToUpdate(true);
-        } else {
-            user = sessions.getUser(sessionId);
-            if (!user.checkConnectionExists(configDriverDTO.dbName!)) {
-                const userDTO = await this.userRepository.addNewConnectionToUser(user.getSessionId(), configDriverDTO);
+
+            const rotation = this.sessions.rotateUserSession(user);
+            await this.userRepository.rotateSessionId(
+                rotation.previousId,
+                rotation.sessionId,
+                rotation.expiresAt,
+            );
+            this.registry.rotateSession(rotation.previousId, rotation.sessionId, rotation.expiresAt);
+
+            if (!user.checkConnectionExists(orgKey)) {
+                const userDTO = await this.userRepository.findUserByTokenId(rotation.sessionId);
                 user.loadConnections(userDTO);
             }
+            user.setActiveOrgKey(orgKey);
+            this.registry.addConnection(rotation.sessionId, orgKey, driver, rotation.expiresAt);
+            user.setConnectionStatus(orgKey, 'CONNECTED');
+            return rotation.sessionId;
+        } catch (error) {
+            driver.dispose();
+            throw error;
         }
+    }
+}
 
-        const rotation = sessions.rotateUserSession(user);
-        await this.userRepository.rotateSessionId(
-            rotation.previousId,
-            rotation.sessionId,
-            rotation.expiresAt,
-        );
-        connectionPool.rotateSession(rotation.previousId, rotation.sessionId);
+export class DisconnectOrgUseCase implements DisconnectOrgInputPort {
+    constructor(private readonly sessions: Sessions, private readonly registry: ConnectionRegistryPort) {}
 
-        user.setcurrentConnection(configDriverDTO.dbName!);
-        connectionPool.addConnection(rotation.sessionId, configDriverDTO.dbName!, driver);
-        user.setConnectionAsOpen(configDriverDTO.dbName!);
-        return rotation.sessionId;
+    async exe(id: SessionId, orgKey: OrgKey): Promise<SessionDTO> {
+        const user = this.sessions.getUser(id);
+        user.getConnection(orgKey);
+        await revokeAndRemove(this.registry, id, orgKey);
+        user.disconnectOrg(orgKey);
+        user.reconcileActiveConnections(new Set(this.registry.listOrgKeys(id)));
+        return user.getSessionStatus();
     }
 }
 
 export class SignOutUseCase implements SignOutInputPort {
-    async exe(id: SessionId): Promise<SessionDTO> {
-        const user = sessions.lookUpUserOnCache(id);
-        if (user) {
-            user.signOut();
-            sessions.deleteSession(id);
-            connectionPool.deleteSession(id);
-            return user.getSessionStatus();
+    constructor(
+        private readonly userRepository: UserRepositoryPort,
+        private readonly sessions: Sessions,
+        private readonly registry: ConnectionRegistryPort,
+    ) {}
+    async exe(id: SessionId): Promise<void> {
+        const user = this.sessions.getUser(id);
+        await this.userRepository.deleteWorkspaceSession(id);
+        for (const orgKey of this.registry.listOrgKeys(id)) {
+            await revokeAndRemove(this.registry, id, orgKey);
         }
-        throw new SessionError("Session expired or invalid");
+        user.signOut();
+        this.sessions.deleteSession(id);
+        this.registry.deleteSession(id);
     }
 }
 
