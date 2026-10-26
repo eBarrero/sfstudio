@@ -18,11 +18,9 @@ flowchart TB
         Stores[Stores Zustand]
         Model[Modelo y generador SOQL]
         Proxy[Proxy y caché de metadatos]
-        Local[(localStorage)]
         Components --> Stores
         Stores --> Model
         Stores --> Proxy
-        Proxy <--> Local
     end
 
     subgraph Server
@@ -133,7 +131,7 @@ La API emite logs JSON mediante un logger estructurado. Cada petición obtiene u
 - filtra objetos y campos;
 - expone un `ModelReader` de solo lectura.
 
-`controller.ts` añade una segunda caché en `localStorage`, indexada por URL.
+El cliente HTTP compartido usa `/api/v1` relativo por defecto y conserva `code` y `correlationId` de los errores públicos. Metadata y SOQL usan temporalmente las rutas `/api` heredadas a través de ese mismo cliente. La caché de esquema sigue solo en memoria; no se copian respuestas Salesforce a `localStorage`.
 
 ### Modelo SOQL
 
@@ -226,7 +224,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant App as React/Zustand
-    participant Cache as localStorage/Proxy
+    participant Cache as Proxy en memoria
     participant API as Express
     participant SF as Salesforce
 
