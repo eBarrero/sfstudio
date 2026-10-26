@@ -79,7 +79,7 @@ it('validates the Vite override and keeps metadata and query results out of loca
     await getDescribe('00D000000000001:005000000000001');
     await sendQuery('00D000000000001:005000000000001', 'SELECT Id FROM Account');
     expect(calls[0]).toContain('/api/describeGlobal/');
-    expect(calls[1]).toContain('/api/soql/');
+    expect(calls[1]).toContain('/api/v1/query');
     expect(localStorage.length).toBe(0);
   } finally {
     global.fetch = previous;

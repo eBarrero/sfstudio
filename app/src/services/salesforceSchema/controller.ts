@@ -8,7 +8,7 @@ export interface SalesforceQueryResponse {
   done: boolean;
   totalSize: number;
   records: Record<string, unknown>[];
-  nextRecordsUrl?: string;
+  limit: number;
 }
 
 export interface MetadataFieldResponse {
@@ -28,7 +28,6 @@ export function getMetadataObject(orgKey: string, sObject: string): Promise<Meta
   return apiClient.request(`getObjectmetadata/${encodeURIComponent(orgKey)}/${encodeURIComponent(sObject)}`, { legacy: true });
 }
 
-export function sendQuery(orgKey: string, query: string): Promise<SalesforceQueryResponse> {
-  const encoded = btoa(query).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  return apiClient.request(`soql/${encodeURIComponent(orgKey)}/${encoded}`, { legacy: true });
+export function sendQuery(orgKey: string, query: string, limit = 200): Promise<SalesforceQueryResponse> {
+  return apiClient.request('query', { method: 'POST', body: { orgKey, query, limit } });
 }

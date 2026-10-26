@@ -60,10 +60,10 @@ export function createApiRouter(container: AppContainer): express.Router {
         container.httpMetadataCtrl.getObjectDescription.bind(container.httpMetadataCtrl),
     );
 
-    router.get(
-        "/api/soql/:orgKey/:soql",
+    router.post(
+        "/api/v1/query",
         container.signInCtrl.setUser.bind(container.signInCtrl),
-        container.httpMetadataCtrl.getSOQL.bind(container.httpMetadataCtrl),
+        container.httpMetadataCtrl.postQuery.bind(container.httpMetadataCtrl),
     );
 
     return router;
