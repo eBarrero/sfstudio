@@ -50,12 +50,15 @@ export default class Proxy {
                 mapFields: new Map(),
                 metadataFieldDownloaded: null,
             }));
-            cache.set(orgSfName, {
-                name: orgSfName,
-                sobjects,
-                indexMap: new Map(sobjects.map(sobject => [sobject.name, sobject.sObjectLocalId])),
-            });
-            cacheFetchedAt.set(orgSfName, metadataStatus(orgSfName).fetchedAt ?? 0);
+            const fetchedAt = metadataStatus(orgSfName).fetchedAt ?? 0;
+            if (!cache.has(orgSfName) || (cacheFetchedAt.get(orgSfName) ?? 0) < fetchedAt) {
+                cache.set(orgSfName, {
+                    name: orgSfName,
+                    sobjects,
+                    indexMap: new Map(sobjects.map(sobject => [sobject.name, sobject.sObjectLocalId])),
+                });
+                cacheFetchedAt.set(orgSfName, fetchedAt);
+            }
         } 
 
         const sobjects = cache.get(orgSfName)?.sobjects;
@@ -105,7 +108,7 @@ export default class Proxy {
         if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
-            const sobject =  cache.get(orgSfName)!.sobjects[objectIndex];
+            let sobject = cache.get(orgSfName)!.sobjects[objectIndex];
             
             if (sobject.fields == null) {
                 const name = cache.get(orgSfName)?.sobjects[objectIndex]?.name;
@@ -135,8 +138,11 @@ export default class Proxy {
                             field.referenceToLocalId[0] = (tmp===null)?-1:tmp;
                         }
                     });
+                    const current = cache.get(orgSfName)?.sobjects[objectIndex];
+                    if (!current || current.name !== name) throw new Error('Object context changed');
+                    sobject = current;
                     sobject.childRelationships = structuredClone(data.childRelationships);
-                    sobject.fields =  structuredClone(data.fields);
+                    sobject.fields = structuredClone(data.fields);
                     sobject.mapFields = structuredClone(data.mapFields);
                     
                 }

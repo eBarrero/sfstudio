@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import SObjectsPanel from '../src/components/organisms/schemaPanel/schemaPanel';
 import { getDescribe, getDescribeObject } from '../src/services/salesforceSchema/controller';
 import Proxy from '../src/services/salesforceSchema/proxy';
-import { metadataObjectStatus } from '../src/services/salesforceSchema/snapshotAdapter';
+import { metadataObjectStatus, metadataStatus } from '../src/services/salesforceSchema/snapshotAdapter';
 import { dispatchExplorerAction } from '../src/core/explorerActions';
 import { CONTEXT_LEVEL, readCommand } from '../src/core/commandManager';
 import applicationState from '../src/store/applicationState';
@@ -63,7 +63,8 @@ test('out-of-order global responses keep the active org and its filters', async 
   });
   await waitFor(() => expect(dataState.getState().sobjects.map(row => row.name)).toEqual(['Account']));
   resolveIntegration({ sobjects: [account] });
-  await waitFor(() => expect(getDescribe).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(metadataStatus(integrationKey).state).toBe('FRESH'));
+  expect(getDescribe).toHaveBeenCalledTimes(2);
   expect(dataState.getState().activeOrgKey).toBe(uatKey);
   expect(dataState.getState().sObjectsFilter.searchText).toBe('');
   expect(dataState.getState().sobjects[0].label).toBe('UAT Account');
