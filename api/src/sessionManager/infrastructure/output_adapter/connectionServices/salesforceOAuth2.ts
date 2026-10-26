@@ -113,7 +113,8 @@ export default class salesforceOAuth2 extends ConnectionDriver {
 
     public async doSOQL(query: string): Promise<QueryPage> {
         try {
-            const rows: QueryResult<Record<string, unknown>> = await this.conn!.query(query);
+            const rows: QueryResult<Record<string, unknown>> = await this.conn!.query(query,
+                { headers: { 'Sforce-Query-Options': 'batchSize=100' } });
             return { done: rows.done, totalSize: rows.totalSize, records: rows.records,
                 nextRecordsUrl: rows.nextRecordsUrl };
 
@@ -123,6 +124,18 @@ export default class salesforceOAuth2 extends ConnectionDriver {
         }
 
     }     
+
+    public async queryMore(locator: string): Promise<QueryPage> {
+        try {
+            const rows: QueryResult<Record<string, unknown>> = await this.conn!.queryMore(locator)
+                .execute({ headers: { 'Sforce-Query-Options': 'batchSize=100' } });
+            return { done: rows.done, totalSize: rows.totalSize, records: rows.records,
+                nextRecordsUrl: rows.nextRecordsUrl };
+        } catch (error) {
+            if (isExpiredSalesforceSession(error)) throw new ReauthRequiredError();
+            throw new QueryRequestError('QUERY_FAILED', 502);
+        }
+    }
 
 
     async getDescribe() : Promise<string>  {

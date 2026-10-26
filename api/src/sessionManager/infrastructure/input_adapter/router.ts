@@ -66,5 +66,11 @@ export function createApiRouter(container: AppContainer): express.Router {
         container.httpMetadataCtrl.postQuery.bind(container.httpMetadataCtrl),
     );
 
+    router.post(
+        "/api/v1/query/next",
+        container.signInCtrl.setUser.bind(container.signInCtrl),
+        container.httpMetadataCtrl.postNextQueryPage.bind(container.httpMetadataCtrl),
+    );
+
     return router;
 }

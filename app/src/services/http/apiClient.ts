@@ -23,6 +23,7 @@ export interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'DELETE';
   legacy?: boolean;
   body?: unknown;
+  signal?: AbortSignal;
 }
 
 export function createApiClient(baseUrl = typeof __SFSTUDIO_API_BASE__ === 'string'
@@ -44,6 +45,7 @@ export function createApiClient(baseUrl = typeof __SFSTUDIO_API_BASE__ === 'stri
     const response = await (fetcher ?? fetch)(url(path, options.legacy), {
       method: options.method ?? 'GET',
       credentials: 'include',
+      signal: options.signal,
       headers: {
         Accept: 'application/json',
         'X-Correlation-Id': correlationId,

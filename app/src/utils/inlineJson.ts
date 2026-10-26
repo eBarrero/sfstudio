@@ -74,7 +74,6 @@ export function salesforceJsontoInlineJson(salesforceJson: any): InlineJsonArray
     recordSet = new Map<string, string[]>;
     recordIndex = 0;
     processCaption(salesforceJson.records, '' );
-    console.log(recordSet);
     const captions: Captions[] = [];         
     const rows: Rows[] = [];
     let col: number=0;   recordSet.forEach((value, key) => {
@@ -108,7 +107,6 @@ export function xsalesforceJsontoInlineJson(salesforceJson: any): InlineJson {
     let indexRow: number = 0;      // it is used to store the index of the current data row of the records  
     let rows: string='';           // it is used to store the rows of the records in inline json format  
     let indexHeader: number = 0;   // 
-    console.log(salesforceJson);
     records.forEach((record: any) => {
         for (const [key, value] of Object.entries(record)) {
             // skip attributes

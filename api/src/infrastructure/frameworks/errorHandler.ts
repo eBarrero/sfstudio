@@ -17,6 +17,7 @@ export function errorHandler(error: Error, req: Request, res: Response) {
             QUERY_RATE_LIMITED: 'Demasiadas consultas. Inténtalo más tarde.',
             QUERY_TIMEOUT: 'La consulta agotó el tiempo disponible.',
             QUERY_FAILED: 'Salesforce no pudo completar la consulta.',
+            QUERY_CURSOR_INVALID: 'La página solicitada ha caducado o no pertenece a esta organización.',
             ORG_KEY_INVALID: 'La organización indicada no es válida.',
             ORG_NOT_FOUND: 'La organización no pertenece al workspace.',
         };

@@ -28,6 +28,14 @@ export class HttpMetadataControllers {
     }
 
     public async postQuery(req: Request, res: Response) {
+        return this.respondToQuery(req, res, false);
+    }
+
+    public async postNextQueryPage(req: Request, res: Response) {
+        return this.respondToQuery(req, res, true);
+    }
+
+    private async respondToQuery(req: Request, res: Response, nextPage: boolean) {
         try {
             if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body))
                 throw new QueryRequestError('QUERY_INVALID', 400);
@@ -38,11 +46,12 @@ export class HttpMetadataControllers {
                 ? { count: 0, windowStart: now } : previous;
             if (++bucket.count > this.maxRequestsPerMinute) throw new QueryRequestError('QUERY_RATE_LIMITED', 429);
             this.requests.set(bucketKey, bucket);
-            const { orgKey, query, limit } = req.body as Record<string, unknown>;
+            const { orgKey, query, limit, cursor } = req.body as Record<string, unknown>;
             let timer: ReturnType<typeof setTimeout> | undefined;
             try {
                 const rows = await Promise.race([
-                    this.metadataRequestUseClase.runQuery(req.appSessionId!, orgKey, query, limit),
+                    nextPage ? this.metadataRequestUseClase.nextQueryPage(req.appSessionId!, orgKey, cursor)
+                        : this.metadataRequestUseClase.runQuery(req.appSessionId!, orgKey, query, limit),
                     new Promise<never>((_resolve, reject) => {
                         timer = setTimeout(() => reject(new QueryRequestError('QUERY_TIMEOUT', 504)), this.timeoutMs);
                     }),

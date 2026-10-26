@@ -1,9 +1,12 @@
 import React, { useState } from 'react'
 import css from './style.module.css'
 import sqlExecutionState from '../../../store/sqlExecutionState'
+import applicationState from '../../../store/applicationState';
+import { SOQL_CMD } from '../../../core/commandManager';
 
 const ResultSheet = () => {
     const {captions, rows} = sqlExecutionState().selectResponse;
+    const status = sqlExecutionState(state => state.sqlExecutionStatus);
     const [columnWidths, setColumnWidths] = useState<number[]>(Array(captions.length).fill(150)); 
 
     const handleMouseDown = (index: number, event: React.MouseEvent<HTMLDivElement>) => {
@@ -29,6 +32,9 @@ const ResultSheet = () => {
       
     return (
         <section>
+            <p role="status">{status === 'LOADING' ? 'Cargando resultados…' : status === 'PARTIAL'
+                ? 'Resultados parciales' : status === 'DONE' ? 'Resultados completos'
+                    : status === 'ERROR' ? 'No se pudo cargar la consulta.' : 'Sin resultados'}</p>
             <div className={css.resizable_table}>
                 <table>
                     <thead>
@@ -63,6 +69,11 @@ const ResultSheet = () => {
                     </tbody>    
                 </table>
             </div>
+
+            {status === 'PARTIAL' && <button type="button"
+                onClick={() => applicationState.getState().exeCommandFromUI(SOQL_CMD.NEXT_PAGE.command)}>
+                Cargar siguiente página
+            </button>}
 
         </section>
     )

@@ -9,6 +9,7 @@ export interface SalesforceQueryResponse {
   totalSize: number;
   records: Record<string, unknown>[];
   limit: number;
+  cursor?: string;
 }
 
 export interface MetadataFieldResponse {
@@ -28,6 +29,10 @@ export function getMetadataObject(orgKey: string, sObject: string): Promise<Meta
   return apiClient.request(`getObjectmetadata/${encodeURIComponent(orgKey)}/${encodeURIComponent(sObject)}`, { legacy: true });
 }
 
-export function sendQuery(orgKey: string, query: string, limit = 200): Promise<SalesforceQueryResponse> {
-  return apiClient.request('query', { method: 'POST', body: { orgKey, query, limit } });
+export function sendQuery(orgKey: string, query: string, limit = 200, signal?: AbortSignal): Promise<SalesforceQueryResponse> {
+  return apiClient.request('query', { method: 'POST', body: { orgKey, query, limit }, signal });
+}
+
+export function nextQueryPage(orgKey: string, cursor: string, signal?: AbortSignal): Promise<SalesforceQueryResponse> {
+  return apiClient.request('query/next', { method: 'POST', body: { orgKey, cursor }, signal });
 }
