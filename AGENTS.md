@@ -103,7 +103,7 @@ Al implementar una PBI:
 5. Añadir las pruebas exigidas.
 6. Actualizar documentación y contratos afectados.
 7. Informar qué criterios quedaron demostrados.
-8. Al finalizar la PBI, revisar que los cambios correspondan únicamente a ella y ejecutar desde la raíz `./gitMergePBI.sh PBI-NNN "Mensaje de commit" "Cuerpo del PR"`, pasando siempre los tres parámetros. El script realiza las validaciones, crea el commit, publica la rama y abre el Pull Request; no sustituir este paso por un commit manual.
+8. Al finalizar la PBI, revisar que los cambios correspondan únicamente a ella y ejecutar desde la raíz `./gitMergePBI.sh PBI-NNN "Mensaje de commit" "Cuerpo del PR"`, pasando siempre los tres parámetros. El script realiza las validaciones, crea el commit, publica la rama, abre el Pull Request, espera la CI y lo fusiona en `dev` solo si pasa; no sustituir este paso por un commit manual.
 
 `doc/PLAN_DE_SPRINTS.md` contiene la secuencia y trazabilidad de los criterios de éxito.
 
