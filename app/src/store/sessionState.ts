@@ -4,6 +4,7 @@ import { createSession, loginSFDC, loginSandBox, loginOrganization, disconnectOr
 import type { PublicWorkspaceDefinition } from '../services/session/types';
 import { ApiError } from '../services/http/apiClient';
 import { createWorkspaceActionDispatcher, type WorkspaceAction, type ActionResult } from '../core/workspaceActions';
+import dataState from './dataState';
 
 
 interface SessionState {
@@ -153,6 +154,7 @@ const workspaceDispatcher = createWorkspaceActionDispatcher({
     connectOrg: environment => environment === 'PRODUCTION'
         ? sessionState.getState().loginSFDC() : sessionState.getState().loginSandBox(),
     closeWorkspace: () => sessionState.getState().closeWorkspace(),
+    refreshMetadata: orgKey => dataState.getState().refreshMetadata(orgKey),
 });
 
 export async function dispatchWorkspaceAction(action: WorkspaceAction, context: CONTEXT_LEVEL): Promise<ActionResult> {

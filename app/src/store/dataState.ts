@@ -71,6 +71,15 @@ const dataState = create<DataState>((set, get) => {
             schemaRequestVersion += 1;
             set({ sobjects: [], sObjectFields: [], childRelationships: [], dataLastErrorMessage: '' });
         },
+        refreshMetadata: async (orgKey: string) => {
+            try {
+                await Proxy.refreshMetadata(orgKey);
+                get().loadSchema(orgKey);
+            } catch {
+                set({ dataLastErrorMessage: 'No se pudo actualizar la metadata. Se conserva la copia anterior.' });
+                throw new Error('Metadata refresh failed');
+            }
+        },
         loadSchema: (orgSfName: SchemaName) => {
             const version = ++schemaRequestVersion;
             set({ sobjects: [], sObjectFields: [], childRelationships: [], dataLastErrorMessage: '' });

@@ -1,10 +1,11 @@
 import { sendQuery, getMetadataObject  } from './controller'
 import type { SalesforceQueryResponse } from './controller'
 import { ModelReader } from './modelReader'
-import { loadGlobal, loadObject } from './snapshotAdapter'
+import { loadGlobal, loadObject, metadataStatus, refreshGlobal } from './snapshotAdapter'
 
 
 const cache: Map<SchemaName, Schema> = new Map(); 
+const cacheFetchedAt = new Map<SchemaName, number>();
 export const modelReader = new ModelReader(cache);
 
 
@@ -13,6 +14,17 @@ export const modelReader = new ModelReader(cache);
 
 
 export default class Proxy {
+
+    public static async refreshMetadata(orgKey: string): Promise<void> {
+        const response = await refreshGlobal(orgKey);
+        const sobjects: SObject[] = response.map((sobject, index) => ({
+            ...sobject, orgSfName: orgKey, sObjectLocalId: index,
+            mapFields: new Map(), metadataFieldDownloaded: null,
+        }));
+        cache.set(orgKey, { name: orgKey, sobjects,
+            indexMap: new Map(sobjects.map(object => [object.name, object.sObjectLocalId])) });
+        cacheFetchedAt.set(orgKey, metadataStatus(orgKey).fetchedAt ?? 0);
+    }
 
 
     /**
@@ -27,6 +39,8 @@ export default class Proxy {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
 
+        const latest = metadataStatus(orgSfName).fetchedAt ?? 0;
+        if (latest > (cacheFetchedAt.get(orgSfName) ?? 0)) cache.delete(orgSfName);
         if (!cache.has(orgSfName)) {
             const response = await loadGlobal(orgSfName);
             const sobjects: SObject[] = response.map((sobject, index) => ({
@@ -41,6 +55,7 @@ export default class Proxy {
                 sobjects,
                 indexMap: new Map(sobjects.map(sobject => [sobject.name, sobject.sObjectLocalId])),
             });
+            cacheFetchedAt.set(orgSfName, metadataStatus(orgSfName).fetchedAt ?? 0);
         } 
 
         const sobjects = cache.get(orgSfName)?.sobjects;

@@ -276,6 +276,7 @@ interface InlineJsonArray {
 
 interface DataState {  
     clearSchema: () => void;
+    refreshMetadata: (orgKey: string) => Promise<void>;
     action: string;                                // It indicates the action to be performed or it being performed
     sobjects: GetSObjectsIndex[];                  // It contains the list of sObjects. Loaded from getSchema()
     sObjectFields: GetFieldsIndex[];               // It contains the list of fields of current sObject. Loaded from getFields() 

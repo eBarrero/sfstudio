@@ -10,6 +10,7 @@ export interface MetadataCache {
   put(identity: MetadataIdentity, store: MetadataStore, snapshot: MetadataSnapshot,
     objectName?: string): Promise<void>;
   clearMemory(): void;
+  clearObjects(identity: MetadataIdentity): Promise<void>;
 }
 
 const databaseName = 'sfstudio-metadata-v1';
@@ -23,6 +24,36 @@ export class IndexedDbMetadataCache implements MetadataCache {
     private readonly report: (event: MetadataCacheEvent) => void = () => {}) {}
 
   clearMemory(): void { this.memory.clear(); }
+
+  async clearObjects(identity: MetadataIdentity): Promise<void> {
+    const prefix = metadataCacheKey(identity);
+    for (const key of this.memory.keys()) {
+      if (!key.startsWith('object:')) continue;
+      try {
+        const parsed = JSON.parse(key.slice('object:'.length)) as [string, string];
+        if (parsed[0] === prefix) this.memory.delete(key);
+      } catch { /* Ignore unrelated malformed keys. */ }
+    }
+    try {
+      const db = await this.open();
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction('object', 'readwrite');
+        const request = tx.objectStore('object').openCursor();
+        request.onsuccess = () => {
+          const cursor = request.result;
+          if (!cursor) return;
+          try {
+            const parsed = JSON.parse(String(cursor.key)) as [string, string];
+            if (parsed[0] === prefix) cursor.delete();
+          } catch { /* Ignore unrelated malformed keys. */ }
+          cursor.continue();
+        };
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    } catch { this.report('IDB_WRITE_FAILED'); }
+  }
 
   private key(identity: MetadataIdentity, objectName?: string): string {
     return JSON.stringify([metadataCacheKey(identity), objectName ?? null]);
