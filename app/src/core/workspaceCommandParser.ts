@@ -2,7 +2,7 @@ import type { WorkspaceAction } from './workspaceActions';
 
 export const WORKSPACE_COMMAND_HELP =
   'Comandos: org list; org use <OrgKey>; org close <OrgKey>; org reconnect <OrgKey>; ' +
-  'org connect <production|sandbox>; workspace close.';
+  'org connect <production|sandbox>; metadata refresh <OrgKey>; workspace close.';
 
 export type WorkspaceCommandParse =
   | { kind: 'action'; action: WorkspaceAction }
@@ -13,8 +13,13 @@ const orgKeyPattern = /^[a-zA-Z0-9]{15}(?:[a-zA-Z0-9]{3})?:[a-zA-Z0-9]{15}(?:[a-
 export function parseWorkspaceCommand(input: string): WorkspaceCommandParse | null {
   const words = input.trim().split(/\s+/);
   const family = words[0]?.toLowerCase();
-  if (family !== 'org' && family !== 'workspace') return null;
+  if (family !== 'org' && family !== 'workspace' && family !== 'metadata') return null;
   const verb = words[1]?.toLowerCase();
+  if (family === 'metadata') {
+    return verb === 'refresh' && words.length === 3 && orgKeyPattern.test(words[2])
+      ? { kind: 'action', action: { id: 'metadata.refresh', orgKey: words[2] } }
+      : { kind: 'error', code: 'COMMAND_INVALID', help: WORKSPACE_COMMAND_HELP };
+  }
   if (family === 'workspace') {
     if (verb === 'close' && words.length === 2) {
       return { kind: 'action', action: { id: 'workspace.close' } };

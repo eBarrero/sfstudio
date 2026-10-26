@@ -58,7 +58,7 @@ const applicationState = create<ApplicationState>((set, get) => {
             }
 
             const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined, commandConfirmed: undefined};
-            if (/^(org|workspace)(\s|$)/i.test(newCommand.trimStart())) {
+            if (/^(org|workspace|metadata)(\s|$)/i.test(newCommand.trimStart())) {
                 newState.helpOnLine = WORKSPACE_COMMAND_HELP;
                 set(newState);
                 return;

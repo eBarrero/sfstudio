@@ -7,11 +7,13 @@ export type ActionId =
   | 'org.close'
   | 'org.reconnect'
   | 'org.connect'
+  | 'metadata.refresh'
   | 'workspace.close';
 
 export type WorkspaceAction =
   | { id: 'org.list' }
   | { id: 'org.use' | 'org.close' | 'org.reconnect'; orgKey: string }
+  | { id: 'metadata.refresh'; orgKey: string }
   | { id: 'org.connect'; environment: 'PRODUCTION' | 'SANDBOX' }
   | { id: 'workspace.close' };
 
@@ -27,6 +29,7 @@ export interface WorkspaceActionPort {
   reconnectOrg(orgKey: string): void;
   connectOrg(environment: 'PRODUCTION' | 'SANDBOX'): void;
   closeWorkspace(): Promise<void>;
+  refreshMetadata(orgKey: string): Promise<void>;
 }
 
 export function createWorkspaceActionDispatcher(port: WorkspaceActionPort) {
@@ -42,7 +45,8 @@ export function createWorkspaceActionDispatcher(port: WorkspaceActionPort) {
         return { ok: false, id: action.id, code: 'ORG_NOT_FOUND',
           message: 'La organización no pertenece al workspace.' };
       }
-      if (action.id === 'org.use' && connection.status !== 'CONNECTED') {
+      if ((action.id === 'org.use' || action.id === 'metadata.refresh') &&
+          connection.status !== 'CONNECTED') {
         return { ok: false, id: action.id, code: 'REAUTH_REQUIRED',
           message: 'Reautentica la organización antes de usarla.' };
       }
@@ -54,6 +58,7 @@ export function createWorkspaceActionDispatcher(port: WorkspaceActionPort) {
         case 'org.close': await port.disconnectOrg(action.orgKey); break;
         case 'org.reconnect': port.reconnectOrg(action.orgKey); break;
         case 'org.connect': port.connectOrg(action.environment); break;
+        case 'metadata.refresh': await port.refreshMetadata(action.orgKey); break;
         case 'workspace.close': await port.closeWorkspace(); break;
       }
       const current = port.getWorkspace();

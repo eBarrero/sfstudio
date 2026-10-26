@@ -25,6 +25,7 @@ it.each([
   [`org reconnect ${orgKey}`, { id: 'org.reconnect', orgKey }],
   ['org connect production', { id: 'org.connect', environment: 'PRODUCTION' }],
   ['workspace close', { id: 'workspace.close' }],
+  [`metadata refresh ${orgKey}`, { id: 'metadata.refresh', orgKey }],
 ])('parses %s into a typed action', (input, action) => {
   expect(parseWorkspaceCommand(input)).toEqual({ kind: 'action', action });
 });
@@ -35,6 +36,7 @@ it('rejects invalid syntax and context without mutating the workspace', async ()
     getWorkspace: () => workspace,
     selectOrganization,
     disconnectOrg: jest.fn(), reconnectOrg: jest.fn(), connectOrg: jest.fn(), closeWorkspace: jest.fn(),
+    refreshMetadata: jest.fn(),
   });
   expect(parseWorkspaceCommand('org use Integration')).toMatchObject({ kind: 'error', code: 'COMMAND_INVALID' });
   expect(parseWorkspaceCommand('org remove')).toMatchObject({ kind: 'error', code: 'COMMAND_INVALID' });

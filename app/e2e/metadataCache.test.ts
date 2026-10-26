@@ -28,6 +28,10 @@ test('IndexedDB survives a new memory cache and isolates users', async () => {
   expect(await reopened.get({ ...identity, userId: '005000000000002',
     orgKey: '00D000000000001:005000000000002' }, 'global')).toBeNull();
   expect(JSON.stringify(snapshot)).not.toMatch(/accessToken|refreshToken|records/i);
+  await reopened.clearObjects(identity);
+  expect(await reopened.get(identity, 'object', 'Account')).toBeNull();
+  expect(await new IndexedDbMetadataCache(idb).get(identity, 'object', 'Account')).toBeNull();
+  expect(await reopened.get(identity, 'global')).toEqual(snapshot);
 });
 
 test('corrupt entries become misses without breaking exploration', async () => {

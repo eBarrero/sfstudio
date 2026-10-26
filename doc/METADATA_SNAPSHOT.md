@@ -23,3 +23,11 @@ IndexedDB no está disponible, falla o devuelve una entrada corrupta, se trata
 como un miss y la exploración continúa con la copia en memoria o una nueva
 lectura remota. La telemetría de caché solo emite códigos de evento, sin
 identificadores de org ni contenido del describe.
+
+Las entradas duran 24 horas. Una entrada vigente se muestra sin petición remota;
+una entrada caducada se muestra como obsoleta mientras se descarga una nueva.
+Las peticiones simultáneas a la misma org y objeto se deduplican. Si falla la
+descarga, la última copia permanece disponible y el estado indica el fallo.
+El botón «Actualizar metadata» y `metadata refresh <OrgKey>` ejecutan la misma
+acción. La UI muestra estado y fecha de obtención. Los snapshots capturados
+para una comparación se clonan y congelan hasta cerrar esa comparación.
