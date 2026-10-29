@@ -65,6 +65,10 @@ export function parseEnvironment(source: NodeJS.ProcessEnv): AppConfig {
     const redirectUri = withoutTrailingSlash(
         source.REDIRECT_URI?.trim() || `http://localhost:${port}`,
     );
+    if (environment === "PROD" &&
+        (!URL.canParse(redirectUri) || new URL(redirectUri).protocol !== "https:")) {
+        throw new ConfigurationError("REDIRECT_URI must use HTTPS in PROD");
+    }
 
     return {
         environment,

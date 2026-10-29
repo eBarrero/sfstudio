@@ -53,9 +53,13 @@ export function errorHandler(error: Error, req: Request, res: Response) {
                },
            });
     } else {
+        const mongoErrorNumber = error.name === 'MongoServerError'
+            && Number.isSafeInteger((error as Error & { code?: number }).code)
+            ? (error as Error & { code: number }).code : undefined;
         logger.error("http.unhandled_error", {
             correlationId: req.correlationId,
             errorName: error.name,
+            mongoErrorNumber,
         });
         res.status(500).json({
             error: {

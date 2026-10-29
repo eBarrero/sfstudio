@@ -51,6 +51,13 @@ describe("parseEnvironment", () => {
         );
     });
 
+    it("rejects an insecure production OAuth callback", () => {
+        assert.throws(
+            () => parseEnvironment({ ...completeEnvironment, REDIRECT_URI: "http://sfstudio.example.test" }),
+            /REDIRECT_URI must use HTTPS in PROD/,
+        );
+    });
+
     it("uses isolated defaults in TESTING", () => {
         const result = parseEnvironment({ ENV: "TESTING" });
 
