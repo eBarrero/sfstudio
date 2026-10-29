@@ -2,7 +2,7 @@
 import { Sessions } from '../../domain/entities/sessions';
 
 import { SessionDTO } from '../../domain/dtos/sessionDTO';
-import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort, DisconnectOrgInputPort } from '../../domain/ports/inbound/httpInputPorts';
+import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort, DisconnectOrgInputPort, SelectActiveOrgInputPort } from '../../domain/ports/inbound/httpInputPorts';
 import { UserRepositoryPort } from '../../domain/ports/outbound/userRepositoryPort';
 import { SessionError } from '../../domain/exceptions/sessionError';
 import { ConnectionDriverDTO } from '../dtos/connectionDriverDTO';
@@ -12,6 +12,7 @@ import { UserEntity } from '../../domain/entities/UserEntity';
 import { createOrgKey, OrgKey } from '../../domain/entities/orgKey';
 import { validateSalesforceLoginHost } from '../../domain/entities/salesforceLoginHost';
 import { CreateDriver } from '../ports/connectionDriverFactoryPort';
+import { ReauthRequiredError } from '../../domain/exceptions/reauthRequiredError';
 
 async function revokeAndRemove(
     registry: ConnectionRegistryPort,
@@ -162,6 +163,23 @@ export class DisconnectOrgUseCase implements DisconnectOrgInputPort {
         await revokeAndRemove(this.registry, id, orgKey);
         user.disconnectOrg(orgKey);
         user.reconcileActiveConnections(new Set(this.registry.listOrgKeys(id)));
+        return user.getSessionStatus();
+    }
+}
+
+export class SelectActiveOrgUseCase implements SelectActiveOrgInputPort {
+    constructor(private readonly sessions: Sessions, private readonly registry: ConnectionRegistryPort) {}
+
+    async exe(id: SessionId, orgKey: OrgKey): Promise<SessionDTO> {
+        const user = this.sessions.getUser(id);
+        user.getConnection(orgKey);
+        try {
+            this.registry.getConnection(id, orgKey);
+        } catch (error) {
+            if (error instanceof ReauthRequiredError) user.disconnectOrg(orgKey);
+            throw error;
+        }
+        user.setActiveOrgKey(orgKey);
         return user.getSessionStatus();
     }
 }

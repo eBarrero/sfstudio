@@ -10,6 +10,7 @@ import { SalesforceOAuthClient, LiveSalesforceOAuthClient } from './salesforceOA
 import { logger } from '../../../../infrastructure/frameworks/structuredLogger';
 import { ReauthRequiredError } from '../../../domain/exceptions/reauthRequiredError';
 import { isExpiredSalesforceSession } from './salesforceSessionError';
+import { QueryPage, QueryRequestError } from '../../../domain/entities/queryContract';
 
 export default class salesforceOAuth2 extends ConnectionDriver {
     private conn?: Connection;     
@@ -110,24 +111,31 @@ export default class salesforceOAuth2 extends ConnectionDriver {
 
 
 
-    /**
-     * Executes a SOQL query after decoding it from a Base64 URL-safe string.
-     *
-     * @param query - The Base64 URL-safe encoded SOQL query string.
-     * @returns A promise that resolves with the query result.
-     * @throws {SessionError} If there is an error executing the SOQL query.
-     */
-    public async doSOQL(decodedQuery: string): Promise<string> {
+    public async doSOQL(query: string): Promise<QueryPage> {
         try {
-            const rows: QueryResult<Record<string, unknown>> = await this.conn!.query(decodedQuery);
-            return JSON.stringify(rows);
+            const rows: QueryResult<Record<string, unknown>> = await this.conn!.query(query,
+                { headers: { 'Sforce-Query-Options': 'batchSize=100' } });
+            return { done: rows.done, totalSize: rows.totalSize, records: rows.records,
+                nextRecordsUrl: rows.nextRecordsUrl };
 
         } catch (error) {
             if (isExpiredSalesforceSession(error)) throw new ReauthRequiredError();
-            throw new SessionError("SOQL Error: " + (error as Error).message);
+            throw new QueryRequestError('QUERY_FAILED', 502);
         }
 
     }     
+
+    public async queryMore(locator: string): Promise<QueryPage> {
+        try {
+            const rows: QueryResult<Record<string, unknown>> = await this.conn!.queryMore(locator)
+                .execute({ headers: { 'Sforce-Query-Options': 'batchSize=100' } });
+            return { done: rows.done, totalSize: rows.totalSize, records: rows.records,
+                nextRecordsUrl: rows.nextRecordsUrl };
+        } catch (error) {
+            if (isExpiredSalesforceSession(error)) throw new ReauthRequiredError();
+            throw new QueryRequestError('QUERY_FAILED', 502);
+        }
+    }
 
 
     async getDescribe() : Promise<string>  {

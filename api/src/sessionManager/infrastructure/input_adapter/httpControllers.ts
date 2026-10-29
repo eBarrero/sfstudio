@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort, DisconnectOrgInputPort } from "../../domain/ports/inbound/httpInputPorts";
+import { SignInInputPort, RequestConnectionInputPort, RequestedConnectionInputPort, SignOutInputPort, DisconnectOrgInputPort, SelectActiveOrgInputPort } from "../../domain/ports/inbound/httpInputPorts";
 import { ConnectionDriverDTO, stringToTechnology } from "../../application/dtos/connectionDriverDTO";
 import { SessionError } from "../../domain/exceptions/sessionError";
 import {
@@ -10,7 +10,7 @@ import { createSessionId } from "../../domain/entities/workspaceSession";
 import { parseOrgKey, OrgKey } from '../../domain/entities/orgKey';
 import { salesforceLoginHost, validateSalesforceLoginHost } from '../../domain/entities/salesforceLoginHost';
 import { errorHandler } from "../../../infrastructure/frameworks/errorHandler";
-import { ENV, REDIRECT_URI, RuntimeEnvironment } from "../../../config/environment";
+import { API_SF_VERSION, ENV, REDIRECT_URI, RuntimeEnvironment } from "../../../config/environment";
 import { logger, StructuredLogger } from "../../../infrastructure/frameworks/structuredLogger";
 import {
     clearOAuthFlowCookie,
@@ -95,13 +95,14 @@ export class SignInController {
                 clearSessionCookie(res, this.environment);
                 sendUnauthorized(res, req.correlationId);
             } else {
-                res.status(200).json({ version: 1, connections: [], activeOrgKey: null });
+                res.status(200).json({ version: 1, connections: [], activeOrgKey: null,
+                    apiVersion: API_SF_VERSION });
             }
             return;
         }
         try {
             const sessionDTO = await this.useCase.getSessionStatus(sessionId);
-            res.status(200).json(sessionDTO.toJSON());
+            res.status(200).json({ ...sessionDTO.toJSON(), apiVersion: API_SF_VERSION });
         } catch (error) {
             if (error instanceof SessionError) {
                 clearSessionCookie(res, this.environment);
@@ -331,6 +332,37 @@ export class DisconnectOrgController {
         try {
             const workspace = await this.disconnectUseCase.exe(req.appSessionId!, orgKey);
             res.status(200).json(workspace.toJSON());
+        } catch (error) {
+            if (error instanceof SessionError) {
+                res.status(404).json({ error: {
+                    code: 'ORG_NOT_FOUND',
+                    message: 'La organización no pertenece al workspace.',
+                    correlationId: req.correlationId,
+                } });
+            } else errorHandler(error as Error, req, res);
+        }
+    }
+}
+
+export class SelectActiveOrgController {
+    constructor(private readonly selectActiveOrg: SelectActiveOrgInputPort) {}
+
+    async do(req: Request, res: Response) {
+        let orgKey: OrgKey;
+        try {
+            if (typeof req.body?.orgKey !== 'string') throw new Error('Missing OrgKey');
+            orgKey = req.body.orgKey as OrgKey;
+            parseOrgKey(orgKey);
+        } catch {
+            res.status(400).json({ error: {
+                code: 'ORG_KEY_INVALID',
+                message: 'La identidad de la organización no es válida.',
+                correlationId: req.correlationId,
+            } });
+            return;
+        }
+        try {
+            res.status(200).json((await this.selectActiveOrg.exe(req.appSessionId!, orgKey)).toJSON());
         } catch (error) {
             if (error instanceof SessionError) {
                 res.status(404).json({ error: {

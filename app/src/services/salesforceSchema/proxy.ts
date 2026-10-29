@@ -1,8 +1,11 @@
-import { getDescribe, getDescribeObject, sendQuery, getMetadataObject  } from './controller'
+import { sendQuery, nextQueryPage, getMetadataObject  } from './controller'
+import type { SalesforceQueryResponse } from './controller'
 import { ModelReader } from './modelReader'
+import { loadGlobal, loadObject, metadataStatus, refreshGlobal } from './snapshotAdapter'
 
 
 const cache: Map<SchemaName, Schema> = new Map(); 
+const cacheFetchedAt = new Map<SchemaName, number>();
 export const modelReader = new ModelReader(cache);
 
 
@@ -11,6 +14,17 @@ export const modelReader = new ModelReader(cache);
 
 
 export default class Proxy {
+
+    public static async refreshMetadata(orgKey: string): Promise<void> {
+        const response = await refreshGlobal(orgKey);
+        const sobjects: SObject[] = response.map((sobject, index) => ({
+            ...sobject, orgSfName: orgKey, sObjectLocalId: index,
+            mapFields: new Map(), metadataFieldDownloaded: null,
+        }));
+        cache.set(orgKey, { name: orgKey, sobjects,
+            indexMap: new Map(sobjects.map(object => [object.name, object.sObjectLocalId])) });
+        cacheFetchedAt.set(orgKey, metadataStatus(orgKey).fetchedAt ?? 0);
+    }
 
 
     /**
@@ -21,21 +35,30 @@ export default class Proxy {
      * @throws Error if the orgSfName is invalid or if the Salesforce objects are not found.
      */
     public static async getSObjectsAdapter(orgSfName: SchemaName, filter: SObjectsFilter) : Promise<GetSObjectsIndex[] | null> {
-        console.log(`getSObjectsAdapter orgSfName: "${orgSfName}"`);
         if (orgSfName.length < 3) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
 
+        const latest = metadataStatus(orgSfName).fetchedAt ?? 0;
+        if (latest > (cacheFetchedAt.get(orgSfName) ?? 0)) cache.delete(orgSfName);
         if (!cache.has(orgSfName)) {
-            const data = await getDescribe(orgSfName);
-            if (data) {
-                // Numbers the objects
-                data.sobjects.forEach((sobject:SObject  , index: number) => sobject.sObjectLocalId = index);
-                // indexMap is used to get the index of the object by name
-                data.indexMap = new Map();
-                data.sobjects.forEach((sobject:SObject) => data.indexMap.set(sobject.name, sobject.sObjectLocalId));
+            const response = await loadGlobal(orgSfName);
+            const sobjects: SObject[] = response.map((sobject, index) => ({
+                ...sobject,
+                orgSfName,
+                sObjectLocalId: index,
+                mapFields: new Map(),
+                metadataFieldDownloaded: null,
+            }));
+            const fetchedAt = metadataStatus(orgSfName).fetchedAt ?? 0;
+            if (!cache.has(orgSfName) || (cacheFetchedAt.get(orgSfName) ?? 0) < fetchedAt) {
+                cache.set(orgSfName, {
+                    name: orgSfName,
+                    sobjects,
+                    indexMap: new Map(sobjects.map(sobject => [sobject.name, sobject.sObjectLocalId])),
+                });
+                cacheFetchedAt.set(orgSfName, fetchedAt);
             }
-            cache.set(orgSfName, data);
         } 
 
         const sobjects = cache.get(orgSfName)?.sobjects;
@@ -81,18 +104,17 @@ export default class Proxy {
     // 4. Child relationships are linked to the object index of the child object
     
     public static async getFieldsAdapter(orgSfName: SchemaName, objectIndex: SObjectLocalId, filter: FieldsFilter | null) : Promise<GetFieldsIndex[]> {
-        console.log(`getSObject orgSfName: "${orgSfName}" index: "${objectIndex}"`);
         
         if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
-        try {
-            const sobject =  cache.get(orgSfName)!.sobjects[objectIndex];
+            let sobject = cache.get(orgSfName)!.sobjects[objectIndex];
             
-            if (sobject.fields===undefined) {
-                console.log("no leido");
+            if (sobject.fields == null) {
                 const name = cache.get(orgSfName)?.sobjects[objectIndex]?.name;
-                const data: SObject = await getDescribeObject(orgSfName, name!);
+                const response = await loadObject(orgSfName, name!);
+                const data: SObject = { ...response, orgSfName, sObjectLocalId: objectIndex,
+                    mapFields: new Map(), metadataFieldDownloaded: null };
                 
                 if (data!==null) {
                     // Set object local index and org
@@ -116,16 +138,17 @@ export default class Proxy {
                             field.referenceToLocalId[0] = (tmp===null)?-1:tmp;
                         }
                     });
+                    const current = cache.get(orgSfName)?.sobjects[objectIndex];
+                    if (!current || current.name !== name) throw new Error('Object context changed');
+                    sobject = current;
                     sobject.childRelationships = structuredClone(data.childRelationships);
-                    sobject.fields =  structuredClone(data.fields);
+                    sobject.fields = structuredClone(data.fields);
                     sobject.mapFields = structuredClone(data.mapFields);
                     
                 }
                 
                 
             } 
-            console.log("leido:" + sobject.fields?.length);
-            console.log(filter);
             const result: GetFieldsIndex[] = sobject.fields!
                 .filter((field) => this.checkMatchFieldFilter(field, filter)) 
                 .map((field): GetFieldsIndex => ({
@@ -149,11 +172,6 @@ export default class Proxy {
                 }));
                 
             return new Promise((resolve) => resolve(result));
-        } catch (error) {
-            console.error(`******Unexpected error: ${(error as Error).stack}`);
-            
-            throw new Error((error as Error).message);
-        }
     }
 
      /**
@@ -181,7 +199,6 @@ export default class Proxy {
     }
     
     public static getChildRelationships(orgSfName: string, objectIndex: SObjectLocalId): GetChildRelationships[] {
-        console.log(`getChildRelationships orgSfName: "${orgSfName}" name: "${objectIndex}"`);
         if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
@@ -206,7 +223,6 @@ export default class Proxy {
 
 
     public static getFieldIdByIndex(orgSfName: string, sObjectIndex: number, fieldIndex: number): FieldId {
-        console.log(`getFieldIdByIndex orgSfName: "${orgSfName}" sObjectIndex: "${sObjectIndex}" fieldIndex: "${fieldIndex}"`);
         if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
@@ -219,7 +235,6 @@ export default class Proxy {
 
 
     public static getSobjectIdByName(orgSfName: string, name: string): SObjectLocalId | null {
-        console.log(`getSobjectIdByName orgSfName: "${orgSfName}" name: "${name}"`);
         if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
@@ -232,32 +247,12 @@ export default class Proxy {
     }
 
 
-/*
-    public static getReferenceSObjectId(orgSfName: string, sObjectIndex: number, fieldIndex: number): SObjectReferenceId {
-        console.log(`getReferenceSObjectId orgSfName: "${orgSfName}" sObjectIndex: "${sObjectIndex}" fieldIndex: "${fieldIndex}"`);
-        if (!cache.has(orgSfName)) {
-            throw new Error(`Invalid orgSfName: "${orgSfName}"`);
-        }
-        const sobject = cache.get(orgSfName)?.sobjects[sObjectIndex];
-        if (!sobject) {
-            throw new Error(`Invalid orgSfName: "${orgSfName}"`);
-        }
-        const field = sobject.fields![fieldIndex];
-        if (field.type !== 'reference') {
-            throw new Error(`Invalid fieldIndex: "${fieldIndex}" type: "${field.type}"`);
-        }
-        return {...Proxy.getSobjectIdByName(orgSfName, field.referenceTo[0]), referenceName: field.relationshipName!};
-        
-    }
-*/
-
     /**
      * @description get metadata of the fields' object and update the object cache
      * @param orgSfName 
      * @param object - The object with the fields to be retrieved
      */
     public static async getFieldsMetadata(orgSfName: string, objectIndex: SObjectLocalId) {
-        console.log(`getFieldsMetadata orgSfName: "${orgSfName}" objectIndex: "${objectIndex}"`);
         if (!cache.has(orgSfName)) {
             throw new Error(`Invalid orgSfName: "${orgSfName}"`);
         }
@@ -275,7 +270,7 @@ export default class Proxy {
                 throw new Error(`Missing fileds: "${sobject.name}"`);
             }
             const fields = sobject.fields
-            const data: [{name: FieldApiName, description: string}]   = await getMetadataObject(orgSfName, sobject.name!);
+            const data = await getMetadataObject(orgSfName, sobject.name!);
             if (data===null) {
                 throw new Error(`Missing metadata: "${sobject.name}"`);
             } else {
@@ -283,26 +278,24 @@ export default class Proxy {
                     const {name, description} = item;
                     const fieldLocalId = sobject.mapFields.get(name);
                     if (fieldLocalId===undefined) {
-                        console.error(`Invalid field name: "${name}"`);
+                        return;
                     } else {
                         fields[fieldLocalId].description =description;
                     }
                 });
                 sobject.metadataFieldDownloaded= 'DOWNLOADED';
             }
-  /*      } catch (error) {
-            console.error(`******Unexpected error: ${(error as Error).stack}`);
-            sobject.metadataFieldDownloaded= 'ERROR';
-            throw new Error((error as Error).message);
-        }*/
         return;
 
     }
 
 
-    public static async sendSoqlAdapter(orgSfName: string, query: string): Promise<string> {
-        console.log(`soqlAdapter orgSfName: "${orgSfName}" query: "${query}"`);
-        return await sendQuery(orgSfName, query);   
+    public static async sendSoqlAdapter(orgSfName: string, query: string, signal?: AbortSignal): Promise<SalesforceQueryResponse> {
+        return await sendQuery(orgSfName, query, 200, signal);
+    }
+
+    public static async nextSoqlPage(orgSfName: string, cursor: string, signal?: AbortSignal): Promise<SalesforceQueryResponse> {
+        return await nextQueryPage(orgSfName, cursor, signal);
     }
 }
 

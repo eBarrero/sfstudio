@@ -3,6 +3,7 @@ import { modelReader } from '../services/salesforceSchema/proxy';
 import constants from '../components/constants';
 import { addCommand, NODEL_CMD } from '../core/commandManager';
 import { SelectAllFieldsEnum } from "../core/constants/fields";
+import { legacySqlState } from '../core/soql/legacyAdapter';
 
 
 
@@ -20,8 +21,22 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
 
         setOrg: (orgSfName: SchemaName)  => {
             if (orgSfName === '') return;
-            set({state: {orgSfName, action:'INI', sObjectApiName:'',  sObjectLocalId: -1, currentField: null, currentPath: ''}});
+            set({state: {orgSfName, action:'INI', sObjectApiName:'',  sObjectLocalId: -1, currentField: null, currentPath: ''},
+                queryState: { queryElemnts: [], indexCurrentElement: 0 },
+                sqlState: { sql: '', isValid: false },
+                currentSOQLFieldSelection: new Map(),
+                rankQueryElements: [],
+            });
         },  
+        clearOrg: () => {
+            set({state: {orgSfName: '', action: '', sObjectApiName: '', sObjectLocalId: -1,
+                currentField: null, currentPath: ''},
+                queryState: { queryElemnts: [], indexCurrentElement: 0 },
+                sqlState: { sql: '', isValid: false },
+                currentSOQLFieldSelection: new Map(),
+                rankQueryElements: [],
+            });
+        },
                                                
             
         /*
@@ -46,14 +61,12 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             });
         },
         setField: (field: GetFieldsIndex) => {
-            console.log('setField', );
             const state = get().state;
             state.currentField = field;
             state.action = 'field';
             set({state});
         },
         gotoLookup: (field: GetFieldsIndex) => {
-            console.log('addReference');
             const orgSfName = get().state.orgSfName;
             
                   
@@ -63,7 +76,6 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             const newlevel = (parentQuery as ReletedObject).level + 1;         // the new level is the parent level + 1 (max. 5) 
             const parentPath = (parentQuery as ReletedObject).path; // the new path is the parent path + fieldApiName + '.'
             const path = ((parentPath)?parentPath:'') + field.relationshipName + '.'; 
-            console.log('path', path);
             
             
             const sObjectLocalId = field.referenceToLocalId![0];
@@ -122,7 +134,6 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
         },
 
         showByqueryElemntsIndex(index: number) {
-            console.log('showByqueryElemntsIndex', index);
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement = index;
             const query = queryState.queryElemnts[currentElement];
@@ -178,7 +189,6 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             set({queryState, sqlState: sqlState(queryState), currentSOQLFieldSelection});
         },
         setSelectAllFields: (value:SelectAllFields) => {
-            console.log('setSelectAllFields');
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement;
             const query = queryState.queryElemnts[currentElement];  
@@ -200,7 +210,6 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
             });
         },
         addWhere: (SimpleCondition: SimpleCondition | pairCondition) => {
-            console.log('addWhere',SimpleCondition);
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement;
             const query = queryState.queryElemnts[currentElement];  
@@ -235,7 +244,6 @@ export default modelState;
 
 
 function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFieldSelectionState> {
-    console.log('createSOQLFieldSelection');
     const map = new Map<FieldLocalId, SOQLFieldSelectionState>();
 
 
@@ -289,100 +297,9 @@ function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFi
 }   
 
 
-function sqlState( queryState: QueryState  ): SQLState {
-
-    function addLookupSelect(parent: number, currentSelect: string, currentGroupBy: string, previousRelatedTo: string): string[] {
-        let select = currentSelect;
-        let sqlGroupBy = currentGroupBy;
-        query.forEach((queryElemnt, index) => {
-            if (queryElemnt.type === 'RELETED' && queryElemnt.parent === parent) {
-                
-                const reletedObject = queryElemnt as ReletedObject;
-                const newRelatedTo = previousRelatedTo + reletedObject.relatedTo + '.';
-                [select, sqlGroupBy]  = addLookupSelect(index, select, currentGroupBy, newRelatedTo);
-                
-                reletedObject.selectClause?.fields?.forEach((field) => {
-                    if  (select !== '')  select += ', ';
-                    const newKeyword = field.soqlFunction.replace('%1', `${newRelatedTo}${field.fieldId.fieldApiName} `);
-                    select += newKeyword;
-                    if (field.makeGroupBy) {
-                        if (sqlGroupBy !== '')  sqlGroupBy += ', ';
-                        sqlGroupBy += newKeyword;
-                    }   
-                });            
-            }
-        });
-
-        return [select, sqlGroupBy];
-    }
-
-
-
-
-
-
-    const query = queryState.queryElemnts;
-    let sqlSelect = 'SELECT ';
-    let sqlFrom = 'FROM ';
-    let sqlWhere = '';
-    const sqlOrderBy = '';
-    let sqlGroupBy = '';
-    const sqlHaving = '';
-    let sqlLimit = '';
-
-
-
-    query.forEach((queryElemnt,index) => {
-        if (queryElemnt.type === 'ROOT') {
-            const rootQuery = queryElemnt as PrimaryQuery;
-            if (rootQuery.selectClause?.fieldsAll!==undefined) sqlSelect += `SELECT ${rootQuery.selectClause?.fieldsAll} `;
-            rootQuery.selectClause!.fields!.forEach((field) => {
-                if  (sqlSelect !== 'SELECT ')  sqlSelect += ', ';
-                sqlSelect += field.soqlFunction.replace('%1',`${field.fieldId.fieldApiName}`);
-                if (field.makeGroupBy) {
-                    if (sqlGroupBy === '') sqlGroupBy = 'GROUP BY '; else sqlGroupBy += ', ';
-                    sqlGroupBy += field.soqlFunction.replace('%1',`${field.fieldId.fieldApiName}`);
-                }
-            });
-            [sqlSelect, sqlGroupBy] = addLookupSelect(0, sqlSelect, sqlGroupBy,  '');
-            sqlFrom += `${rootQuery.sObjectId.sObjectApiName} `;
-            rootQuery.where?.forEach((where) => {
-                if  (sqlWhere === '')  sqlWhere='WHERE '; else sqlWhere += ' AND ';
-                sqlWhere += `${where.sqlString} `;
-            });
-
-
-        } else if (queryElemnt.type === 'SUBQUERY') {
-
-            let subQueryWhere = ''
-            const subQuery = queryElemnt as NestedQuery;
-            let subQuerySelect = '';
-            subQuery.selectClause?.fields?.forEach((field) => {
-                if (subQuerySelect === '')  subQuerySelect='SELECT '; else subQuerySelect += ', ';
-                subQuerySelect += field.soqlFunction.replace('%1',`${field.fieldId.fieldApiName}`);
-           
-            });
-            [subQuerySelect] = addLookupSelect(index, subQuerySelect, '', '');
-            subQuerySelect+= ` FROM ${subQuery.relationshipName} `;
-            subQuery.where?.forEach((where) => {
-                if  (subQueryWhere === '')  subQueryWhere='WHERE '; else subQueryWhere += ' AND ';
-                subQueryWhere += `${where.sqlString} `;
-            });            
-            if  (sqlSelect === '')  sqlSelect='SELECT '; else sqlSelect += ', ';
-            sqlSelect += `(${subQuerySelect} ${subQueryWhere} ) `;
-
-        } 
-    });
-
-
-
-
-    sqlLimit = ` LIMIT ${ (query[0] as PrimaryQuery).limit} `;
-
-    const sql = `${sqlSelect} ${sqlFrom} ${sqlWhere} ${sqlOrderBy} ${sqlGroupBy} ${sqlHaving} ${sqlLimit}`;
-    const isValid = (sql.split("SELECT").length ===sql.split("FROM").length);
-    return {sql, isValid};
-}   
+function sqlState(queryState: QueryState): SQLState {
+    return legacySqlState(queryState);
+}
 
 function rankQueryElements(queryElemnts: QueryElement[]): RankQueryElements[] {
     function calculateRankingPath(index: number ): string {

@@ -1,12 +1,20 @@
 import {create} from 'zustand';
 import { addCommand, deleteCommand, SESSION_CMD, CONTEXT_LEVEL } from '../core/commandManager';
-import { createSession, loginSFDC, loginSandBox, loginOrganization, disconnectOrg, closeWorkspace } from '../services/session/model';
+import { createSession, loginSFDC, loginSandBox, loginOrganization, disconnectOrg, closeWorkspace, selectOrganization } from '../services/session/model';
 import type { PublicWorkspaceDefinition } from '../services/session/types';
+import { ApiError } from '../services/http/apiClient';
+import { createWorkspaceActionDispatcher, type WorkspaceAction, type ActionResult } from '../core/workspaceActions';
+import dataState from './dataState';
+import modelState from './modelState';
+import viewState from './viewState';
+import applicationState from './applicationState';
+import { CONTEXT_LEVEL as ExplorerContext } from '../core/commandManager';
 
 
 interface SessionState {
     publicSession: PublicWorkspaceDefinition;
     lastError: string | null;
+    lastActionFeedback: string | null;
     setWorkspace: (workspace: PublicWorkspaceDefinition) => void;
     createSession: () => void;
     loginSFDC: () => void;
@@ -15,15 +23,21 @@ interface SessionState {
     initializeSession: () => void;
     disconnectOrg: (orgKey: string) => Promise<void>;
     closeWorkspace: () => Promise<void>;
+    selectOrganization: (orgKey: string) => Promise<void>;
+    expireWorkspace: () => void;
 }
+
+export const ORG_USE_ACTION_ID = 'org.use';
 
 const sessionState = create<SessionState>((set, get) => {
     return  {
         publicSession: { version: 1, activeOrgKey: null, connections: [] },
         lastError: null,
+        lastActionFeedback: null,
         setWorkspace: (workspace) => {
             deleteCommand('Disconnect_org_');
             deleteCommand('Reconnect_org_');
+            deleteCommand('Select_org_');
             deleteCommand('Close_workspace');
             const contexts = Object.values(CONTEXT_LEVEL);
             workspace.connections.forEach(conn => {
@@ -31,17 +45,29 @@ const sessionState = create<SessionState>((set, get) => {
                 for (const context of contexts) {
                     if (conn.status === 'CONNECTED') {
                         addCommand({
+                            command: `Select_org_${key}`,
+                            description: `Usar ${conn.alias} (${conn.organizationId})`,
+                            actionId: ORG_USE_ACTION_ID,
+                            menuItem: 'Org', menuCaption: `Usar ${conn.alias} (${conn.organizationId})`,
+                            context,
+                            action: () => { void dispatchWorkspaceAction({ id: 'org.use', orgKey: conn.orgKey }, context); },
+                        });
+                        addCommand({
                             command: `Disconnect_org_${key}`,
                             description: `Desconectar ${conn.alias}`,
+                            actionId: 'org.close',
+                            menuItem: 'Org', menuCaption: `Desconectar ${conn.alias} (${conn.organizationId})`,
                             context,
-                            action: () => { void get().disconnectOrg(conn.orgKey); },
+                            action: () => { void dispatchWorkspaceAction({ id: 'org.close', orgKey: conn.orgKey }, context); },
                         });
-                    } else {
+                    } else if (conn.status === 'REAUTH_REQUIRED' || conn.status === 'ERROR') {
                         addCommand({
                             command: `Reconnect_org_${key}`,
                             description: `Reautenticar ${conn.alias}`,
+                            actionId: 'org.reconnect',
+                            menuItem: 'Org', menuCaption: `Reautenticar ${conn.alias} (${conn.organizationId})`,
                             context,
-                            action: () => { get().loginOrganization(conn.orgKey); },
+                            action: () => { void dispatchWorkspaceAction({ id: 'org.reconnect', orgKey: conn.orgKey }, context); },
                         });
                     }
                 }
@@ -51,17 +77,28 @@ const sessionState = create<SessionState>((set, get) => {
                     addCommand({
                         command: 'Close_workspace',
                         description: 'Cerrar el workspace',
+                        actionId: 'workspace.close',
+                        menuItem: 'Workspace', menuCaption: 'Cerrar workspace',
                         context,
-                        action: () => { void get().closeWorkspace(); },
+                        action: () => { void dispatchWorkspaceAction({ id: 'workspace.close' }, context); },
                     });
                 }
             }
-            set({ publicSession: workspace, lastError: null });
+            set({ publicSession: { ...workspace,
+                apiVersion: workspace.apiVersion ?? get().publicSession.apiVersion }, lastError: null });
         },
         createSession: () => {
             createSession().then((s) => {
                 get().setWorkspace(s);
-            }).catch(() => set({ lastError: 'No se pudo cargar el workspace.' }));
+            }).catch((error: unknown) => {
+                if (error instanceof ApiError && error.code === 'SESSION_INVALID') {
+                    get().expireWorkspace();
+                } else set({ lastError: 'No se pudo cargar el workspace.' });
+            });
+        },
+        expireWorkspace: () => {
+            get().setWorkspace({ version: 1, activeOrgKey: null, connections: [] });
+            set({ lastError: 'La sesión caducó. Conecta de nuevo la organización.' });
         },
         loginSFDC: () => {
             loginSFDC();
@@ -72,29 +109,80 @@ const sessionState = create<SessionState>((set, get) => {
         loginOrganization: (orgKey: string) => {
             loginOrganization(orgKey);
         },
+        selectOrganization: async (orgKey: string) => {
+            try {
+                if (get().publicSession.activeOrgKey !== orgKey) {
+                    (await import('./sqlExecutionState')).default.getState().resetForOrg();
+                }
+                get().setWorkspace(await selectOrganization(orgKey));
+            } catch (error) {
+                const message = error instanceof ApiError && error.code === 'REAUTH_REQUIRED'
+                    ? 'Reautentica la organización antes de usarla.'
+                    : 'No se pudo seleccionar la organización.';
+                set({ lastError: message });
+                throw error;
+            }
+        },
         disconnectOrg: async (orgKey: string) => {
             try {
+                if (get().publicSession.activeOrgKey === orgKey) {
+                    (await import('./sqlExecutionState')).default.getState().resetForOrg();
+                }
                 get().setWorkspace(await disconnectOrg(orgKey));
-            } catch {
+            } catch (error) {
                 set({ lastError: 'No se pudo desconectar la organización.' });
+                throw error;
             }
         },
         closeWorkspace: async () => {
             try {
                 await closeWorkspace();
+                (await import('./sqlExecutionState')).default.getState().clear();
                 get().setWorkspace({ version: 1, connections: [], activeOrgKey: null });
-            } catch {
+            } catch (error) {
                 set({ lastError: 'No se pudo cerrar el workspace.' });
+                throw error;
             }
         },
         initializeSession: () => {
-            addCommand({...SESSION_CMD.PROD, action: () => { get().loginSFDC();}});
-            addCommand({...SESSION_CMD.SANDBOX, action: () => { get().loginSandBox();}});
+            for (const context of Object.values(CONTEXT_LEVEL)) {
+                addCommand({...SESSION_CMD.PROD, context, actionId: 'org.connect',
+                    action: () => { void dispatchWorkspaceAction({ id: 'org.connect', environment: 'PRODUCTION' }, context); }});
+                addCommand({...SESSION_CMD.SANDBOX, context, actionId: 'org.connect',
+                    action: () => { void dispatchWorkspaceAction({ id: 'org.connect', environment: 'SANDBOX' }, context); }});
+            }
         }
     }   
 });
 
 
 export default sessionState;
+
+const workspaceDispatcher = createWorkspaceActionDispatcher({
+    getWorkspace: () => sessionState.getState().publicSession,
+    selectOrganization: orgKey => sessionState.getState().selectOrganization(orgKey),
+    disconnectOrg: orgKey => sessionState.getState().disconnectOrg(orgKey),
+    reconnectOrg: orgKey => sessionState.getState().loginOrganization(orgKey),
+    connectOrg: environment => environment === 'PRODUCTION'
+        ? sessionState.getState().loginSFDC() : sessionState.getState().loginSandBox(),
+    closeWorkspace: () => sessionState.getState().closeWorkspace(),
+    refreshMetadata: async orgKey => {
+        await dataState.getState().refreshMetadata(orgKey);
+        if (sessionState.getState().publicSession.activeOrgKey === orgKey) {
+            modelState.getState().setOrg(orgKey);
+            viewState.getState().setCurrentView(ExplorerContext.ORG);
+            applicationState.getState().setContextLevel(ExplorerContext.ORG);
+        }
+    },
+});
+
+export async function dispatchWorkspaceAction(action: WorkspaceAction, context: CONTEXT_LEVEL): Promise<ActionResult> {
+    const result = await workspaceDispatcher(action, context);
+    sessionState.setState({
+        lastActionFeedback: result.message,
+        lastError: result.ok ? null : result.message,
+    });
+    return result;
+}
 
 

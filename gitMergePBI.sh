@@ -56,7 +56,7 @@ echo "Cambios que se incluirán:"
 git status --short
 echo
 
-read -r -p "¿Quieres validar e incluir todos estos cambios? [s/N] " confirmation
+read -r -p "¿Quieres validar, publicar y fusionar la PBI en dev tras pasar CI? [s/N] " confirmation
 
 if [[ ! "$confirmation" =~ ^[sS]$ ]]; then
     echo "Operación cancelada."
@@ -82,6 +82,8 @@ if ! git merge-base --is-ancestor origin/dev HEAD; then
     exit 1
 fi
 
+base_sha="$(git rev-parse origin/dev)"
+
 echo
 echo "Ejecutando validaciones..."
 npm run typecheck
@@ -101,6 +103,7 @@ if git diff --cached --quiet; then
 fi
 
 git commit -m "$commit_message"
+head_sha="$(git rev-parse HEAD)"
 
 echo
 echo "Publicando $expected_branch..."
@@ -123,21 +126,25 @@ if [[ -n "$existing_pr" ]]; then
     echo
     echo "Ya existe un Pull Request abierto:"
     echo "$existing_pr"
-    exit 0
+    pr_url="$existing_pr"
+else
+    echo
+    echo "Creando Pull Request hacia dev..."
+
+    pr_url="$(
+        gh pr create \
+            --base dev \
+            --head "$expected_branch" \
+            --title "$commit_message" \
+            --body "$pr_body"
+    )"
 fi
 
 echo
-echo "Creando Pull Request hacia dev..."
-
-pr_url="$(
-    gh pr create \
-        --base dev \
-        --head "$expected_branch" \
-        --title "$commit_message" \
-        --body "$pr_body"
-)"
+echo "Esperando la CI del Pull Request antes de fusionar..."
+bash "$repository_root/scripts/mergePbiAfterCi.sh" "$pr_url" "$base_sha" "$head_sha"
 
 echo
 echo "PBI terminada correctamente."
 echo "Commit: $(git rev-parse --short HEAD)"
-echo "Pull Request: $pr_url"
+echo "Pull Request fusionado en dev: $pr_url"

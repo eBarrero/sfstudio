@@ -42,6 +42,12 @@ export function createApiRouter(container: AppContainer): express.Router {
         container.signOutCtrl.do.bind(container.signOutCtrl),
     );
 
+    router.post(
+        "/api/v1/workspace/active-org",
+        container.signInCtrl.setUser.bind(container.signInCtrl),
+        container.selectActiveOrgCtrl.do.bind(container.selectActiveOrgCtrl),
+    );
+
     router.get(
         "/api/describeGlobal/:orgKey",
         container.signInCtrl.setUser.bind(container.signInCtrl),
@@ -54,10 +60,16 @@ export function createApiRouter(container: AppContainer): express.Router {
         container.httpMetadataCtrl.getObjectDescription.bind(container.httpMetadataCtrl),
     );
 
-    router.get(
-        "/api/soql/:orgKey/:soql",
+    router.post(
+        "/api/v1/query",
         container.signInCtrl.setUser.bind(container.signInCtrl),
-        container.httpMetadataCtrl.getSOQL.bind(container.httpMetadataCtrl),
+        container.httpMetadataCtrl.postQuery.bind(container.httpMetadataCtrl),
+    );
+
+    router.post(
+        "/api/v1/query/next",
+        container.signInCtrl.setUser.bind(container.signInCtrl),
+        container.httpMetadataCtrl.postNextQueryPage.bind(container.httpMetadataCtrl),
     );
 
     return router;

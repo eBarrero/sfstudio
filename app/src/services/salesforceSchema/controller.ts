@@ -1,134 +1,38 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import RequestError from "./requestError";
+import { apiClient } from '../http/apiClient';
 
-
-
-async function request(url: string): Promise<any | null>  {
-    console.log('fetching data' + url);
-    try {
-        const res = await fetch(url);
-        if (!res.ok) {
-         console.log('#Error' + res.statusText);   
-          throw new RequestError(res, res.statusText);
-        }
-        const json = await res.json();
-        try {
-            window.localStorage.setItem(url, JSON.stringify(json));
-        } catch (error) {
-            console.error(`localStorage.setItem() error: ${(error as Error).message}`);
-        }
-
-        return json;
-    } catch (error) {
-        if (error instanceof Error) {
-            console.error(`Unexpected error: ${(error as Error).message}`);
-            removeOlderLocalStoreItem();
-        }
-        throw error;
-    }
+export interface SalesforceGlobalDescribeResponse {
+  sobjects: Salesforce_SObject[];
 }
 
-async function requestWithOutCache(url: string): Promise<any | null>  {
-    console.log('fetching data' + url);
-    try {
-        const res = await fetch(url);
-        if (!res.ok) {
-         console.log('#Error' + res.statusText);   
-          throw new RequestError(res, res.statusText);
-        }
-        const json = await res.json();
-        return json;
-    } catch (error) {
-        if (error instanceof Error) {
-            console.error(`Unexpected error: ${(error as Error).message}`);
-        }
-        throw error;
-    }
+export interface SalesforceQueryResponse {
+  done: boolean;
+  totalSize: number;
+  records: Record<string, unknown>[];
+  limit: number;
+  cursor?: string;
 }
 
-
-export  async function  getDescribe(orgSfName: string): Promise<any | null> {
-    const url = `/api/describeGlobal/${orgSfName}`;
-    const result = window.localStorage.getItem(url);
-    if (result) {
-        console.log('SI CACHE');
-        return Promise.resolve(JSON.parse(result));
-    }
-    console.log('NO CACHE');
-    return  await request(url);
+export interface MetadataFieldResponse {
+  name: string;
+  description: string;
 }
 
-export async function getDescribeObject(orgSfName: string, sObject: string): Promise<any | null> {
-    const url = `/api/describe/${orgSfName}/${sObject}`;
-    const result = window.localStorage.getItem(url);
-    if (result) {
-        console.log('SI CACHE');
-        return JSON.parse(result);
-    }
-    console.log('NO CACHE');
-    try {
-        const newResult = await request(url);
-        return newResult;
-    } catch (error) {
-        console.error(`Unexpected error: ${(error as Error).message}`);
-        throw error;
-    }
-    
+export function getDescribe(orgKey: string): Promise<SalesforceGlobalDescribeResponse> {
+  return apiClient.request(`describeGlobal/${encodeURIComponent(orgKey)}`, { legacy: true });
 }
 
-
-// get Metadata
-export async function getMetadataObject(orgSfName: string, sObject: string): Promise<any | null> {
-    const url = `/api/getObjectmetadata/${orgSfName}/${sObject}`;
-    const result = window.localStorage.getItem(url);
-    if (result) {
-        console.log('SI CACHE');
-        return JSON.parse(result);
-    }
-    console.log('NO CACHE');
-    try {
-        const newResult = await request(url);
-        return newResult;
-    } catch (error) {
-        console.error(`Unexpected error: ${(error as Error).message}`);
-        throw error;
-    }
+export function getDescribeObject(orgKey: string, sObject: string): Promise<Salesforce_SObject> {
+  return apiClient.request(`describe/${encodeURIComponent(orgKey)}/${encodeURIComponent(sObject)}`, { legacy: true });
 }
 
-
-export async function sendQuery(orgSfName: string,  query: string): Promise<any | null> {    
-    const url = `/api/soql/${orgSfName}/${toBase64UrlSafe(query)}`;
-
-    try {
-        const newResult = await requestWithOutCache(url);
-        
-        return newResult;
-    } catch (error) {
-        console.error(`Unexpected error: ${(error as Error).message}`);
-        throw error;
-    }
+export function getMetadataObject(orgKey: string, sObject: string): Promise<MetadataFieldResponse[]> {
+  return apiClient.request(`getObjectmetadata/${encodeURIComponent(orgKey)}/${encodeURIComponent(sObject)}`, { legacy: true });
 }
 
+export function sendQuery(orgKey: string, query: string, limit = 200, signal?: AbortSignal): Promise<SalesforceQueryResponse> {
+  return apiClient.request('query', { method: 'POST', body: { orgKey, query, limit }, signal });
+}
 
-function toBase64UrlSafe(str: string):string {
-    console.log('toBase64UrlSafe' + str);
-    const base64 = btoa(str);
-    return base64
-      .replace(/\+/g, '-') // replace + con -
-      .replace(/\//g, '_') // replace / con _
-      .replace(/=+$/, ''); // remove padding caracter '='
-  }
-
-function removeOlderLocalStoreItem(): void {
-    try {
-        for (let i = localStorage.length; i > 0; i--) {
-            const key = localStorage.key(i);
-            if (key?.startsWith('/api/')) {
-                localStorage.removeItem(key);
-                return;
-            }
-        }
-    } catch (error) {
-        console.error(`removeOlderLocalStoreItem error: ${(error as Error).message}`);
-    }    
-}    
+export function nextQueryPage(orgKey: string, cursor: string, signal?: AbortSignal): Promise<SalesforceQueryResponse> {
+  return apiClient.request('query/next', { method: 'POST', body: { orgKey, cursor }, signal });
+}

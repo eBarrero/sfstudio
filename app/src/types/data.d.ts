@@ -257,24 +257,11 @@ type typeInputDates = 'date' | 'time' | 'datetime-local' | 'month' | 'week' | 'y
 
 
 
-interface Rows {
-    col: string[];
-}
-
-interface Captions{
-    objectName?: string;
-    fieldName: string;
-    quantity: number;
-}
-
-interface InlineJsonArray {
-    captions: Captions[];
-    rows: Rows[];
-}
-
-
-
 interface DataState {  
+    clearSchema: () => void;
+    activeOrgKey: string | null;
+    activateOrg: (orgKey: string) => void;
+    refreshMetadata: (orgKey: string) => Promise<void>;
     action: string;                                // It indicates the action to be performed or it being performed
     sobjects: GetSObjectsIndex[];                  // It contains the list of sObjects. Loaded from getSchema()
     sObjectFields: GetFieldsIndex[];               // It contains the list of fields of current sObject. Loaded from getFields() 

@@ -18,11 +18,9 @@ flowchart TB
         Stores[Stores Zustand]
         Model[Modelo y generador SOQL]
         Proxy[Proxy y caché de metadatos]
-        Local[(localStorage)]
         Components --> Stores
         Stores --> Model
         Stores --> Proxy
-        Proxy <--> Local
     end
 
     subgraph Server
@@ -133,7 +131,7 @@ La API emite logs JSON mediante un logger estructurado. Cada petición obtiene u
 - filtra objetos y campos;
 - expone un `ModelReader` de solo lectura.
 
-`controller.ts` añade una segunda caché en `localStorage`, indexada por URL.
+El cliente HTTP compartido usa `/api/v1` relativo por defecto y conserva `code` y `correlationId` de los errores públicos. Metadata y SOQL usan temporalmente las rutas `/api` heredadas a través de ese mismo cliente. La caché de esquema sigue solo en memoria; no se copian respuestas Salesforce a `localStorage`.
 
 ### Modelo SOQL
 
@@ -163,11 +161,15 @@ La página principal combina:
 
 La consola funciona como una «command palette» contextual. Los comandos se registran al inicializar cada store y algunos se generan dinámicamente a partir del esquema.
 
+Las acciones del workspace (`org.list`, `org.use`, `org.close`, `org.reconnect`, `org.connect`, `workspace.close`) tienen parámetros tipados y un único dispatcher en `app/src/core/workspaceActions.ts`. El parser de `app/src/core/workspaceCommandParser.ts`, los botones y los menús producen el mismo `ActionId`; el dispatcher valida contexto, pertenencia al workspace y estado de conexión antes de invocar el caso de uso del store. El registro dinámico de comandos de org se reemplaza al actualizar el workspace para evitar duplicados. Las acciones del editor SOQL conservan su registro anterior hasta su migración en los sprints siguientes.
+
 ## 4. API HTTP actual
 
 ### Contrato multi-org v1
 
 `GET /api/v1/workspace` devuelve JSON tipado, versión 1, con una lista de conexiones conocidas y `activeOrgKey`. `OrgKey` concatena `organizationId:userId`; alias y hostname nunca identifican una conexión. Cada conexión expone identidad, alias, URL de instancia, host de login, entorno y estado. La ruta `GET /api/v1/connections/:orgKey/authorize` reautentica una org conocida del workspace. El callback comprueba la identidad devuelta por Salesforce antes de asociar el driver al workspace. `ConnectionRegistry` guarda `Map<WorkspaceId, Map<OrgKey, driver>>` en memoria. La API reconcilia sus claves con las orgs conocidas para mostrar `CONNECTED` o `REAUTH_REQUIRED`; nunca serializa el driver ni sus tokens.
+
+`POST /api/v1/workspace/active-org` recibe `{ "orgKey": "organizationId:userId" }` y devuelve el mismo contrato público con la nueva `activeOrgKey`. Comprueba que la org pertenece al workspace y mantiene un driver activo; seleccionar una org no cierra las demás. Clave inválida: `400 ORG_KEY_INVALID`; org ajena: `404 ORG_NOT_FOUND`; conexión perdida: `401 REAUTH_REQUIRED`.
 
 La expiración de cada workspace se comprueba al acceder al registro y mediante una limpieza periódica de un minuto. Al expirar o sustituir una conexión se llama a `dispose()` para soltar la referencia a jsforce. Al desconectar se intenta revocar el access token con Salesforce y se elimina el driver aunque la revocación remota falle. La rotación de sesión tras OAuth mueve todas las conexiones del workspace al nuevo ID. Una org conocida sin driver, o con token Salesforce expirado, devuelve `401 REAUTH_REQUIRED` en los endpoints de lectura; el cliente actualiza el workspace para mostrar la acción de reautenticación.
 
@@ -186,13 +188,21 @@ Los documentos `User.connections` antiguos se normalizan al leerlos: se conserva
 | `GET /api/init` | Recuperar la sesión pública o indicar sesión nueva. |
 | `GET /api/auth/:tech` | Iniciar OAuth para producción o sandbox. |
 | `GET /api/v1/workspace` | Obtener contrato público JSON versionado del workspace. |
+| `POST /api/v1/workspace/active-org` | Seleccionar la org activa del workspace por `OrgKey`. |
 | `GET /api/v1/connections/:orgKey/authorize` | Reautenticar una organización conocida del workspace. |
 | `GET /api/callback` | Procesar el callback de Salesforce. |
 | `DELETE /api/v1/workspace/orgs/:orgKey` | Desconectar una org conocida; devuelve el workspace actualizado. |
 | `DELETE /api/v1/workspace` | Cerrar todo el workspace, borrar la sesión y expirar la cookie. |
 | `GET /api/describeGlobal/:orgKey` | Obtener objetos de la organización. |
 | `GET /api/describe/:orgKey/:sobject` | Obtener campos y relaciones. |
-| `GET /api/soql/:orgKey/:soql` | Ejecutar SOQL codificado en Base64 URL-safe; pendiente de sustitución por POST en Sprint 05. |
+| `POST /api/v1/query` | Ejecutar SOQL SELECT en la org indicada por `orgKey`, con `query` y `limit` en JSON. |
+| `POST /api/v1/query/next` | Continuar una consulta con `orgKey` y cursor opaco. |
+
+La ruta `GET /api/soql/:orgKey/:soql` se retiró. `POST /api/v1/query` recibe `{ "orgKey": "organizationId:userId", "query": "SELECT ...", "limit": 200 }`. El límite por defecto es 200 y el máximo 2000; el servidor añade `LIMIT` cuando falta y rechaza un límite mayor que el solicitado. La respuesta es `{ "done": true, "totalSize": 1, "records": [], "limit": 200 }`. Los errores llevan `error.code`, `error.message` y `error.correlationId`. El cuerpo máximo JSON es 32 KiB, cada workspace admite 60 peticiones por minuto y cada petición tiene un plazo de 15 segundos. No se registra el texto de la consulta ni se transmite en URL.
+
+Una primera página incompleta incluye `cursor`, nunca `nextRecordsUrl`. `POST /api/v1/query/next` recibe `{ "orgKey": "organizationId:userId", "cursor": "..." }`; el cursor expira a los cinco minutos, se usa una sola vez y solo funciona con el workspace y la org que iniciaron la consulta. Salesforce entrega páginas de hasta 100 registros y el servidor respeta el límite total. Al cambiar de org, el navegador aborta la petición en curso y descarta su resultado tardío.
+
+Los resultados y la tabla viven en memoria de Zustand; no se envían a IndexedDB, localStorage ni MongoDB. `query run`, `query next`, `query cancel` y `query clear` son los comandos gemelos de los botones y menús de consulta. Al cerrar el workspace se descartan resultados, petición activa y cursores del servidor. Recargar la página descarta los resultados.
 
 El frontend también intenta llamar a `GET /api/getObjectmetadata/:dbName/:sobject`, pero esa ruta no existe en el router.
 
@@ -226,7 +236,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant App as React/Zustand
-    participant Cache as localStorage/Proxy
+    participant Cache as Proxy en memoria
     participant API as Express
     participant SF as Salesforce
 

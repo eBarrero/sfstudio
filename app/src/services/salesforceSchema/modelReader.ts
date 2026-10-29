@@ -18,7 +18,6 @@ export class ModelReader {
   getSObjectLocalIdbyName(orgSfName: SchemaName, name: SObjectApiName): SObjectLocalId | null {
     const sObjectLocalId = this.localSchema.get(orgSfName)?.indexMap.get(name);
     if (sObjectLocalId === undefined || sObjectLocalId === null) {
-      console.error(`${orgSfName}/${name}: notFound`);
       return null;
     }
     return sObjectLocalId;

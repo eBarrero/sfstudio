@@ -1,10 +1,12 @@
 import { OrgKey } from '../../entities/orgKey';
 import { SessionId } from '../../entities/workspaceSession';
+import { QueryPage } from '../../entities/queryContract';
 
 export interface ActiveConnectionPort {
     getDescribeGlobal(): Promise<string>;
     describeSObject(sobject: string): Promise<string>;
-    doSOQL(query: string): Promise<string>;
+    doSOQL(query: string): Promise<QueryPage>;
+    queryMore(locator: string): Promise<QueryPage>;
     revoke(): Promise<void>;
     dispose(): void;
 }

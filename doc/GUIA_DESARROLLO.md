@@ -67,7 +67,13 @@ npm --workspace app run dev
 
 Vite abre normalmente `http://localhost:5173` y proxyfica `/api` a `http://localhost:3000`.
 
-Hay una excepción importante: `app/src/services/session/controller.ts` contiene `http://localhost:3000/api/` de forma fija. Debe sustituirse por `/api/` o por una variable de entorno antes de confiar en producción.
+El cliente del navegador usa `/api/v1` en el mismo host. Las rutas de metadata y SOQL que todavía no tienen contrato v1 pasan por el mismo cliente usando `/api`; sus contratos se renovarán en sprints posteriores. Solo se permite cambiar la base con `VITE_API_BASE_URL` al compilar la app: debe terminar en `/api/v1`, usar HTTPS si es absoluta y no contener credenciales, query ni fragmento. En desarrollo se acepta HTTP para `localhost` y `127.0.0.1`. El cliente envía la cookie y `X-Correlation-Id`; la API valida y devuelve ese identificador en cabecera y errores.
+
+El gestor de conexiones distingue las orgs por `OrgKey`, incluso cuando comparten alias. **Usar** selecciona una org conectada mediante `POST /api/v1/workspace/active-org`. El destino visible junto al explorador y al panel de consulta se actualiza al alternar. El estado de consulta anterior se limpia para que nunca aparezca bajo la identidad nueva.
+
+La consola acepta `org list`, `org use <OrgKey>`, `org close <OrgKey>`, `org reconnect <OrgKey>`, `org connect production|sandbox` y `workspace close`. `OrgKey` tiene la forma `organizationId:userId`. Los botones, menús y comandos del workspace envían el mismo `ActionId` al dispatcher. La consola muestra el resultado o ayuda para comandos de workspace inválidos. Los nombres anteriores (`Select_org_...`, `Disconnect_org_...`, `Reconnect_org_...`, `Login_to_Prod`, `Login_to_Sandbox`, `Close_workspace`) siguen disponibles temporalmente por compatibilidad.
+
+La suite del Sprint 03 se ejecuta con `npm test`. `api/test/sprint03Journey.test.js` abre un servidor local y usa un driver Salesforce falso y repositorios en memoria; `app/e2e/multiOrgJourney.test.tsx` compara el resultado de las acciones de ratón y consola. No necesita credenciales ni acceso a Salesforce. Si el entorno restringe puertos locales, permite loopback para las pruebas HTTP.
 
 ## Compilación verificada
 
@@ -86,6 +92,10 @@ npm run audit
 ```
 
 `npm run audit` valida las dependencias de producción con severidad alta o crítica. Para revisar también el toolchain de desarrollo se puede ejecutar `npm run audit:all`.
+
+## Cierre de una PBI
+
+Desde `feature/PBI-NNN`, ejecuta `./gitMergePBI.sh PBI-NNN "Mensaje de commit" "Cuerpo del PR"`. El script valida, crea el commit y el PR hacia `dev`, espera a que aparezca y pase el job `CI / validate` del evento `pull_request` y fusiona con un merge commit. Comprueba que el commit de la rama y la base `dev` no hayan cambiado mientras corría la CI. Si la CI falla, no aparece en cinco minutos o `dev` avanza, deja el PR abierto sin fusionar para revisar y volver a validar.
 
 ## Calidad
 
@@ -149,6 +159,8 @@ MongoDB dispone de una colección mínima `WorkspaceSession` con referencia al u
 `User.sessionId` se conserva temporalmente como clave heredada para mantener compatible el índice único ya desplegado. No se consulta para autenticar, no se envía al navegador y no coincide con el UUID de `WorkspaceSession`. Retirarlo exige una migración operativa explícita del índice de la colección `User`; la aplicación no borra ese índice ni el campo automáticamente.
 
 `WorkspaceSession.user` ya no es único: el mismo usuario puede abrir dos workspaces independientes. En el primer alta de sesión tras actualizar, el repositorio elimina solo el índice único heredado `user_1` de esa colección. La cuenta MongoDB necesita permiso para `dropIndex` durante esta migración; si no lo tiene, el operador debe retirar ese índice antes de usar sesiones concurrentes. Se conservan el índice único de `sessionId` y el TTL de `expiresAt`.
+
+Los despliegues antiguos también pueden conservar los índices únicos `users.connections.userId_1` y `users.connections.userName_1`. El repositorio comprueba sus claves y unicidad y retira solo esos dos índices antes de escribir conexiones en `User`; así, una identidad Salesforce conocida puede conectarse desde otro workspace. Se conserva `users.sessionId_1` y cualquier índice compuesto. Esta migración también necesita permiso `dropIndex`. Si la cuenta de la aplicación carece de él, el operador puede comprobar `db.users.getIndexes()` y retirar manualmente únicamente los dos índices heredados que coincidan en nombre, clave y unicidad.
 
 ## Seguridad OAuth y trazabilidad
 
@@ -219,10 +231,10 @@ Verificaciones después del deploy:
 | --- | --- |
 | `OAUTH_CONTEXT_INVALID` al conectar | La tecnología o el host guardado no corresponde al entorno Salesforce. |
 | `SALESFORCE_AUTH_FAILED` | Revisa callback, permisos y credenciales de la app OAuth en Salesforce sin registrar el código ni el token. |
-| En producción el navegador intenta conectar a tu PC | `URL_PATH` está fijado a `localhost`. |
+| En producción el navegador intenta conectar a otro host | Revisa el valor de `VITE_API_BASE_URL` usado en el build; sin override se usa el mismo host. |
 | `REAUTH_REQUIRED` tras deploy/reinicio o expiración del token | El registro de drivers vive solo en memoria; usa **Reautenticar** en la org afectada. La misma identidad Salesforce conserva su `OrgKey`. |
 | Metadatos de descripción de campos fallan con 404 | Falta la ruta `/api/getObjectmetadata/...`. |
-| Esquema obsoleto | `localStorage` no tiene TTL ni clave de versión. |
+| Esquema obsoleto | La caché actual de metadata vive solo en memoria; vuelve a cargar el workspace para refrescarla. |
 | Quieres desconectar una org sin cerrar las otras | Usa **Desconectar** o el comando `Disconnect_org_<organizationId>_<userId>`; la org queda como `REAUTH_REQUIRED`. |
 | Quieres cerrar la sesión completa | Usa **Cerrar workspace** o `Close_workspace`; `DELETE /api/v1/workspace` revoca los tokens disponibles, elimina los drivers y la cookie. |
 | `FIELDS(ALL)` produce SOQL inválido | El generador concatena un segundo `SELECT`. |
