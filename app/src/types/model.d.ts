@@ -59,7 +59,7 @@ interface QueryElementAbstract {
     where?: (SimpleCondition | pairCondition)[];
     whereLogic?: (LogicalOperator | number )[];
     orderBy?: OrderBy[];
-    level: 0|1|2|3|4|number;                       // It indicates the level of the query element in the query max. 5. ROOT and SUBQUERY are always level 0
+    level: number;                                  // Depth from the root; ROOT is 0.
 }
 
 interface PrimaryQuery extends QueryElementAbstract  {

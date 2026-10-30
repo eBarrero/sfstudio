@@ -13,6 +13,15 @@ import { NODEL_CMD }    from '../../../core/commandManager'
 import { IconCharacter} from '../../constants'
 import SmartLabel       from '../../atoms/SmartLabel/smartLabel';
 
+function queryDepth(elements: QueryElement[], index: number): number {
+    let depth = 0;
+    let parent = elements[index]?.parent;
+    while (parent !== undefined && parent >= 0 && depth < elements.length) {
+        depth += 1;
+        parent = elements[parent]?.parent;
+    }
+    return depth;
+}
 
 
 
@@ -30,7 +39,7 @@ const SOQLPath = () => {
             const [, elementIndex] = r;
             const element = queryState.queryElemnts[elementIndex];
             const iconType = element.type==='RELETED' ? '1to1' : '1toN';
-            const margin = 20 * element.level;
+            const margin = 20 * queryDepth(queryState.queryElemnts, elementIndex);
             return (
                 <div key={`${index}${element.sObjectId.sObjectLocalId}`} 
                      style={{ paddingLeft : `${margin}px` }}>

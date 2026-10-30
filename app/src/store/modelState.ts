@@ -106,6 +106,8 @@ import { legacySqlState } from '../core/soql/legacyAdapter';
             const {orgSfName, sObjectLocalId, childSObject, relationshipName} = child;
             
             const queryState = structuredClone(get().queryState); 
+            const parent = queryState.indexCurrentElement;
+            const parentQuery = queryState.queryElemnts[parent];
 
             if (queryState.queryElemnts[0].selectClause.fields.length>0 &&
                 queryState.queryElemnts[0].selectClause.fields[0].isAggregateFunction ) {
@@ -116,9 +118,9 @@ import { legacySqlState } from '../core/soql/legacyAdapter';
 
             const newSubquery: NestedQuery = {
                 sObjectId: {orgSfName, sObjectLocalId, sObjectApiName: childSObject},
-                parent: 0,
+                parent,
                 type:'SUBQUERY',
-                level: 1,
+                level: parentQuery.level + 1,
                 selectClause: {fields: []},
                 relationshipName,
                 limit : 1

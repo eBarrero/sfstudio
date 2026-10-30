@@ -8,10 +8,9 @@ export default function TableChildRelationShips() {
     const { childRelationships }  = dataState();
     const { exeCommandFromUI } = applicationState();
 
-    const onActionRowHandle = (rowId: string, action: string) => {
-        console.log('onRowActionHandle:' + action + ' [' + rowId + ']');
+    const onActionRowHandle = (rowId: string) => {
         const sObjectApiName: SObjectApiName = rowId.split('|')[1];
-        exeCommandFromUI('.child_' + sObjectApiName);
+        exeCommandFromUI('child_' + sObjectApiName);
 
     }
     return (

@@ -50,6 +50,8 @@ export function legacyQueryToAst(state: QueryState): RootQuery | undefined {
   const elements = state.queryElemnts;
   const root = elements.find(element => element.type === 'ROOT') as PrimaryQuery | undefined;
   if (!root) return undefined;
+  const rootIndex = elements.indexOf(root);
+  if (elements.some(element => element.type === 'SUBQUERY' && element.parent !== rootIndex)) return undefined;
   const fields = (parent: number, prefix = ''): Selection[] => {
     const own = elements[parent];
     return [
@@ -59,7 +61,7 @@ export function legacyQueryToAst(state: QueryState): RootQuery | undefined {
     ];
   };
   const select: Selection[] = root.selectClause.fieldsAll ?
-    [{ kind: 'fields', scope: root.selectClause.fieldsAll.replace(/^FIELDS\(|\)$/g, '') as 'ALL' }] : fields(elements.indexOf(root));
+    [{ kind: 'fields', scope: root.selectClause.fieldsAll.replace(/^FIELDS\(|\)$/g, '') as 'ALL' }] : fields(rootIndex);
   elements.forEach((element, index) => {
     if (element.type !== 'SUBQUERY') return;
     const child: ChildQuery = { kind: 'child', relationship: element.relationshipName,
