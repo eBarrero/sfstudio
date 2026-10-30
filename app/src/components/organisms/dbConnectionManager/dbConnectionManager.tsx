@@ -75,7 +75,7 @@ export default function DBConnectionManager() {
                 <span className={css.status} role="img" aria-label={`Estado: ${statusLabel[connection.status]}`}>
                   <span aria-hidden="true">{statusIcon[connection.status]}</span> {compactStatusLabel[connection.status]}
                 </span>
-                {active && <strong>Activa</strong>}
+                {active && <strong role="img" aria-label="Organización activa">{IconCharacter.CHECK}</strong>}
               </div>
             </li>
           );

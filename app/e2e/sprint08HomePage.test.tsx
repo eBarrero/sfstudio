@@ -19,12 +19,12 @@ jest.mock('../src/components/organisms/resultSheet/resultSheet', () => ({
 
 afterEach(cleanup);
 
-it('renders active org context once in the explorer, including editor views', () => {
+it('hides active org context when no organization needs attention', () => {
   act(() => {
     sessionState.getState().setWorkspace({ version: 1, activeOrgKey: null, connections: [] });
     viewState.getState().setCurrentView('SQL_RESULT');
   });
   render(<HomePage />);
-  expect(screen.getAllByText('Sin organización activa para explorar o consultar.')).toHaveLength(1);
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
   expect(screen.getByText('Resultados')).toBeInTheDocument();
 });

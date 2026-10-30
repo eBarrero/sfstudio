@@ -6,6 +6,7 @@ import sessionState, { ORG_USE_ACTION_ID } from '../src/store/sessionState';
 import modelState from '../src/store/modelState';
 import { CONTEXT_LEVEL, readCommand } from '../src/core/commandManager';
 import type { PublicConnectionDefinition, PublicWorkspaceDefinition } from '../src/services/session/types';
+import { IconCharacter } from '../src/components/constants';
 
 const firstKey = '00D000000000001:005000000000001';
 const secondKey = '00D000000000002:005000000000002';
@@ -34,6 +35,7 @@ it('opens compact connection details by gear and restores focus when closed', ()
   render(<DBConnectionManager />);
   const gear = screen.getByRole('button', { name: 'Gestionar organizaciones' });
   expect(screen.getAllByLabelText('Estado: Conectada').length).toBeGreaterThan(0);
+  expect(screen.getByRole('img', { name: 'Organización activa' })).toHaveTextContent(IconCharacter.CHECK);
   expect(screen.queryByRole('button', { name: 'Desconectar' })).not.toBeInTheDocument();
   gear.focus();
   fireEvent.click(gear);
@@ -79,7 +81,7 @@ it('selects one of two same-alias orgs by OrgKey through button and command', as
     expect(document.activeElement).toBe(buttons[1]);
     fireEvent.click(buttons[1]);
     await waitFor(() => expect(sessionState.getState().publicSession.activeOrgKey).toBe(secondKey));
-    expect(screen.getByRole('status')).toHaveTextContent('Destino de exploración y consulta: Shared alias');
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(requests[0]).toContain(secondKey);
 
     const command = readCommand('Select_org_00D000000000001_005000000000001', CONTEXT_LEVEL.ORG)!;
@@ -93,6 +95,22 @@ it('selects one of two same-alias orgs by OrgKey through button and command', as
   } finally {
     global.fetch = previous;
   }
+});
+
+it('shows context only when a known organization needs selection or attention', () => {
+  act(() => sessionState.getState().setWorkspace(workspace));
+  const view = render(<ActiveOrgContext />);
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+
+  act(() => sessionState.getState().setWorkspace({ ...workspace, activeOrgKey: null }));
+  expect(screen.getByRole('status')).toHaveTextContent('Sin organización activa para explorar o consultar.');
+
+  act(() => sessionState.getState().setWorkspace({ ...workspace, connections: [connection(firstKey, 'REAUTH_REQUIRED')] }));
+  expect(screen.getByRole('status')).toHaveTextContent('Organización no disponible para explorar o consultar: Shared alias');
+
+  act(() => sessionState.getState().setWorkspace({ version: 1, activeOrgKey: null, connections: [] }));
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  view.unmount();
 });
 
 it('shows all connection states with text and clears the old query when changing org', () => {
