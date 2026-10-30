@@ -131,7 +131,11 @@ La API emite logs JSON mediante un logger estructurado. Cada petición obtiene u
 - filtra objetos y campos;
 - expone un `ModelReader` de solo lectura.
 
-El cliente HTTP compartido usa `/api/v1` relativo por defecto y conserva `code` y `correlationId` de los errores públicos. Metadata y SOQL usan temporalmente las rutas `/api` heredadas a través de ese mismo cliente. La caché de esquema sigue solo en memoria; no se copian respuestas Salesforce a `localStorage`.
+El cliente HTTP compartido usa `/api/v1` relativo por defecto y conserva `code` y `correlationId` de los errores públicos. Metadata y SOQL usan temporalmente las rutas `/api` heredadas a través de ese mismo cliente. Los snapshots de metadata usan memoria e IndexedDB con identidad de org, versión y expiración; no se copian respuestas Salesforce a `localStorage`.
+
+Para un incremento posterior, las preferencias complejas y las consultas SOQL guardadas se almacenarán en IndexedDB del navegador, sin exigir todavía una cuenta propia de SF Studio. Las consultas guardadas serán definiciones de consulta, no sus resultados, y se asociarán al `OrgKey` (`organizationId:userId`) cuando dependan de una org; el identificador de sesión no sirve como clave persistente porque rota y expira. Guardar una consulta requerirá una acción explícita del usuario, ya que sus literales pueden contener datos sensibles. La información local se versionará y podrá borrarse o exportarse. IndexedDB pertenece al origen y al perfil del navegador, no identifica por sí mismo al usuario ni sincroniza entre dispositivos; hasta implementar esta función, solo se persisten allí snapshots de metadata.
+
+Cuando exista autenticación propia de SF Studio y un modelo de usuario estable, las preferencias y consultas guardadas podrán migrarse a MongoDB con una asociación verificable al usuario. Esa migración necesitará una decisión explícita sobre propiedad, conflictos y consentimiento; no cambia la regla de mantener tokens, resultados SOQL y registros Salesforce fuera de MongoDB.
 
 ### Modelo SOQL
 

@@ -24,8 +24,8 @@ const HomePage = () => {
                     </section>                    
                     <section className={css.frame_explorer}>
                         <ActiveOrgContext/>
-                        <SOQLPath/>
                         <Console/>
+                        <SOQLPath/>
                     </section>
                 </nav>
                 <section className={css.panel_container}>
