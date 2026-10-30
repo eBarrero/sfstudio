@@ -44,6 +44,7 @@ const viewState = create<ViewState>((set, get) => {
             addCommand({ ...VIEW_CMD.HELP1, action: () => { get().pushDialog(Dialog.Help)}} );
             addCommand({ ...VIEW_CMD.HELP2, action: () => { get().pushDialog(Dialog.Help)}} );
             addCommand({ ...VIEW_CMD.HELP3, action: () => { get().pushDialog(Dialog.Help)}} );
+            addCommand({ ...VIEW_CMD.HELP4, action: () => { get().pushDialog(Dialog.Help)}} );
             addCommand({ ...VIEW_CMD.SHOW_FIELDS, action: () => {
                 dispatchObjectPanelAction(OBJECT_PANEL_ACTION.SHOW_FIELDS);
             }});

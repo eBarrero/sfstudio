@@ -65,6 +65,7 @@ Ejemplos:
 | Abrir objeto | `object open Account` |
 | Filtrar campos | `field filter custom on` |
 | Ejecutar consulta | `query run` |
+| Ver la SOQL generada | `query edit` |
 | Cerrar conexión | `org close <alias>` |
 | Ver campos de un objeto | `show_fields` |
 | Ver relaciones hijas | `Show_Relations` |

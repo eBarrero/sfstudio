@@ -208,6 +208,8 @@ Una primera página incompleta incluye `cursor`, nunca `nextRecordsUrl`. `POST /
 
 Los resultados y la tabla viven en memoria de Zustand; no se envían a IndexedDB, localStorage ni MongoDB. `query run`, `query next`, `query cancel` y `query clear` son los comandos gemelos de los botones y menús de consulta. Al cerrar el workspace se descartan resultados, petición activa y cursores del servidor. Recargar la página descarta los resultados.
 
+`query edit` abre desde el contexto de objeto la vista `SOQL_EDIT` con contexto `SQL_EDITION`. Muestra en modo de solo lectura la SOQL generada que ya reside en `modelState.sqlState`; el comando `Back` vuelve al objeto. Esta vista no modifica la consulta ni ejecuta llamadas a Salesforce.
+
 El frontend también intenta llamar a `GET /api/getObjectmetadata/:dbName/:sobject`, pero esa ruta no existe en el router.
 
 ## 5. Flujos

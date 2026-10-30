@@ -9,6 +9,7 @@ import SObjectPanel from '../../organisms/sObjectPanel/sObjectPanel';
 import viewState from '../../../store/viewState';
 import Console from '../../organisms/console/console';
 import ResultSheet from '../../organisms/resultSheet/resultSheet';
+import SOQLEdit from '../../organisms/SOQLEdit/soqlEdit';
 
 
 
@@ -35,6 +36,7 @@ const HomePage = () => {
                         {currentView==='sobject' && <SObjectPanel/> }     
                         {currentView==='OBJECT_EXTEND' && <SObjectPanel/> }
                         {currentView==='SQL_RESULT' && <ResultSheet/> }                   
+                        {currentView==='SOQL_EDIT' && <SOQLEdit/> }
                     </section>
                 </section>    
             </main>
