@@ -27,10 +27,10 @@ const SOQLPath = () => {
     return (
         <div className={css.container}>
         {rankQueryElements && rankQueryElements.map((r, index) => {
-            const [hierarchy, elementIndex] = r;
+            const [, elementIndex] = r;
             const element = queryState.queryElemnts[elementIndex];
             const iconType = element.type==='RELETED' ? '1to1' : '1toN';
-            const margin = 20 * hierarchy.length-1;
+            const margin = 20 * element.level;
             return (
                 <div key={`${index}${element.sObjectId.sObjectLocalId}`} 
                      style={{ paddingLeft : `${margin}px` }}>
@@ -49,4 +49,4 @@ const SOQLPath = () => {
 }   
 
 
-export default SOQLPath;    
+export default SOQLPath;
