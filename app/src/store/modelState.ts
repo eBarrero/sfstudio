@@ -4,6 +4,7 @@ import constants from '../components/constants';
 import { addCommand, NODEL_CMD } from '../core/commandManager';
 import { SelectAllFieldsEnum } from "../core/constants/fields";
 import { legacySqlState } from '../core/soql/legacyAdapter';
+import { MAX_PARENT_TO_CHILD_LEVELS } from '../core/soql/domain';
 
 
 
@@ -108,6 +109,14 @@ import { legacySqlState } from '../core/soql/legacyAdapter';
             const queryState = structuredClone(get().queryState); 
             const parent = queryState.indexCurrentElement;
             const parentQuery = queryState.queryElemnts[parent];
+
+            let parentToChildLevels = 1;
+            for (let index = parent; index >= 0; index = queryState.queryElemnts[index].parent) {
+                if (queryState.queryElemnts[index].type === 'SUBQUERY') parentToChildLevels += 1;
+            }
+            if (parentToChildLevels >= MAX_PARENT_TO_CHILD_LEVELS) {
+                throw new Error('SOQL admite como máximo cinco niveles de objetos en relaciones hijas.');
+            }
 
             if (queryState.queryElemnts[0].selectClause.fields.length>0 &&
                 queryState.queryElemnts[0].selectClause.fields[0].isAggregateFunction ) {

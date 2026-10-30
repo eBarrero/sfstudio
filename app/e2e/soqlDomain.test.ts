@@ -1,4 +1,4 @@
-import { escapeLiteral, renderQuery, SoqlValidationError, validateQuery, type RootQuery } from '../src/core/soql/domain';
+import { escapeLiteral, MAX_PARENT_TO_CHILD_LEVELS, renderQuery, SoqlValidationError, validateQuery, type RootQuery } from '../src/core/soql/domain';
 
 const base = (select: RootQuery['select']): RootQuery => ({ kind: 'root', from: 'Account', select, limit: 50 });
 const field = (path: string) => ({ kind: 'expression' as const, expression: { kind: 'field' as const, path } });
@@ -16,6 +16,22 @@ describe('pure SOQL domain', () => {
     const expected = "SELECT Name, Owner.Name, (SELECT Email FROM Contacts LIMIT 2) FROM Account WHERE Name LIKE 'O\\'Reilly%' ORDER BY Name ASC LIMIT 50 OFFSET 10";
     expect(renderQuery(query)).toBe(expected);
     expect(renderQuery(query)).toBe(expected);
+  });
+
+  test('renders nested child relationships through five object levels and rejects a sixth', () => {
+    const query = base([field('Name')]);
+    let select = query.select;
+    for (let depth = 2; depth <= MAX_PARENT_TO_CHILD_LEVELS; depth++) {
+      const child = { kind: 'subquery' as const, query: { kind: 'child' as const,
+        relationship: `Children${depth}`, select: [field('Name')] } };
+      select.push(child);
+      select = child.query.select;
+    }
+    expect(validateQuery(query)).toEqual([]);
+    expect(renderQuery(query)).toBe('SELECT Name, (SELECT Name, (SELECT Name, (SELECT Name, (SELECT Name FROM Children5) FROM Children4) FROM Children3) FROM Children2) FROM Account LIMIT 50');
+    select.push({ kind: 'subquery', query: { kind: 'child', relationship: 'Children6', select: [field('Name')] } });
+    expect(validateQuery(query).map(error => error.code)).toContain('CHILD_RELATIONSHIP_DEPTH_EXCEEDED');
+    expect(() => renderQuery(query)).toThrow(SoqlValidationError);
   });
 
   test('renders grouped aggregate', () => {

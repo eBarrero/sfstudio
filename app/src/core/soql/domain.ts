@@ -46,6 +46,9 @@ export interface ChildQuery extends QueryClauses {
 
 export interface SoqlError { code: string; path: string; message: string }
 
+// Salesforce counts the root object as level one, leaving four child subquery levels.
+export const MAX_PARENT_TO_CHILD_LEVELS = 5;
+
 const identifier = /^[A-Za-z][A-Za-z0-9_]*$/;
 const pathIdentifier = /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/;
 const dateValue = /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)?$/;
@@ -85,19 +88,19 @@ export function validateQuery(query: RootQuery): SoqlError[] {
       if (value.kind === 'set' && literal.kind === 'null') add('INVALID_SET_VALUE', `${path}.values[${i}]`);
     });
   };
-  const clauses = (value: QueryClauses, path: string, child: boolean) => {
+  const clauses = (value: QueryClauses, path: string, depth: number) => {
     if (!value.select.length) add('SELECT_REQUIRED', `${path}.select`);
     const fields = value.select.filter(item => item.kind === 'fields');
-    if (fields.length && (value.select.length !== 1 || child)) add('FIELDS_MUST_STAND_ALONE', `${path}.select`);
+    if (fields.length && (value.select.length !== 1 || depth > 1)) add('FIELDS_MUST_STAND_ALONE', `${path}.select`);
     value.select.forEach((item, i) => {
       const at = `${path}.select[${i}]`;
       if (item.kind === 'expression') {
         expression(item.expression, `${at}.expression`);
         if (item.alias) name(item.alias, `${at}.alias`);
       } else if (item.kind === 'subquery') {
-        if (child) add('NESTED_SUBQUERY_UNSUPPORTED', at);
+        if (depth >= MAX_PARENT_TO_CHILD_LEVELS) add('CHILD_RELATIONSHIP_DEPTH_EXCEEDED', at);
         name(item.query.relationship, `${at}.relationship`);
-        clauses(item.query, at, true);
+        clauses(item.query, at, depth + 1);
       } else if (!['ALL', 'CUSTOM', 'STANDARD'].includes(item.scope)) {
         add('INVALID_FIELDS_SCOPE', `${at}.scope`);
       }
@@ -108,7 +111,7 @@ export function validateQuery(query: RootQuery): SoqlError[] {
     if (value.offset !== undefined && (!Number.isSafeInteger(value.offset) || value.offset < 0 || value.offset > 2000)) add('INVALID_OFFSET', `${path}.offset`);
   };
   name(query.from, 'query.from');
-  clauses(query, 'query', false);
+  clauses(query, 'query', 1);
   query.groupBy?.forEach((part, i) => expression(part, `query.groupBy[${i}]`));
   const hasAggregate = query.select.some(item => item.kind === 'expression' && item.expression.kind === 'function' &&
     ['COUNT', 'COUNT_DISTINCT', 'SUM', 'AVG', 'MIN', 'MAX'].includes(item.expression.name));

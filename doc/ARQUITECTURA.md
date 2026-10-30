@@ -151,6 +151,8 @@ El modelo representa:
 
 Después recorre esta estructura y produce el texto SOQL. La dirección es buena: el siguiente paso debería ser extraer esta lógica a un módulo puro con pruebas exhaustivas.
 
+El adaptador SOQL anida las subconsultas de relaciones hijas según el padre real de cada elemento del árbol. El objeto raíz cuenta como nivel uno y se admiten hasta cuatro niveles hijos adicionales, conforme a la consulta REST de Salesforce con API 58.0 o posterior. Una subconsulta necesita campos seleccionados para producir una SOQL ejecutable; superar la profundidad muestra un error antes de modificar el árbol. Esta compatibilidad aplica a objetos estándar y personalizados, no a objetos grandes o externos.
+
 ### Interfaz
 
 La página principal combina:

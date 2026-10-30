@@ -3,6 +3,7 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import SOQLPath from '../src/components/organisms/SOQLPath/soqlPath';
 import modelState from '../src/store/modelState';
 import { legacyQueryToAst } from '../src/core/soql/legacyAdapter';
+import { validateQuery } from '../src/core/soql/domain';
 
 const queryElement = (index: number, level: number, parent: number, name: string): QueryElement => {
   const base = {
@@ -40,7 +41,7 @@ it('indents by tree depth, including a two-digit element index', () => {
   expect(screen.getByText(/Sibling10/).closest('[style]')).toHaveStyle({ paddingLeft: '20px' });
 });
 
-it('places a child of a child under its actual parent without creating executable SOQL', () => {
+it('places a child of a child under its actual parent; fields are still needed to run it', () => {
   const root = queryElement(0, 0, -1, 'Account');
   act(() => modelState.setState({
     state: { ...modelState.getState().state, orgSfName: 'fixture-org' },
@@ -56,11 +57,22 @@ it('places a child of a child under its actual parent without creating executabl
   const state = modelState.getState();
   expect(state.queryState.queryElemnts[2].parent).toBe(1);
   expect(state.rankQueryElements?.map(([, index]) => index)).toEqual([0, 1, 2]);
-  expect(legacyQueryToAst(state.queryState)).toBeUndefined();
+  const ast = legacyQueryToAst(state.queryState)!;
+  expect(ast.select[0]).toMatchObject({ kind: 'subquery', query: {
+    relationship: 'Contacts', select: [{ kind: 'subquery', query: { relationship: 'Tasks' } }],
+  } });
+  expect(validateQuery(ast).map(error => error.code)).toContain('SELECT_REQUIRED');
   expect(state.sqlState.isValid).toBe(false);
 
   render(<SOQLPath />);
   expect(screen.getByText(/Account/).closest('[style]')).toHaveStyle({ paddingLeft: '0px' });
   expect(screen.getByText(/Contact/).closest('[style]')).toHaveStyle({ paddingLeft: '20px' });
   expect(screen.getByText(/Task/).closest('[style]')).toHaveStyle({ paddingLeft: '40px' });
+
+  act(() => modelState.getState().gotoChild(child('Event', 3)));
+  act(() => modelState.getState().gotoChild(child('Note', 4)));
+  expect(modelState.getState().queryState.queryElemnts).toHaveLength(5);
+  expect(() => modelState.getState().gotoChild(child('Attachment', 5)))
+    .toThrow('SOQL admite como máximo cinco niveles de objetos en relaciones hijas.');
+  expect(modelState.getState().queryState.queryElemnts).toHaveLength(5);
 });

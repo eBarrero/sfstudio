@@ -51,24 +51,27 @@ export function legacyQueryToAst(state: QueryState): RootQuery | undefined {
   const root = elements.find(element => element.type === 'ROOT') as PrimaryQuery | undefined;
   if (!root) return undefined;
   const rootIndex = elements.indexOf(root);
-  if (elements.some(element => element.type === 'SUBQUERY' && element.parent !== rootIndex)) return undefined;
-  const fields = (parent: number, prefix = ''): Selection[] => {
+  if (elements.some((element, index) => index !== rootIndex &&
+    (element.parent < 0 || element.parent >= index ||
+      (element.type === 'SUBQUERY' && elements[element.parent].type === 'RELETED')))) return undefined;
+  const selections = (parent: number, prefix = ''): Selection[] => {
     const own = elements[parent];
     return [
-      ...own.selectClause.fields.map(field => ({ kind: 'expression' as const, expression: expression(field, prefix), alias: field.alias })),
+      ...(own.selectClause.fieldsAll ? [{ kind: 'fields' as const,
+        scope: own.selectClause.fieldsAll.replace(/^FIELDS\(|\)$/g, '') as 'ALL' | 'CUSTOM' | 'STANDARD' }] :
+        own.selectClause.fields.map(field => ({ kind: 'expression' as const, expression: expression(field, prefix), alias: field.alias }))),
       ...elements.flatMap((element, index) => element.type === 'RELETED' && element.parent === parent ?
-        fields(index, `${prefix}${element.relatedTo}.`) : []),
+        selections(index, `${prefix}${element.relatedTo}.`) : []),
+      ...elements.flatMap((element, index): Selection[] => {
+        if (element.type !== 'SUBQUERY' || element.parent !== parent) return [];
+        const child: ChildQuery = { kind: 'child', relationship: element.relationshipName,
+          select: selections(index), where: conditions(element.where), limit: element.limit, offset: element.offset,
+          orderBy: element.orderBy?.map(order => ({ field: order.field.fieldApiName, direction: order.direction })) };
+        return [{ kind: 'subquery', query: child }];
+      }),
     ];
   };
-  const select: Selection[] = root.selectClause.fieldsAll ?
-    [{ kind: 'fields', scope: root.selectClause.fieldsAll.replace(/^FIELDS\(|\)$/g, '') as 'ALL' }] : fields(rootIndex);
-  elements.forEach((element, index) => {
-    if (element.type !== 'SUBQUERY') return;
-    const child: ChildQuery = { kind: 'child', relationship: element.relationshipName,
-      select: fields(index), where: conditions(element.where), limit: element.limit, offset: element.offset,
-      orderBy: element.orderBy?.map(order => ({ field: order.field.fieldApiName, direction: order.direction })) };
-    select.push({ kind: 'subquery', query: child });
-  });
+  const select = selections(rootIndex);
   return { kind: 'root', from: root.sObjectId.sObjectApiName, select,
     where: conditions(root.where), limit: root.limit, offset: root.offset,
     groupBy: root.selectClause.fields.filter(field => field.makeGroupBy).map(field => expression(field)),
