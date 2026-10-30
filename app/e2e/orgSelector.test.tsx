@@ -29,6 +29,32 @@ const workspace: PublicWorkspaceDefinition = {
 
 afterEach(() => { cleanup(); jest.restoreAllMocks(); });
 
+it('opens compact connection details by gear and restores focus when closed', () => {
+  act(() => sessionState.getState().setWorkspace(workspace));
+  render(<DBConnectionManager />);
+  const gear = screen.getByRole('button', { name: 'Gestionar organizaciones' });
+  expect(screen.getAllByLabelText('Estado: Conectada').length).toBeGreaterThan(0);
+  expect(screen.queryByRole('button', { name: 'Desconectar' })).not.toBeInTheDocument();
+  gear.focus();
+  fireEvent.click(gear);
+  expect(screen.getByRole('dialog', { name: 'Gestionar organizaciones' })).toBeInTheDocument();
+  expect(screen.getByText('Usuario: fixture-1')).toBeInTheDocument();
+  expect(screen.getByText('Organization ID: 00D000000000001')).toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: 'Desconectar' })).toHaveLength(2);
+  expect(screen.getByRole('button', { name: 'Cerrar' })).toHaveFocus();
+  fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+  expect(gear).toHaveFocus();
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});
+
+it('can open connection controls with no organizations', () => {
+  act(() => sessionState.getState().setWorkspace({ version: 1, activeOrgKey: null, connections: [] }));
+  render(<DBConnectionManager />);
+  fireEvent.click(screen.getByRole('button', { name: 'Gestionar organizaciones' }));
+  expect(screen.getByRole('button', { name: 'Conectar producción' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Conectar sandbox' })).toBeInTheDocument();
+});
+
 it('selects one of two same-alias orgs by OrgKey through button and command', async () => {
   const responses = [
     { ...workspace, activeOrgKey: secondKey },
@@ -43,6 +69,7 @@ it('selects one of two same-alias orgs by OrgKey through button and command', as
   try {
     act(() => sessionState.getState().setWorkspace(workspace));
     const view = render(<><DBConnectionManager /><ActiveOrgContext /></>);
+    fireEvent.click(screen.getByRole('button', { name: 'Gestionar organizaciones' }));
     const buttons = screen.getAllByRole('button', { name: /Usar Shared alias/ });
     expect(buttons).toHaveLength(2);
     expect(buttons[0]).toHaveAttribute('aria-pressed', 'true');
@@ -77,10 +104,11 @@ it('shows all connection states with text and clears the old query when changing
   ];
   act(() => sessionState.getState().setWorkspace({ version: 1, activeOrgKey: firstKey, connections: states }));
   const view = render(<DBConnectionManager />);
-  expect(screen.getByText('Estado: Conectada')).toBeInTheDocument();
-  expect(screen.getByText('Estado: Conectando')).toBeInTheDocument();
-  expect(screen.getByText('Estado: Reautenticación necesaria')).toBeInTheDocument();
-  expect(screen.getByText('Estado: Error de conexión')).toBeInTheDocument();
+  expect(screen.getByLabelText('Estado: Conectada')).toBeInTheDocument();
+  expect(screen.getByLabelText('Estado: Conectando')).toBeInTheDocument();
+  expect(screen.getByLabelText('Estado: Reautenticación necesaria')).toBeInTheDocument();
+  expect(screen.getByLabelText('Estado: Error de conexión')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Gestionar organizaciones' }));
   expect(screen.getByRole('button', { name: 'Reautenticar' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Reintentar conexión' })).toBeInTheDocument();
   expect(screen.getByText('Espera a que termine la conexión.')).toBeInTheDocument();

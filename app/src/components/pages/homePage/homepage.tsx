@@ -30,7 +30,6 @@ const HomePage = () => {
                 </nav>
                 <section className={css.panel_container}>
                     <section className={css.frame_editor}>
-                        <ActiveOrgContext/>
                         {currentView==='INIT' && <AppIntro/> }
                         {currentView==='org' && <SchemaPanel/> }
                         {currentView==='sobject' && <SObjectPanel/> }     

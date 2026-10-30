@@ -12,6 +12,7 @@ import dataState from '../src/store/dataState';
 import modelState from '../src/store/modelState';
 import sessionState from '../src/store/sessionState';
 import viewState from '../src/store/viewState';
+import objectPanelState from '../src/store/objectPanelState';
 
 jest.mock('../src/services/salesforceSchema/controller', () => ({
   getDescribe: jest.fn(), getDescribeObject: jest.fn(),
@@ -91,6 +92,7 @@ test('Account opens with each org’s own fields via button and command', async 
   expect(modelState.getState().state.orgSfName).toBe(integrationKey);
   expect(metadataObjectStatus(integrationKey, 'Account').state).toBe('FRESH');
   expect(readCommand('Integration__c', CONTEXT_LEVEL.OBJECT)).toBeDefined();
+  act(() => objectPanelState.getState().selectTab('relations'));
 
   act(() => {
     sessionState.getState().setWorkspace({ ...sessionState.getState().publicSession,
@@ -107,6 +109,7 @@ test('Account opens with each org’s own fields via button and command', async 
   expect(command.actionId).toBe('object.open');
   (command.action as () => void)();
   await waitFor(() => expect(dataState.getState().sObjectFields[0].fieldApiName).toBe('UAT__c'));
+  expect(objectPanelState.getState().activeTab).toBe('fields');
   expect(modelState.getState().state.orgSfName).toBe(uatKey);
   expect(metadataObjectStatus(uatKey, 'Account').state).toBe('FRESH');
   expect(readCommand('UAT__c', CONTEXT_LEVEL.OBJECT)).toBeDefined();

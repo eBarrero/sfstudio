@@ -1,5 +1,7 @@
 # Guía del sprint 06: Motor de comparación de esquemas
 
+Estado: aplazado hasta reevaluar su alcance e implementación.
+
 ## Objetivo
 
 Construir un motor puro que compare snapshots coherentes de dos orgs y produzca diferencias deterministas de objetos, campos, propiedades, picklists y relaciones.

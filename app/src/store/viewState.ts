@@ -1,6 +1,7 @@
 import {create} from 'zustand';
 import { addCommand, VIEW_CMD } from '../core/commandManager';
 import { Dialog } from '../components/constants';
+import { dispatchObjectPanelAction, OBJECT_PANEL_ACTION } from '../core/objectPanelActions';
 
 
 
@@ -43,6 +44,12 @@ const viewState = create<ViewState>((set, get) => {
             addCommand({ ...VIEW_CMD.HELP1, action: () => { get().pushDialog(Dialog.Help)}} );
             addCommand({ ...VIEW_CMD.HELP2, action: () => { get().pushDialog(Dialog.Help)}} );
             addCommand({ ...VIEW_CMD.HELP3, action: () => { get().pushDialog(Dialog.Help)}} );
+            addCommand({ ...VIEW_CMD.SHOW_FIELDS, action: () => {
+                dispatchObjectPanelAction(OBJECT_PANEL_ACTION.SHOW_FIELDS);
+            }});
+            addCommand({ ...VIEW_CMD.SHOW_RELATIONS, action: () => {
+                dispatchObjectPanelAction(OBJECT_PANEL_ACTION.SHOW_RELATIONS);
+            }});
         }
     }
 

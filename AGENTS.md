@@ -128,10 +128,10 @@ Al implementar una PBI:
 
 ### Ratón y comandos
 
-- Toda acción funcional disponible con ratón debe tener un comando gemelo.
-- Ratón, menú, teclado y consola deben producir el mismo `ActionId` y llamar al mismo caso de uso.
+- La existencia de un comando gemelo es opcional y se decide para cada acción según su utilidad o por petición del equipo.
+- Cuando una acción tiene varias entradas (ratón, menú, teclado o consola), todas deben producir el mismo `ActionId` y llamar al mismo caso de uso.
 - No duplicar lógica de negocio dentro de componentes y parser de comandos.
-- Una acción nueva debe incluir pruebas de paridad.
+- Las acciones con comando gemelo deben incluir pruebas de paridad.
 
 ### Solo lectura
 
@@ -319,7 +319,7 @@ La release debe demostrar:
 2. Alternancia sin confusión de contexto.
 3. Exploración y SOQL de solo lectura en cualquiera.
 4. Comparación de objetos, campos y relaciones.
-5. Paridad entre ratón y comandos.
+5. Paridad entre ratón y comandos para las acciones que tengan ambas entradas.
 6. Reautenticación clara tras reinicio/expiración.
 7. Ausencia de tokens y datos de negocio persistidos.
 8. Límites de consulta y resultados efímeros.

@@ -26,6 +26,7 @@ it('mouse and console actions dispatch through the same workspace operations', (
     sessionState.setState({ disconnectOrg, loginOrganization, closeWorkspace });
     sessionState.getState().setWorkspace({ version: 1, activeOrgKey: orgKey, connections: [connection] });
     const view = render(<DBConnectionManager />);
+    fireEvent.click(screen.getByRole('button', { name: 'Gestionar organizaciones' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Desconectar' }));
     (readCommand('Disconnect_org_00D000000000001_005000000000001', CONTEXT_LEVEL.ORG)!.action as () => void)();

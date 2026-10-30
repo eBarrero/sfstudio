@@ -5,6 +5,7 @@ import modelState from '../store/modelState';
 import sessionState from '../store/sessionState';
 import viewState from '../store/viewState';
 import applicationState from '../store/applicationState';
+import objectPanelState from '../store/objectPanelState';
 
 export const OBJECT_OPEN_ACTION_ID = 'object.open' as const;
 export interface ObjectOpenAction { id: typeof OBJECT_OPEN_ACTION_ID; objectName: string; }
@@ -36,6 +37,7 @@ export async function dispatchExplorerAction(action: ObjectOpenAction): Promise<
   dataState.getState().createLookuoCommands(fields);
   dataState.getState().createFieldsCommands(fields);
   modelState.getState().setSObject(objectId);
+  objectPanelState.getState().resetTab();
   dataState.getState().loadChildRelationships(orgKey, objectId);
   applicationState.getState().setContextLevel(CONTEXT_LEVEL.OBJECT);
   viewState.getState().setCurrentView('sobject');

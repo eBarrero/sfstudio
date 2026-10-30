@@ -1,5 +1,7 @@
 
 import {t} from '../utils/utils'
+import { IconCharacter } from '../components/constants';
+import { OBJECT_PANEL_ACTION } from './objectPanelActions';
 
 export enum CONTEXT_LEVEL  {
     INIT = 'init',
@@ -13,7 +15,11 @@ export const VIEW_CMD : { [key: string]: CommandDefinition } = {
     HELP0:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.INIT } as const,
     HELP1:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.ORG } as const,
     HELP2:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.OBJECT } as const,
-    HELP3:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.SQL_EXECUTION } as const
+    HELP3:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.SQL_EXECUTION } as const,
+    SHOW_FIELDS: { command: 'show_fields', description: 'Mostrar campos', iconSymbol: IconCharacter.FIELDS,
+        actionId: OBJECT_PANEL_ACTION.SHOW_FIELDS, context: CONTEXT_LEVEL.OBJECT } as const,
+    SHOW_RELATIONS: { command: 'Show_Relations', description: 'Mostrar relaciones hijas', iconSymbol: IconCharacter.RELATIONS,
+        actionId: OBJECT_PANEL_ACTION.SHOW_RELATIONS, context: CONTEXT_LEVEL.OBJECT } as const
   };
   
 export const SESSION_CMD : { [key: string]: CommandDefinition } = {
