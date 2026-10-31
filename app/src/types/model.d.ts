@@ -137,6 +137,7 @@ interface ModelState {
     setOrg: (orgSfName: SchemaName) => void; 
     clearOrg: () => void;
     setSObject: (sObjectLocalId:SObjectLocalId) => void;
+    loadSavedQuery: (queryState: QueryState) => void;
     setField: (field: GetFieldsIndex) => void;
     gotoLookup: (field: GetFieldsIndex) => void; 
     gotoChild: (child: GetChildRelationships) => void;

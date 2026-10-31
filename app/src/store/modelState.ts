@@ -5,6 +5,7 @@ import { addCommand, NODEL_CMD } from '../core/commandManager';
 import { SelectAllFieldsEnum } from "../core/constants/fields";
 import { legacySqlState } from '../core/soql/legacyAdapter';
 import { MAX_PARENT_TO_CHILD_LEVELS } from '../core/soql/domain';
+import savedSoqlState from './savedSoqlState';
 
 
 
@@ -22,6 +23,7 @@ import { MAX_PARENT_TO_CHILD_LEVELS } from '../core/soql/domain';
 
         setOrg: (orgSfName: SchemaName)  => {
             if (orgSfName === '') return;
+            savedSoqlState.getState().clearCurrent();
             set({state: {orgSfName, action:'INI', sObjectApiName:'',  sObjectLocalId: -1, currentField: null, currentPath: ''},
                 queryState: { queryElemnts: [], indexCurrentElement: 0 },
                 sqlState: { sql: '', isValid: false },
@@ -30,6 +32,7 @@ import { MAX_PARENT_TO_CHILD_LEVELS } from '../core/soql/domain';
             });
         },  
         clearOrg: () => {
+            savedSoqlState.getState().clearCurrent();
             set({state: {orgSfName: '', action: '', sObjectApiName: '', sObjectLocalId: -1,
                 currentField: null, currentPath: ''},
                 queryState: { queryElemnts: [], indexCurrentElement: 0 },
@@ -44,6 +47,7 @@ import { MAX_PARENT_TO_CHILD_LEVELS } from '../core/soql/domain';
         * Set the current sObject to be used in the query
         */
         setSObject: (sObjectLocalId: SObjectLocalId) => {
+            savedSoqlState.getState().clearCurrent();
             const orgSfName = get().state.orgSfName;
             const sObjectApiName = modelReader.getSObjectApiName(orgSfName, sObjectLocalId);
             const mainQuery: PrimaryQuery = {
@@ -59,6 +63,19 @@ import { MAX_PARENT_TO_CHILD_LEVELS } from '../core/soql/domain';
                 sqlState: sqlState(queryState),
                 currentSOQLFieldSelection: createSOQLFieldSelection(queryState.queryElemnts[0]),
                 rankQueryElements: rankQueryElements(queryState.queryElemnts)                
+            });
+        },
+        loadSavedQuery: (saved: QueryState) => {
+            const queryState = structuredClone(saved);
+            queryState.indexCurrentElement = 0;
+            const root = queryState.queryElemnts[0];
+            const {orgSfName, sObjectApiName, sObjectLocalId} = root.sObjectId;
+            set({
+                state: {orgSfName, action: 'sobject', sObjectApiName, sObjectLocalId, currentField: null, currentPath: ''},
+                queryState,
+                sqlState: sqlState(queryState),
+                currentSOQLFieldSelection: createSOQLFieldSelection(root),
+                rankQueryElements: rankQueryElements(queryState.queryElemnts),
             });
         },
         setField: (field: GetFieldsIndex) => {

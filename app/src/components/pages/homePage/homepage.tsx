@@ -10,6 +10,7 @@ import viewState from '../../../store/viewState';
 import Console from '../../organisms/console/console';
 import ResultSheet from '../../organisms/resultSheet/resultSheet';
 import SOQLEdit from '../../organisms/SOQLEdit/soqlEdit';
+import SOQLManagement from '../../organisms/SOQLManagement/soqlManagement';
 
 
 
@@ -37,6 +38,7 @@ const HomePage = () => {
                         {currentView==='OBJECT_EXTEND' && <SObjectPanel/> }
                         {currentView==='SQL_RESULT' && <ResultSheet/> }                   
                         {currentView==='SOQL_EDIT' && <SOQLEdit/> }
+                        {currentView==='SOQL_MANAGEMENT' && <SOQLManagement/> }
                     </section>
                 </section>    
             </main>

@@ -151,6 +151,8 @@ const dataState = create<DataState>((set, get) => {
                          sObjectFields:  structuredClone(data), 
                          dataLastErrorMessage: '' 
                     });
+                    get().createFieldsCommands(data);
+                    get().createLookuoCommands(data);
                     get().loadChildRelationships(orgSfName, sObjectIndex);
                 } else if (version === fieldRequestVersion && orgSfName === get().activeOrgKey) {
                     set({dataLastErrorMessage: `#CMD.Object_not_found|${sObjectIndex}`});
