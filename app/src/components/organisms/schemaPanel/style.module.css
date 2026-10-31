@@ -30,9 +30,13 @@
   text-align: left;
   vertical-align: middle;
   cursor: pointer;
+  background-color: transparent;
+  color: var(--color-data_text);
+  border: 1px solid transparent;
 }
 .PanelSObjectItem:hover {
-  background-color: #3f3f41;
-  color: black;
+  background-color: var(--color-data_text2);
+  color: var(--color-data_hover);
+  border: 1px solid var(--color-data_text2);
   border-radius: 5px;
 }
