@@ -52,6 +52,9 @@ const viewState = create<ViewState>((set, get) => {
             addCommand({ ...VIEW_CMD.SHOW_RELATIONS, action: () => {
                 dispatchObjectPanelAction(OBJECT_PANEL_ACTION.SHOW_RELATIONS);
             }});
+            addCommand({ ...VIEW_CMD.SHOW_WHERE, action: () => {
+                dispatchObjectPanelAction(OBJECT_PANEL_ACTION.SHOW_WHERE);
+            }});
         }
     }
 

@@ -161,11 +161,13 @@ La página principal combina:
 - ruta de la consulta;
 - consola de comandos y menús;
 - panel de objetos;
-- panel de campos/relaciones;
+- panel de campos, relaciones y condiciones WHERE por elemento de consulta;
 - diálogo de selección y filtros;
 - tabla de resultados.
 
 La consola funciona como una «command palette» contextual. Los comandos se registran al inicializar cada store y algunos se generan dinámicamente a partir del esquema.
+
+En `CONTEXT_LEVEL.OBJECT`, la pestaña «Where Clause» muestra las condiciones `where` de cada elemento de `queryState.queryElemnts`, agrupadas por objeto o relación. El botón de la pestaña, la opción «views → Where Clause» y el comando `Show_Where` usan `object.show_where`. Este comando no crea un botón en la barra de la consola. Al abrir otro objeto, el panel vuelve a Campos.
 
 Las acciones del workspace (`org.list`, `org.use`, `org.close`, `org.reconnect`, `org.connect`, `workspace.close`) tienen parámetros tipados y un único dispatcher en `app/src/core/workspaceActions.ts`. El parser de `app/src/core/workspaceCommandParser.ts`, los botones y los menús producen el mismo `ActionId`; el dispatcher valida contexto, pertenencia al workspace y estado de conexión antes de invocar el caso de uso del store. El registro dinámico de comandos de org se reemplaza al actualizar el workspace para evitar duplicados. Las acciones del editor SOQL conservan su registro anterior hasta su migración en los sprints siguientes.
 

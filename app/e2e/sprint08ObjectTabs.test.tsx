@@ -1,7 +1,9 @@
 import '@testing-library/jest-dom';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import SObjectPanel from '../src/components/organisms/sObjectPanel/sObjectPanel';
-import { CONTEXT_LEVEL, readCommand } from '../src/core/commandManager';
+import { CONTEXT_LEVEL, getCommands, getMenus, readCommand } from '../src/core/commandManager';
+import applicationState from '../src/store/applicationState';
+import modelState from '../src/store/modelState';
 import objectPanelState from '../src/store/objectPanelState';
 import viewState from '../src/store/viewState';
 
@@ -52,6 +54,64 @@ it('switches one visible panel through tabs and matching OBJECT commands', () =>
   fireEvent.keyDown(relations, { key: 'ArrowLeft' });
   expect(fields).toHaveFocus();
   expect(fields).toHaveAttribute('aria-selected', 'true');
+  fireEvent.keyDown(fields, { key: 'End' });
+  expect(screen.getByRole('tab', { name: 'Where Clause' })).toHaveFocus();
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'Where Clause' }), { key: 'ArrowLeft' });
+  expect(relations).toHaveFocus();
+});
+
+it('shows every stored WHERE condition and shares an action across tab, menu and command', () => {
+  const first: SimpleCondition = { field: { fieldApiName: 'Name', fieldIndex: 0 },
+    operator: 'LIKE', value: 'A%', sqlString: "Name LIKE 'A%'" };
+  const second: SimpleCondition = { field: { fieldApiName: 'Status', fieldIndex: 1 },
+    operator: '=', value: 'Open', sqlString: "Status = 'Open'" };
+  act(() => {
+    viewState.getState().initializeView();
+    viewState.getState().setCurrentView('sobject');
+    applicationState.getState().setContextLevel(CONTEXT_LEVEL.OBJECT);
+    modelState.setState({ queryState: { indexCurrentElement: 1, queryElemnts: [
+      { type: 'ROOT', parent: -1, level: 0, limit: 50,
+        sObjectId: { orgSfName: 'fixture', sObjectApiName: 'Account', sObjectLocalId: 0 },
+        selectClause: { fields: [] }, where: [first] },
+      { type: 'SUBQUERY', parent: 0, level: 1, limit: 50, relationshipName: 'Contacts',
+        sObjectId: { orgSfName: 'fixture', sObjectApiName: 'Contact', sObjectLocalId: 1 },
+        selectClause: { fields: [] }, where: [second] },
+    ] } });
+  });
+  render(<SObjectPanel />);
+  const tab = screen.getByRole('tab', { name: 'Where Clause' });
+  const command = readCommand('Show_Where', CONTEXT_LEVEL.OBJECT)!;
+  expect(command.actionId).toBe('object.show_where');
+  expect(tab).toHaveAttribute('data-action-id', command.actionId);
+  expect(getCommands(CONTEXT_LEVEL.OBJECT)).not.toContain(command);
+  expect(getMenus(CONTEXT_LEVEL.OBJECT).find(menu => menu.label === 'views')?.options)
+    .toContainEqual({ label: 'Where Clause', command: 'Show_Where' });
+
+  fireEvent.click(tab);
+  expect(tab).toHaveAttribute('aria-selected', 'true');
+  const panel = screen.getByRole('tabpanel', { name: 'Where Clause' });
+  expect(within(panel).getByText("Name LIKE 'A%'")).toBeInTheDocument();
+  expect(within(panel).getByText("Status = 'Open'")).toBeInTheDocument();
+  expect(within(panel).getByText('Account')).toBeInTheDocument();
+  expect(within(panel).getByText('Contact · Contacts')).toBeInTheDocument();
+
+  act(() => objectPanelState.getState().selectTab('fields'));
+  applicationState.getState().exeCommandFromUI('Show_Where');
+  expect(applicationState.getState().commandConfirmed?.actionId).toBe(command.actionId);
+  act(() => applicationState.getState().commandConfirmed!.action({} as AcctionParams));
+  expect(tab).toHaveAttribute('aria-selected', 'true');
+
+  act(() => objectPanelState.getState().selectTab('relations'));
+  applicationState.getState().setCommand('Show_Where');
+  applicationState.getState().exeCommand('Show_Where');
+  expect(applicationState.getState().commandConfirmed?.actionId).toBe(command.actionId);
+  act(() => applicationState.getState().commandConfirmed!.action({} as AcctionParams));
+  expect(tab).toHaveAttribute('aria-selected', 'true');
+
+  act(() => modelState.setState({ queryState: { indexCurrentElement: 0, queryElemnts: [] } }));
+  const refreshedPanel = screen.getByRole('tabpanel', { name: 'Where Clause' });
+  expect(within(refreshedPanel).getByText('No hay condiciones WHERE en la consulta.')).toBeInTheDocument();
+  expect(within(refreshedPanel).queryByText("Name LIKE 'A%'")).not.toBeInTheDocument();
 });
 
 it('keeps the extended fields view and resets to fields for a new object', () => {

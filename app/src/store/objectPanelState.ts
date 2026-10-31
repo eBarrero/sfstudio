@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type ObjectPanelTab = 'fields' | 'relations';
+export type ObjectPanelTab = 'fields' | 'relations' | 'where';
 
 interface ObjectPanelState {
   activeTab: ObjectPanelTab;

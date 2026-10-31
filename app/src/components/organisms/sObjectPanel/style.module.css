@@ -10,6 +10,9 @@
 .tabs button[aria-selected='true'] { font-weight: bold; border-bottom-width: 3px; }
 .tabs button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
+.whereConditions { padding-left: 1.5rem; overflow-wrap: anywhere; }
+.whereConditions li { margin-bottom: 0.5rem; }
+
 .containerExtended {
     display:block
 }
