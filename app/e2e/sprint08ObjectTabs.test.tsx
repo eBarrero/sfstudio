@@ -59,9 +59,9 @@ it('switches one visible panel through tabs and matching OBJECT commands', () =>
   expect(fields).toHaveFocus();
   expect(fields).toHaveAttribute('aria-selected', 'true');
   fireEvent.keyDown(fields, { key: 'End' });
+  expect(screen.getByRole('tab', { name: 'Order Clause' })).toHaveFocus();
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'Order Clause' }), { key: 'ArrowLeft' });
   expect(screen.getByRole('tab', { name: 'Where Clause' })).toHaveFocus();
-  fireEvent.keyDown(screen.getByRole('tab', { name: 'Where Clause' }), { key: 'ArrowLeft' });
-  expect(relations).toHaveFocus();
 });
 
 it('shows every stored WHERE condition and shares an action across tab, menu and command', () => {

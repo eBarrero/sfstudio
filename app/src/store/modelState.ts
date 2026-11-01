@@ -6,7 +6,7 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
 import { legacySqlState } from '../core/soql/legacyAdapter';
 import { MAX_PARENT_TO_CHILD_LEVELS } from '../core/soql/domain';
 import { defaultWhereLogic, parseWhereLogic } from '../core/soql/whereLogic';
-import { whereOwner } from '../core/soql/whereOwnership';
+import { qualifiedFieldName, whereOwner } from '../core/soql/whereOwnership';
 import { fieldCapabilities } from '../core/soql/fieldEditor';
 import savedSoqlState from './savedSoqlState';
 
@@ -302,6 +302,45 @@ import savedSoqlState from './savedSoqlState';
             else block.limit = limit;
             set({ queryState, sqlState: sqlState(queryState) });
         },
+        addOrderBy: (field: GetFieldsIndex, direction: 'ASC' | 'DESC', nulls: 'FIRST' | 'LAST') => {
+            if (field.sortable === false || fieldCapabilities(field.type).order === false)
+                throw new Error('This field cannot be used in ORDER BY.');
+            if (!['ASC', 'DESC'].includes(direction) || !['FIRST', 'LAST'].includes(nulls))
+                throw new Error('Choose a direction and a NULLS policy.');
+            const queryState = structuredClone(get().queryState);
+            const { ownerIndex, relationshipPath } = whereOwner(queryState, queryState.indexCurrentElement);
+            const owner = queryState.queryElemnts[ownerIndex] as PrimaryQuery | NestedQuery;
+            const fieldId: FieldId = { fieldApiName: field.fieldApiName,
+                fieldIndex: field.fieldLocalId, relationshipPath };
+            const name = qualifiedFieldName(fieldId);
+            if (owner.orderBy?.some(order => qualifiedFieldName(order.field) === name))
+                throw new Error(`${name} is already used in ORDER BY for this query block.`);
+            owner.orderBy = [...(owner.orderBy ?? []), { field: fieldId, direction, nulls }];
+            set({ queryState, sqlState: sqlState(queryState),
+                currentSOQLFieldSelection: createSOQLFieldSelection(queryState, queryState.indexCurrentElement) });
+        },
+        removeOrderBy: (elementIndex: number, orderIndex: number) => {
+            const queryState = structuredClone(get().queryState);
+            const { ownerIndex } = whereOwner(queryState, elementIndex);
+            const owner = queryState.queryElemnts[ownerIndex] as PrimaryQuery | NestedQuery;
+            if (!owner.orderBy || !Number.isInteger(orderIndex) || orderIndex < 0 || orderIndex >= owner.orderBy.length)
+                throw new Error('The selected ORDER BY entry is unavailable.');
+            owner.orderBy = owner.orderBy.filter((_, index) => index !== orderIndex);
+            set({ queryState, sqlState: sqlState(queryState),
+                currentSOQLFieldSelection: createSOQLFieldSelection(queryState, queryState.indexCurrentElement) });
+        },
+        moveOrderBy: (elementIndex: number, orderIndex: number, destination: number) => {
+            const queryState = structuredClone(get().queryState);
+            const { ownerIndex } = whereOwner(queryState, elementIndex);
+            const owner = queryState.queryElemnts[ownerIndex] as PrimaryQuery | NestedQuery;
+            const orders = owner.orderBy;
+            if (!orders || !Number.isInteger(orderIndex) || !Number.isInteger(destination) ||
+                orderIndex < 0 || destination < 0 || orderIndex >= orders.length || destination >= orders.length)
+                throw new Error('The selected ORDER BY priority is unavailable.');
+            const [moved] = orders.splice(orderIndex, 1);
+            orders.splice(destination, 0, moved);
+            set({ queryState, sqlState: sqlState(queryState) });
+        },
         initializeModel: () => {
             // Create the commands for the field filter
             addCommand({...NODEL_CMD.SELECT_ALL_FIELDS ,     action: () => { get().setSelectAllFields(SelectAllFieldsEnum.ALL); } });
@@ -373,7 +412,8 @@ function createSOQLFieldSelection(queryState: QueryState, index: number): Map<Fi
         }
       });
 
-    query.orderBy?.forEach((orderBy) => {
+    owner.orderBy?.filter(order => (order.field.relationshipPath ?? []).join('.') === relationshipPath.join('.'))
+    .forEach((orderBy) => {
         if (map.has(orderBy.field.fieldIndex)) {
             const item = map.get(orderBy.field.fieldIndex);
             item!.isOrderBy = true;

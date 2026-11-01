@@ -13,6 +13,7 @@ import TitleBar from '../../atoms/TitleBar/titleBar';
 import Tabs     from '../../atoms/Tabs/tabs';
 import Select from './selectBuilder';
 import WhereBuilder from './whereBuilder/whereBuilder';
+import OrderByBuilder from './orderByBuilder';
 
 
 
@@ -49,7 +50,9 @@ const FieldDialog = () => {
             <div className={css.win}>
                 {currentField &&  <>
                     <TitleBar title={`${currentField.type} - ${currentPath}${currentField.fieldApiName}`} onClose={onClose}  />
-                    <Tabs tabs={whereDialog === 'NOT_ALLOWED' ? [['Select', 'S']] : [['Select', 'S'], ['Where', 'W']]}
+                    <Tabs tabs={whereDialog === 'NOT_ALLOWED'
+                        ? [['Select', 'S'], ['Order', 'O']]
+                        : [['Select', 'S'], ['Where', 'W'], ['Order', 'O']]}
                         value={activeTab} onTabChange={setCurrentTab}/>
                     {activeTab === 'S' && <Select
                                                 typeField={currentField.type} 
@@ -58,6 +61,9 @@ const FieldDialog = () => {
                     {activeTab === 'W' && whereDialog !== 'NOT_ALLOWED' && <WhereBuilder
                         key={`${queryState.indexCurrentElement}:${currentField.fieldApiName}`}
                         applyNewCondition={addWhere} field={currentField} path={currentPath ?? ''} />}
+
+                    {activeTab === 'O' && <OrderByBuilder key={`${queryState.indexCurrentElement}:${currentField.fieldApiName}`}
+                        field={currentField} path={currentPath ?? ''} />}
 
 
                 </>}

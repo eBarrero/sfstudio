@@ -28,7 +28,7 @@ export type Selection =
 interface QueryClauses {
   select: Selection[];
   where?: Predicate;
-  orderBy?: { field: string; direction: 'ASC' | 'DESC' }[];
+  orderBy?: { field: string; direction: 'ASC' | 'DESC'; nulls: 'FIRST' | 'LAST' }[];
   limit?: number;
   offset?: number;
 }
@@ -106,7 +106,11 @@ export function validateQuery(query: RootQuery): SoqlError[] {
       }
     });
     if (value.where) predicate(value.where, `${path}.where`);
-    value.orderBy?.forEach((order, i) => name(order.field, `${path}.orderBy[${i}].field`, true));
+    value.orderBy?.forEach((order, i) => {
+      name(order.field, `${path}.orderBy[${i}].field`, true);
+      if (order.direction !== 'ASC' && order.direction !== 'DESC') add('INVALID_ORDER_DIRECTION', `${path}.orderBy[${i}].direction`);
+      if (order.nulls !== 'FIRST' && order.nulls !== 'LAST') add('INVALID_NULL_POLICY', `${path}.orderBy[${i}].nulls`);
+    });
     if (value.limit !== undefined && (!Number.isSafeInteger(value.limit) || value.limit < 1 || value.limit > 2000)) add('INVALID_LIMIT', `${path}.limit`);
     if (value.offset !== undefined && (!Number.isSafeInteger(value.offset) || value.offset < 0 || value.offset > 2000)) add('INVALID_OFFSET', `${path}.offset`);
   };
@@ -153,7 +157,7 @@ export function renderQuery(query: RootQuery): string {
     `${value.name}(${value.field ?? ''})`;
   const clauses = (value: QueryClauses): string => [
     value.where && `WHERE ${renderPredicate(value.where)}`,
-    value.orderBy?.length && `ORDER BY ${value.orderBy.map(order => `${order.field} ${order.direction}`).join(', ')}`,
+    value.orderBy?.length && `ORDER BY ${value.orderBy.map(order => `${order.field} ${order.direction} NULLS ${order.nulls}`).join(', ')}`,
     value.limit !== undefined && `LIMIT ${value.limit}`,
     value.offset !== undefined && `OFFSET ${value.offset}`,
   ].filter(Boolean).join(' ');
@@ -165,7 +169,7 @@ export function renderQuery(query: RootQuery): string {
   return [`SELECT ${query.select.map(select).join(', ')} FROM ${query.from}`,
     query.where && `WHERE ${renderPredicate(query.where)}`,
     query.groupBy?.length && `GROUP BY ${query.groupBy.map(expression).join(', ')}`,
-    query.orderBy?.length && `ORDER BY ${query.orderBy.map(order => `${order.field} ${order.direction}`).join(', ')}`,
+    query.orderBy?.length && `ORDER BY ${query.orderBy.map(order => `${order.field} ${order.direction} NULLS ${order.nulls}`).join(', ')}`,
     query.limit !== undefined && `LIMIT ${query.limit}`,
     query.offset !== undefined && `OFFSET ${query.offset}`].filter(Boolean).join(' ');
 }

@@ -12,8 +12,8 @@ describe('pure SOQL domain', () => {
     const query: RootQuery = { ...base([field('Name'), field('Owner.Name'), {
       kind: 'subquery', query: { kind: 'child', relationship: 'Contacts', select: [field('Email')], limit: 2 },
     }]), where: { kind: 'comparison', field: 'Name', operator: 'LIKE', value: { kind: 'text', value: "O'Reilly%" } },
-    orderBy: [{ field: 'Name', direction: 'ASC' }], offset: 10 };
-    const expected = "SELECT Name, Owner.Name, (SELECT Email FROM Contacts LIMIT 2) FROM Account WHERE Name LIKE 'O\\'Reilly%' ORDER BY Name ASC LIMIT 50 OFFSET 10";
+    orderBy: [{ field: 'Name', direction: 'ASC', nulls: 'LAST' }], offset: 10 };
+    const expected = "SELECT Name, Owner.Name, (SELECT Email FROM Contacts LIMIT 2) FROM Account WHERE Name LIKE 'O\\'Reilly%' ORDER BY Name ASC NULLS LAST LIMIT 50 OFFSET 10";
     expect(renderQuery(query)).toBe(expected);
     expect(renderQuery(query)).toBe(expected);
   });

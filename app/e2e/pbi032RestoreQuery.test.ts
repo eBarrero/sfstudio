@@ -21,7 +21,10 @@ function savedQuery(): QueryState {
   return { indexCurrentElement: 0, queryElemnts: [
     { type: 'ROOT', parent: -1, level: 0, limit: 50,
       sObjectId: { orgSfName: source, sObjectApiName: 'Contact', sObjectLocalId: 0 },
-      selectClause: { fields: [select] }, whereLogic: 'C1 OR C2', where: [
+      selectClause: { fields: [select] },
+      orderBy: [{ field: { fieldApiName: 'Industry', fieldIndex: 2, relationshipPath: ['Account'] },
+        direction: 'DESC', nulls: 'FIRST' }],
+      whereLogic: 'C1 OR C2', where: [
         { field: { fieldApiName: 'LastName', fieldIndex: 1, relationshipPath: [] },
           operator: '=', value: "'Soto'", sqlString: "LastName = 'Soto'" },
         { field: { fieldApiName: 'Industry', fieldIndex: 2, relationshipPath: ['Account'] },
@@ -63,6 +66,9 @@ test('restores qualified conditions using target metadata while retaining logic 
   expect(restored).not.toBe(sourceState);
   expect((restored.queryElemnts[0] as PrimaryQuery).whereLogic).toBe('C1 OR C2');
   expect((restored.queryElemnts[0] as PrimaryQuery).where?.map(item => item.field.fieldIndex)).toEqual([6, 11]);
+  expect((restored.queryElemnts[0] as PrimaryQuery).orderBy).toEqual([{ field: {
+    fieldApiName: 'Industry', fieldIndex: 11, relationshipPath: ['Account'] },
+    direction: 'DESC', nulls: 'FIRST' }]);
   expect(restored.queryElemnts[0].selectClause.fields[0].fieldId.fieldIndex).toBe(5);
   expect(restored.queryElemnts[1].sObjectId.sObjectLocalId).toBe(9);
   expect((sourceState.queryElemnts[0] as PrimaryQuery).where?.[1].field.fieldIndex).toBe(2);
@@ -81,10 +87,11 @@ test('loads one saved related query into a compatible org without losing its WHE
   await savedSoqlRepository.put({ id, name: 'Shared Contacts',
     createdDate: '2026-01-01T00:00:00.000Z', lastModifiedDate: '2026-01-01T00:00:00.000Z',
     body: "SELECT Id FROM Contact WHERE (LastName = 'Soto' OR Account.Industry = 'Tech') LIMIT 50",
-    createdOrgKey: source, availableOrgKeys: [source], formatVersion: 3, queryState: savedQuery() });
+    createdOrgKey: source, availableOrgKeys: [source], formatVersion: 4, queryState: savedQuery() });
   await loadSavedSoql(id);
   expect(modelState.getState().sqlState.sql).toContain(
     "WHERE (LastName = 'Soto' OR Account.Industry = 'Tech')");
+  expect(modelState.getState().sqlState.sql).toContain('ORDER BY Account.Industry DESC NULLS FIRST');
   expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).whereLogic).toBe('C1 OR C2');
   expect((await savedSoqlRepository.get(id))?.availableOrgKeys).toEqual([source, target]);
   expect(savedSoqlState.getState().currentId).toBe(id);
@@ -101,7 +108,7 @@ test.each([
   const id = `pbi032-${mode}`;
   await savedSoqlRepository.put({ id, name: id, createdDate: '2026-01-01T00:00:00.000Z',
     lastModifiedDate: '2026-01-01T00:00:00.000Z', body: 'SELECT Id FROM Contact',
-    createdOrgKey: source, availableOrgKeys: [source], formatVersion: 3, queryState: savedQuery() });
+    createdOrgKey: source, availableOrgKeys: [source], formatVersion: 4, queryState: savedQuery() });
   const before = modelState.getState().queryState;
   await expect(loadSavedSoql(id)).rejects.toThrow(message);
   expect(modelState.getState().queryState).toBe(before);

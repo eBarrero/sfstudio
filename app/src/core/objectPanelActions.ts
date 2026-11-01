@@ -4,6 +4,7 @@ export const OBJECT_PANEL_ACTION = {
   SHOW_FIELDS: 'object.show_fields',
   SHOW_RELATIONS: 'object.show_relations',
   SHOW_WHERE: 'object.show_where',
+  SHOW_ORDER: 'object.show_order',
 } as const;
 
 export type ObjectPanelActionId = typeof OBJECT_PANEL_ACTION[keyof typeof OBJECT_PANEL_ACTION];
@@ -13,6 +14,7 @@ export function dispatchObjectPanelAction(actionId: ObjectPanelActionId): void {
     [OBJECT_PANEL_ACTION.SHOW_FIELDS]: 'fields',
     [OBJECT_PANEL_ACTION.SHOW_RELATIONS]: 'relations',
     [OBJECT_PANEL_ACTION.SHOW_WHERE]: 'where',
+    [OBJECT_PANEL_ACTION.SHOW_ORDER]: 'order',
   } as const;
   objectPanelState.getState().selectTab(tabs[actionId]);
 }

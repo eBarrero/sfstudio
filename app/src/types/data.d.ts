@@ -237,6 +237,7 @@ interface GetFieldsIndex {
     precision: number,
     scale: number,
     unique: boolean,
+    sortable?: boolean,
     custom: boolean,
     referenceTo: SObjectApiName,
     relationshipName: RelationshipName | null

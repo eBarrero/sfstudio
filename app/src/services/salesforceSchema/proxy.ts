@@ -162,6 +162,7 @@ export default class Proxy {
                     precision: field.precision, 
                     scale: field.scale, 
                     unique: field.unique, 
+                    sortable: field.sortable,
                     custom: field.custom, 
                     type: field.type, 
                     referenceTo: field.referenceTo[0],

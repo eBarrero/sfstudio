@@ -7,7 +7,7 @@ export interface SavedSoql {
   body: string;
   createdOrgKey: string;
   availableOrgKeys: string[];
-  formatVersion: 3;
+  formatVersion: 4;
   queryState: QueryState;
 }
 
@@ -43,7 +43,7 @@ export class IndexedDbSavedSoqlRepository implements SavedSoqlRepository {
     return new Promise((resolve, reject) => {
       const request = db.transaction('queries', 'readonly').objectStore('queries').getAll();
       request.onsuccess = () => resolve((request.result as SavedSoql[])
-        .filter(query => query.formatVersion === 3)
+        .filter(query => query.formatVersion === 4)
         .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id)));
       request.onerror = () => reject(request.error);
     });
@@ -53,7 +53,7 @@ export class IndexedDbSavedSoqlRepository implements SavedSoqlRepository {
     const db = await this.open();
     return new Promise((resolve, reject) => {
       const request = db.transaction('queries', 'readonly').objectStore('queries').get(id);
-      request.onsuccess = () => resolve(request.result?.formatVersion === 3 ? request.result as SavedSoql : null);
+      request.onsuccess = () => resolve(request.result?.formatVersion === 4 ? request.result as SavedSoql : null);
       request.onerror = () => reject(request.error);
     });
   }

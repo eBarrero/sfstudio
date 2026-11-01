@@ -24,6 +24,7 @@ interface pairCondition extends SimpleCondition {
 interface OrderBy {
     field: FieldId;
     direction: 'ASC' | 'DESC';
+    nulls: 'FIRST' | 'LAST';
   }
 
 
@@ -149,5 +150,8 @@ interface ModelState {
     addWhere: (SimpleCondition: SimpleCondition) => void;
     setWhereLogic: (elementIndex: number, expression: string) => void;
     setLimit: (elementIndex: number, limit: number | undefined) => void;
+    addOrderBy: (field: GetFieldsIndex, direction: 'ASC' | 'DESC', nulls: 'FIRST' | 'LAST') => void;
+    removeOrderBy: (elementIndex: number, orderIndex: number) => void;
+    moveOrderBy: (elementIndex: number, orderIndex: number, destination: number) => void;
     initializeModel: () => void;
   }

@@ -75,7 +75,8 @@ export function legacyQueryToAst(state: QueryState): RootQuery | undefined {
         if (element.type !== 'SUBQUERY' || element.parent !== parent) return [];
         const child: ChildQuery = { kind: 'child', relationship: element.relationshipName,
           select: selections(index), where: conditions(element.where, element.whereLogic), limit: element.limit, offset: element.offset,
-          orderBy: element.orderBy?.map(order => ({ field: order.field.fieldApiName, direction: order.direction })) };
+          orderBy: element.orderBy?.map(order => ({ field: qualifiedFieldName(order.field),
+            direction: order.direction, nulls: order.nulls })) };
         return [{ kind: 'subquery', query: child }];
       }),
     ];
@@ -89,7 +90,8 @@ export function legacyQueryToAst(state: QueryState): RootQuery | undefined {
   return { kind: 'root', from: root.sObjectId.sObjectApiName, select,
     where: conditions(root.where, root.whereLogic), limit: root.limit, offset: root.offset,
     groupBy: groupedSelections(rootIndex),
-    orderBy: root.orderBy?.map(order => ({ field: order.field.fieldApiName, direction: order.direction })) };
+    orderBy: root.orderBy?.map(order => ({ field: qualifiedFieldName(order.field),
+      direction: order.direction, nulls: order.nulls })) };
 }
 
 export function legacySqlState(state: QueryState): SQLState {

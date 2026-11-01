@@ -59,7 +59,9 @@ export async function restoreQuery(saved: QueryState, orgKey: string): Promise<Q
     if (element.type !== 'RELETED') {
       for (const condition of element.where ?? []) await resolveConditionField(objectId, condition.field);
     }
-    element.orderBy?.forEach(order => resolveField(order.field));
+    if (element.type !== 'RELETED') {
+      for (const order of element.orderBy ?? []) await resolveConditionField(objectId, order.field);
+    }
     if (element.type === 'ROOT' || element.type === 'SUBQUERY') {
       element.aggregatorQuery?.groupBy.forEach(resolveField);
       element.aggregatorQuery?.having.forEach(condition => resolveField(condition.field));
