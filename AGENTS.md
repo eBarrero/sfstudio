@@ -290,7 +290,7 @@ Reglas:
 
 ## 12. Estilo y mantenimiento
 
-- Estamos en fase de desarrollo: al cambiar esquemas o persistencia no se hacen migraciones ni se mantiene compatibilidad con versiones anteriores. Se puede reiniciar la persistencia tantas veces como sea necesario. Esta regla no autoriza guardar secretos ni datos de negocio.
+- Estamos en fase de desarrollo: al cambiar esquemas o persistencia propios de SF Studio no se hacen migraciones ni se mantiene compatibilidad con versiones anteriores. Se puede reiniciar la persistencia local del proyecto tantas veces como sea necesario, sin esfuerzo adicional para conservar sus datos anteriores. Esta regla nunca se aplica a una organización Salesforce conectada: no autoriza borrar, reiniciar ni modificar sus datos o metadata. Tampoco autoriza guardar secretos ni datos de negocio.
 - Mantener TypeScript estricto.
 - Preferir unions discriminadas frente a estados stringly-typed.
 - Nombres de clases en PascalCase, funciones/variables en camelCase.
