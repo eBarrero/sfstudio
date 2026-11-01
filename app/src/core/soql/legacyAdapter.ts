@@ -1,5 +1,5 @@
 import type { ChildQuery, Expression, Literal, Predicate, RootQuery, Selection } from './domain';
-import { renderQuery, validateQuery } from './domain';
+import { renderPredicate, renderQuery, validateQuery } from './domain';
 import { defaultWhereLogic, parseWhereLogic, WhereLogicError,
   type WhereLogicNode } from './whereLogic';
 import { qualifiedFieldName } from './whereOwnership';
@@ -43,6 +43,10 @@ export function legacyConditionToPredicate(condition: SimpleCondition | pairCond
       String(condition.value ?? '').split(/[\n,]/).filter(Boolean).map(value => literal(`'${value.trim()}'`)),
   };
   return { kind: 'comparison', field, operator: condition.operator as '=', value: literal(condition.value) };
+}
+
+export function legacyConditionPreview(condition: SimpleCondition | pairCondition): string {
+  return renderPredicate(legacyConditionToPredicate(condition));
 }
 
 function conditions(items: (SimpleCondition | pairCondition)[] | undefined,

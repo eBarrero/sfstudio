@@ -31,9 +31,7 @@ const viewState = create<ViewState>((set, get) => {
             set({dialogStack: [...get().dialogStack, newWindow]});
         },
         popDialog: () => {
-            const dialogArray = get().dialogStack;
-            dialogArray.pop();
-            set({dialogStack: dialogArray});
+            set({dialogStack: get().dialogStack.slice(0, -1)});
         },
         setMsgbox(type: string, title: string, message: string) {
             set({msgbox: {type, title, message}, dialogStack: [...get().dialogStack, Dialog.MSGBOX]});

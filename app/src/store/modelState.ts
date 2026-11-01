@@ -132,7 +132,7 @@ import savedSoqlState from './savedSoqlState';
                 if (queryState.queryElemnts[index].type === 'SUBQUERY') parentToChildLevels += 1;
             }
             if (parentToChildLevels >= MAX_PARENT_TO_CHILD_LEVELS) {
-                throw new Error('SOQL admite como máximo cinco niveles de objetos en relaciones hijas.');
+                throw new Error('SOQL supports at most five levels of child relationships.');
             }
 
             if (queryState.queryElemnts[0].selectClause.fields.length>0 &&
@@ -257,7 +257,7 @@ import savedSoqlState from './savedSoqlState';
             const provided = SimpleCondition.field.fieldApiName.split('.');
             const fieldApiName = provided.pop();
             if (!fieldApiName || (provided.length && provided.join('.') !== relationshipPath.join('.')))
-                throw new Error('La ruta del campo no coincide con la relación actual.');
+                throw new Error('The field path does not match the current relationship.');
             const condition = { ...SimpleCondition, field: {
                 ...SimpleCondition.field, fieldApiName, relationshipPath,
             } };
@@ -282,7 +282,7 @@ import savedSoqlState from './savedSoqlState';
             const current = get().queryState;
             const { ownerIndex } = whereOwner(current, elementIndex);
             const element = current.queryElemnts[ownerIndex] as PrimaryQuery | NestedQuery;
-            if (!element?.where?.length) throw new Error('No hay condiciones WHERE en este elemento.');
+            if (!element?.where?.length) throw new Error('This query block has no WHERE conditions.');
             const normalized = expression.trim();
             parseWhereLogic(normalized, element.where.length);
             const queryState = structuredClone(current);
@@ -293,9 +293,9 @@ import savedSoqlState from './savedSoqlState';
             const current = get().queryState;
             const element = current.queryElemnts[elementIndex];
             if (!Number.isInteger(elementIndex) || !element || element.type === 'RELETED')
-                throw new Error('El bloque SOQL no es válido.');
+                throw new Error('Invalid SOQL query block.');
             if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 1 || limit > 2000))
-                throw new Error('El límite debe ser un entero entre 1 y 2000.');
+                throw new Error('LIMIT must be a whole number from 1 to 2000.');
             const queryState = structuredClone(current);
             const block = queryState.queryElemnts[elementIndex] as PrimaryQuery | NestedQuery;
             if (limit === undefined) delete block.limit;

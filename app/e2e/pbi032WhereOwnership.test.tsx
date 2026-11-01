@@ -39,9 +39,9 @@ test('resolves the nearest query block and rejects corrupt ancestry', () => {
   expect(whereOwner(state, 2)).toEqual({ ownerIndex: 0, relationshipPath: ['Account', 'Owner'] });
   expect(whereOwner(state, 4)).toEqual({ ownerIndex: 3, relationshipPath: ['Account'] });
   state.queryElemnts[2].parent = 2;
-  expect(() => whereOwner(state, 2)).toThrow('Árbol de consulta no válido');
+  expect(() => whereOwner(state, 2)).toThrow('Invalid query tree');
   state.queryElemnts[2].parent = 99;
-  expect(() => whereOwner(state, 2)).toThrow('Árbol de consulta no válido');
+  expect(() => whereOwner(state, 2)).toThrow('Invalid query tree');
 });
 
 test('mixes local and chained parent conditions under one root WHERE with custom logic', () => {
@@ -98,11 +98,11 @@ test('shows one editor per query block and qualified paths for related condition
   expect(screen.getAllByText('C1')).toHaveLength(2);
   expect(screen.getByText('C2')).toBeInTheDocument();
   expect(screen.getByText('(Account.Industry)')).toBeInTheDocument();
-  expect(screen.queryByRole('textbox', { name: /Lógica WHERE de User/ })).not.toBeInTheDocument();
-  const rootInput = screen.getByRole('textbox', { name: 'Lógica WHERE de Contact' });
+  expect(screen.queryByRole('textbox', { name: /WHERE logic for User/ })).not.toBeInTheDocument();
+  const rootInput = screen.getByRole('textbox', { name: 'WHERE logic for Contact' });
   expect(rootInput).toHaveValue('C1 OR C2');
   fireEvent.change(rootInput, { target: { value: '(C1 AND C2)' } });
-  fireEvent.click(within(rootInput.closest('form')!).getByRole('button', { name: 'Aplicar lógica' }));
+  fireEvent.click(within(rootInput.closest('form')!).getByRole('button', { name: 'Apply logic' }));
   expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).whereLogic).toBe('(C1 AND C2)');
 });
 

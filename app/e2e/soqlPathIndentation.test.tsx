@@ -73,6 +73,6 @@ it('places a child of a child under its actual parent; fields are still needed t
   act(() => modelState.getState().gotoChild(child('Note', 4)));
   expect(modelState.getState().queryState.queryElemnts).toHaveLength(5);
   expect(() => modelState.getState().gotoChild(child('Attachment', 5)))
-    .toThrow('SOQL admite como máximo cinco niveles de objetos en relaciones hijas.');
+    .toThrow('SOQL supports at most five levels of child relationships.');
   expect(modelState.getState().queryState.queryElemnts).toHaveLength(5);
 });

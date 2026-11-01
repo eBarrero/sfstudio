@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { fieldCapabilities } from '../../../core/soql/fieldEditor';
 import modelState from '../../../store/modelState';
 
-interface Props { field: GetFieldsIndex; path: string }
+interface Props { field: GetFieldsIndex; path: string; onApplied?: () => void }
 
-export default function OrderByBuilder({ field, path }: Props) {
+export default function OrderByBuilder({ field, path, onApplied }: Props) {
   const addOrderBy = modelState(state => state.addOrderBy);
   const [direction, setDirection] = useState<'' | 'ASC' | 'DESC'>('');
   const [nulls, setNulls] = useState<'' | 'FIRST' | 'LAST'>('');
@@ -15,6 +15,7 @@ export default function OrderByBuilder({ field, path }: Props) {
     try {
       addOrderBy(field, direction, nulls);
       setError('');
+      onApplied?.();
     } catch (cause) {
       setError((cause as Error).message);
     }

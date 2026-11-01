@@ -268,3 +268,7 @@ Verificaciones después del deploy:
 - No imprimir cookies, OAuth URLs, códigos ni identidad en logs.
 - No mutar arrays/maps recuperados desde Zustand; crear una nueva referencia.
 - Nombres de clases en PascalCase y corrección gradual de typos, sin reescritura masiva.
+
+### Editores modales y cláusulas SOQL
+
+`FieldDialog` abre por defecto en **Select** cuando el comando no expresa otra intención. Un editor modal conserva el elemento que tenía foco, enfoca su primera pestaña, contiene la navegación con Tab y devuelve el foco al cerrarse. Las pestañas usan `role="tablist"`, `role="tab"`, `aria-selected` y paneles asociados; las flechas, Home y End cambian de pestaña. Los controles de WHERE mantienen un borrador local y solo habilitan **Apply** cuando `buildWhereCondition` produce un predicado validado; su vista previa procede de `renderPredicate`. Las acciones del store aplican los cambios al bloque propietario y las vistas globales WHERE/ORDER BY se abren mediante `dispatchObjectPanelAction`.

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { defaultWhereLogic, WhereLogicError } from '../../../core/soql/whereLogic';
+import { defaultWhereLogic, parseWhereLogic, WhereLogicError } from '../../../core/soql/whereLogic';
 import { qualifiedFieldName } from '../../../core/soql/whereOwnership';
+import { legacyConditionPreview } from '../../../core/soql/legacyAdapter';
 import modelState from '../../../store/modelState';
 import css from './style.module.css';
 
@@ -9,6 +10,13 @@ function WhereGroup({ element, index }: { element: PrimaryQuery | NestedQuery; i
     const storedLogic = element.whereLogic ?? defaultWhereLogic(conditions.length);
     const [draft, setDraft] = useState(storedLogic);
     const [error, setError] = useState('');
+    let draftError = '';
+    try { parseWhereLogic(draft, conditions.length); }
+    catch (cause) {
+        draftError = cause instanceof WhereLogicError && cause.code === 'INDEX_OUT_OF_RANGE'
+            ? `Use condition numbers from C1 to C${conditions.length}.`
+            : 'Check the operators and parentheses in the expression.';
+    }
 
     useEffect(() => {
         setDraft(storedLogic);
@@ -23,9 +31,9 @@ function WhereGroup({ element, index }: { element: PrimaryQuery | NestedQuery; i
         } catch (cause) {
             if (cause instanceof WhereLogicError) {
                 setError(cause.code === 'INDEX_OUT_OF_RANGE'
-                    ? `Usa índices entre C1 y C${conditions.length}.`
-                    : 'Revisa los operadores y los paréntesis de la expresión.');
-            } else setError('No se pudo actualizar la lógica WHERE.');
+                    ? `Use condition numbers from C1 to C${conditions.length}.`
+                    : 'Check the operators and parentheses in the expression.');
+            } else setError('Could not update the WHERE logic.');
         }
     }
 
@@ -36,14 +44,15 @@ function WhereGroup({ element, index }: { element: PrimaryQuery | NestedQuery; i
         <ol className={css.whereConditions}>
             {conditions.map((condition, conditionIndex) =>
                 <li key={conditionIndex}><strong>C{conditionIndex + 1}</strong>{' '}
-                    <code>{condition.sqlString}</code>{' '}
+                    <code>{legacyConditionPreview(condition)}</code>{' '}
                     <small>({qualifiedFieldName(condition.field)})</small></li>)}
         </ol>
         <form onSubmit={apply}>
-            <label htmlFor={`where-logic-${index}`}>Lógica WHERE de {element.sObjectId.sObjectApiName}</label>
+            <label htmlFor={`where-logic-${index}`}>WHERE logic for {element.sObjectId.sObjectApiName}</label>
             <input id={`where-logic-${index}`} value={draft}
-                onChange={event => setDraft(event.target.value)} />
-            <button type="submit">Aplicar lógica</button>
+                onChange={event => { setDraft(event.target.value); setError(''); }} />
+            <button type="submit" disabled={Boolean(draftError)}>Apply logic</button>
+            {draftError && <p role="alert">{draftError}</p>}
             {error && <p role="alert">{error}</p>}
         </form>
     </section>;
@@ -68,7 +77,7 @@ function LimitRow({ element, index }: { element: PrimaryQuery | NestedQuery; ind
 
     function applyOther() {
         if (!/^\d+$/.test(draft) || Number(draft) < 2 || Number(draft) > 2000) {
-            setError('Introduce un número entero entre 2 y 2000.');
+            setError('Enter a whole number from 2 to 2000.');
             return;
         }
         choose(Number(draft));
@@ -97,15 +106,15 @@ export default function WhereClausePanel() {
         <h2 id="where-clause-heading">Where Clause</h2>
         {blocks.length > 0 && <>
             <table className={css.limitTable}>
-                <caption>LIMIT por objeto</caption>
+                <caption>LIMIT by object</caption>
                 <thead><tr><th scope="col">Object</th><th scope="col">All</th>
                     <th scope="col">1</th><th scope="col">Other</th></tr></thead>
                 <tbody>{blocks.map(({ element, index }) =>
                     <LimitRow key={index} element={element} index={index} />)}</tbody>
             </table>
-            <p>All omite LIMIT en la SOQL. La ejecución mantiene un máximo de 2000 filas y carga más páginas bajo demanda.</p>
+            <p>All omits LIMIT from the SOQL. Execution still retrieves at most 2000 rows, with more pages loaded on demand.</p>
         </>}
-        {withWhere.length === 0 && <p>No hay condiciones WHERE en la consulta.</p>}
+        {withWhere.length === 0 && <p>No WHERE conditions have been added.</p>}
         {withWhere.map(({element, index}) => <WhereGroup key={index} element={element} index={index} />)}
     </section>;
 }

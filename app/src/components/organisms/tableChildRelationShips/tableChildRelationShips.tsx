@@ -27,7 +27,7 @@ export default function TableChildRelationShips() {
                 data:[
                     {label:relation.childSObject,
                     iconType : '1toN',
-                    tooltip : 'go to relationShip', 
+                    tooltip : 'Open child relationship',
                     action: 'GOTO_RELATION'
                     },  {label:relation.relationshipName}
                 ]

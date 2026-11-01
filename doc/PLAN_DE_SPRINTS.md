@@ -18,7 +18,7 @@ Este plan convierte los criterios de éxito de [VISION_PRODUCTO.md](./VISION_PRO
 | [Sprint 08](./sprint08/guia%20del%20sprint.md) | Interfaz más compacta de conexiones y exploración de objetos por pestañas. |
 | [Sprint 09](./sprint09/guia%20del%20sprint.md) | PBI-032 implementada: el WHERE del bloque mezcla condiciones locales y de relaciones padre. |
 | [Sprint 10](./sprint10/guia%20del%20sprint.md) | Cerrado: PBI-033 implementó la gestión de `LIMIT` por bloque SOQL. |
-| [Sprint 11](./sprint11/guia%20del%20sprint.md) | Planificado: completar FieldDialog, corregir SELECT/WHERE e implementar ORDER BY con política de nulos y panel propio. |
+| [Sprint 11](./sprint11/guia%20del%20sprint.md) | Cerrado: FieldDialog accesible, SELECT/WHERE validados y ORDER BY con política de nulos y panel propio. |
 
 ## Trazabilidad con los criterios de éxito
 

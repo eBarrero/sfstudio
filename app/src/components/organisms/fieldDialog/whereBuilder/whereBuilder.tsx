@@ -8,6 +8,7 @@ interface Props {
   field: GetFieldsIndex;
   path: string;
   applyNewCondition: (condition: SimpleCondition | pairCondition) => void;
+  onApplied?: () => void;
 }
 
 function fieldKind(type: string): WhereKind {
@@ -19,7 +20,7 @@ function fieldKind(type: string): WhereKind {
 
 const comparisonOperators = ['=', '!=', '>', '<', '>=', '<='];
 
-export default function WhereBuilder({ field, path, applyNewCondition }: Props) {
+export default function WhereBuilder({ field, path, applyNewCondition, onApplied }: Props) {
   const kind = fieldKind(field.type);
   const [mode, setMode] = useState<WhereMode>(kind === 'picklist' || kind === 'multiselect' ? 'list' : 'single');
   const [operator, setOperator] = useState(kind === 'picklist' ? 'IN' : kind === 'multiselect' ? 'INCLUDES' : '=');
@@ -31,7 +32,9 @@ export default function WhereBuilder({ field, path, applyNewCondition }: Props) 
   const fieldId: FieldId = { fieldApiName: `${path}${field.fieldApiName}`, fieldIndex: field.fieldLocalId };
   const draft: WhereDraft = { field: fieldId, kind, mode, operator, from, to, values, dateLiteral };
   let preview = '';
-  try { preview = buildWhereCondition(draft).sqlString; } catch { /* Incomplete drafts have no preview. */ }
+  let draftError = '';
+  try { preview = buildWhereCondition(draft).sqlString; }
+  catch (cause) { draftError = (cause as Error).message; }
 
   const modes: { value: WhereMode; label: string }[] = kind === 'picklist' || kind === 'multiselect'
     ? [{ value: 'list', label: 'Values' }, { value: 'null', label: 'NULL' }]
@@ -56,6 +59,7 @@ export default function WhereBuilder({ field, path, applyNewCondition }: Props) 
     try {
       applyNewCondition(buildWhereCondition(draft));
       setError('');
+      onApplied?.();
     } catch (cause) {
       setError((cause as Error).message);
     }
@@ -99,8 +103,9 @@ export default function WhereBuilder({ field, path, applyNewCondition }: Props) 
     <section className={css.card}>
       <span className={css.cardTitle}>Predicate preview</span>
       <output className={css.sql}>{preview || 'Complete the condition to see a preview.'}</output>
+      {draftError && <p aria-live="polite">{draftError}</p>}
       {error && <p role="alert">{error}</p>}
-      <button type="button" onClick={apply}>Apply</button>
+      <button type="button" disabled={!preview} onClick={apply}>Apply</button>
     </section>
   </section>;
 }

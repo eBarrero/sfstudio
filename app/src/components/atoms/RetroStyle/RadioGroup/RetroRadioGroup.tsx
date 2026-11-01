@@ -18,8 +18,8 @@ const RetroCheckboxGroup: React.FC<RetroCheckboxGroupProps> = ({label, options, 
   
     
   return ( 
-    <div className={css.retro_CheckboxGroup}>
-      {label && <label className={css.label}>{label}</label>}
+    <fieldset className={css.retro_CheckboxGroup}>
+      {label && <legend className={css.label}>{label}</legend>}
       <div  className={css.checkbox_group}>
         {options.map((option, index) => (
           <div key={`${index}|${option.code}`} className={css.item}>  
@@ -37,7 +37,7 @@ const RetroCheckboxGroup: React.FC<RetroCheckboxGroupProps> = ({label, options, 
           </div>
         ))}
       </div>
-    </div>
+    </fieldset>
   );
 };
 

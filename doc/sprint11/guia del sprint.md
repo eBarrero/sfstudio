@@ -2,7 +2,7 @@
 
 ## Estado y objetivo
 
-Planificado. Convertir el diagnóstico de [REVISION_FIELD_DIALOG.md](../REVISION_FIELD_DIALOG.md) en un editor fiable para `SELECT`, `WHERE` y `ORDER BY`. El sprint 10 queda cerrado; los sprints 06 y 07 permanecen aplazados.
+Cerrado. El diagnóstico de [REVISION_FIELD_DIALOG.md](../REVISION_FIELD_DIALOG.md) se convirtió en un editor fiable para `SELECT`, `WHERE` y `ORDER BY`. El sprint 10 también está cerrado; los sprints 06 y 07 permanecen aplazados.
 
 La interfaz debe mostrar únicamente opciones que el modelo y el renderer pueden ejecutar. La vista previa, el estado guardado y la SOQL generada deben expresar la misma consulta.
 

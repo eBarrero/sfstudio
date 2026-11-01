@@ -74,19 +74,19 @@ test('sets independent limits atomically and renders or omits LIMIT in the right
     expect(() => modelState.getState().setLimit(0, invalid)).toThrow();
     expect(modelState.getState().queryState).toBe(before);
   }
-  expect(() => modelState.getState().setLimit(1, 50)).toThrow('bloque SOQL');
+  expect(() => modelState.getState().setLimit(1, 50)).toThrow('SOQL query block');
   expect(modelState.getState().queryState).toBe(before);
 });
 
 test('shows four columns, exclusive modes and an accessible error without WHERE conditions', () => {
   setup();
   render(<WhereClausePanel />);
-  const table = screen.getByRole('table', { name: 'LIMIT por objeto' });
+  const table = screen.getByRole('table', { name: 'LIMIT by object' });
   expect(within(table).getAllByRole('columnheader').map(cell => cell.textContent))
     .toEqual(['Object', 'All', '1', 'Other']);
   expect(within(table).getAllByRole('row')).toHaveLength(3);
   expect(within(table).queryByText('User')).not.toBeInTheDocument();
-  expect(screen.getByText('No hay condiciones WHERE en la consulta.')).toBeInTheDocument();
+  expect(screen.getByText('No WHERE conditions have been added.')).toBeInTheDocument();
   const rootAll = screen.getByRole('checkbox', { name: 'All Account 0' });
   const rootOne = screen.getByRole('checkbox', { name: '1 Account 0' });
   const rootOther = screen.getByRole('spinbutton', { name: 'Other Account 0' });
@@ -106,7 +106,7 @@ test('shows four columns, exclusive modes and an accessible error without WHERE 
   expect(modelState.getState().sqlState.sql).toMatch(/FROM Account LIMIT 250$/);
   fireEvent.change(rootOther, { target: { value: '2500' } });
   fireEvent.blur(rootOther);
-  expect(screen.getByRole('alert')).toHaveTextContent('entre 2 y 2000');
+  expect(screen.getByRole('alert')).toHaveTextContent('from 2 to 2000');
   expect(rootOther).toHaveAttribute('aria-invalid', 'true');
   expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).limit).toBe(250);
   fireEvent.click(rootOne);

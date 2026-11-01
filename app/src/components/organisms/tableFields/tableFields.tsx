@@ -21,7 +21,6 @@ export default function TableFields() {
     const { exeCommandFromUI} = applicationState();
 
     const onActionRowHandle = (rowId: string, action: string) => {
-        console.log('onRowActionHandle:' + action + ' [' + rowId + ']');
         const fieldLocalId = parseInt(rowId.split('|')[0]);
         const index = parseInt(rowId.split('|')[1]);
         if (action===constants.GOTO_REFERENCE) { 
@@ -71,7 +70,7 @@ const parseTypeField = (field: GetFieldsIndex):GridTableCell => {
     if (field.type===SFFieldTypesEnum.Reference)
         return {
             iconType : '1to1',
-            tooltip : 'go to reference',
+            tooltip : 'Open parent relationship',
             label: field.referenceTo,
             subLabel: '',
             action: constants.GOTO_REFERENCE

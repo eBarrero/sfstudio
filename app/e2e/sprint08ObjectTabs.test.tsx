@@ -33,8 +33,8 @@ it('switches one visible panel through tabs and matching OBJECT commands', () =>
     objectPanelState.getState().resetTab();
   });
   render(<SObjectPanel />);
-  const fields = screen.getByRole('tab', { name: /Campos/ });
-  const relations = screen.getByRole('tab', { name: /Relaciones hijas/ });
+  const fields = screen.getByRole('tab', { name: /Fields/ });
+  const relations = screen.getByRole('tab', { name: /Child Relationships/ });
   expect(fields).toHaveAttribute('data-action-id', 'object.show_fields');
   expect(relations).toHaveAttribute('data-action-id', 'object.show_relations');
   expect(fields).toHaveAttribute('aria-selected', 'true');
@@ -114,7 +114,7 @@ it('shows every stored WHERE condition and shares an action across tab, menu and
 
   act(() => modelState.setState({ queryState: { indexCurrentElement: 0, queryElemnts: [] } }));
   const refreshedPanel = screen.getByRole('tabpanel', { name: 'Where Clause' });
-  expect(within(refreshedPanel).getByText('No hay condiciones WHERE en la consulta.')).toBeInTheDocument();
+  expect(within(refreshedPanel).getByText('No WHERE conditions have been added.')).toBeInTheDocument();
   expect(within(refreshedPanel).queryByText("Name LIKE 'A%'")).not.toBeInTheDocument();
 });
 
@@ -141,16 +141,16 @@ it('numbers conditions and applies only valid WHERE logic from the panel', () =>
   const panel = screen.getByRole('tabpanel', { name: 'Where Clause' });
   expect(within(panel).getByText('C1')).toBeInTheDocument();
   expect(within(panel).getByText('C2')).toBeInTheDocument();
-  const input = within(panel).getByRole('textbox', { name: 'Lógica WHERE de Account' });
+  const input = within(panel).getByRole('textbox', { name: 'WHERE logic for Account' });
   expect(input).toHaveValue('C1 AND C2');
 
   fireEvent.change(input, { target: { value: '(C1 OR C0)' } });
-  fireEvent.click(within(panel).getByRole('button', { name: 'Aplicar lógica' }));
-  expect(within(panel).getByRole('alert')).toHaveTextContent('Usa índices entre C1 y C2.');
+  expect(within(panel).getByRole('button', { name: 'Apply logic' })).toBeDisabled();
+  expect(within(panel).getByRole('alert')).toHaveTextContent('Use condition numbers from C1 to C2.');
   expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).whereLogic).toBe('C1 AND C2');
 
   fireEvent.change(input, { target: { value: '(C1 OR C2)' } });
-  fireEvent.click(within(panel).getByRole('button', { name: 'Aplicar lógica' }));
+  fireEvent.click(within(panel).getByRole('button', { name: 'Apply logic' }));
   expect(within(panel).queryByRole('alert')).not.toBeInTheDocument();
   expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).whereLogic).toBe('(C1 OR C2)');
   expect(modelState.getState().sqlState.sql).toContain("WHERE (Name = 'Alice' OR Industry = 'Tech')");
@@ -166,6 +166,6 @@ it('keeps the extended fields view and resets to fields for a new object', () =>
   expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   act(() => objectPanelState.getState().resetTab());
   act(() => viewState.getState().setCurrentView('sobject'));
-  expect(screen.getByRole('tab', { name: /Campos/ })).toHaveAttribute('aria-selected', 'true');
+  expect(screen.getByRole('tab', { name: /Fields/ })).toHaveAttribute('aria-selected', 'true');
   rendered.unmount();
 });

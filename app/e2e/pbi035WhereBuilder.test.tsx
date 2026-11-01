@@ -56,8 +56,8 @@ test('incomplete or unsupported drafts are rejected without a preview or mutatio
   const apply = jest.fn();
   render(<WhereBuilder field={field} path="" applyNewCondition={apply} />);
   expect(screen.getByText('Complete the condition to see a preview.')).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
-  expect(screen.getByRole('alert')).toHaveTextContent('Enter a value');
+  expect(screen.getByText('Enter a value before applying the condition.')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
   expect(apply).not.toHaveBeenCalled();
 });
 
@@ -65,7 +65,7 @@ test('picklist buttons work with keyboard and Not In matches the stored operator
   const apply = jest.fn();
   const picklist = { ...field, type: 'picklist', picklistValues: [{ value: 'Gold', label: 'Gold' }] } as unknown as GetFieldsIndex;
   render(<WhereBuilder field={picklist} path="" applyNewCondition={apply} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+  expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
   expect(apply).not.toHaveBeenCalled();
   const value = screen.getByRole('button', { name: 'Gold' });
   value.focus();

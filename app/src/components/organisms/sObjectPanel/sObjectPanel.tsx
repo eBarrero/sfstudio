@@ -14,8 +14,8 @@ import { IconCharacter } from '../../constants';
 import { dispatchObjectPanelAction, OBJECT_PANEL_ACTION } from '../../../core/objectPanelActions';
 import type { KeyboardEvent } from 'react';
 
-const statusText = { EMPTY: 'Sin datos', FRESH: 'Vigente', STALE: 'Obsoleta',
-    REFRESHING: 'Actualizando', ERROR: 'Error al actualizar' } as const;
+const statusText = { EMPTY: 'No data', FRESH: 'Current', STALE: 'Outdated',
+    REFRESHING: 'Refreshing', ERROR: 'Refresh failed' } as const;
 const tabOrder: ObjectPanelTab[] = ['fields', 'relations', 'where', 'order'];
 const tabActions = [OBJECT_PANEL_ACTION.SHOW_FIELDS, OBJECT_PANEL_ACTION.SHOW_RELATIONS,
     OBJECT_PANEL_ACTION.SHOW_WHERE, OBJECT_PANEL_ACTION.SHOW_ORDER] as const;
@@ -46,23 +46,23 @@ const status = useSyncExternalStore(subscribeMetadata,
     () => metadataObjectStatus('', ''));
     return (
         <>
-        {orgKey && <p role="status">Metadata {statusText[status.state]}
+        {orgKey && <p role="status">Metadata: {statusText[status.state]}
             {status.fetchedAt !== null && ` · ${new Date(status.fetchedAt).toLocaleString()}`}
         </p>}
         {currentView === 'sobject' && (
         <div>
-            <div role="tablist" aria-label="Contenido del objeto" className={css.tabs} onKeyDown={onTabKeyDown}>
+            <div role="tablist" aria-label="Object content" className={css.tabs} onKeyDown={onTabKeyDown}>
                 <button type="button" role="tab" id="object-fields-tab" aria-controls="object-fields-panel"
                     aria-selected={activeTab === 'fields'} tabIndex={activeTab === 'fields' ? 0 : -1}
                     data-action-id={VIEW_CMD.SHOW_FIELDS.actionId}
                     onClick={() => dispatchObjectPanelAction(OBJECT_PANEL_ACTION.SHOW_FIELDS)}>
-                    <span aria-hidden="true">{IconCharacter.FIELDS}</span> Campos
+                    <span aria-hidden="true">{IconCharacter.FIELDS}</span> Fields
                 </button>
                 <button type="button" role="tab" id="object-relations-tab" aria-controls="object-relations-panel"
                     aria-selected={activeTab === 'relations'} tabIndex={activeTab === 'relations' ? 0 : -1}
                     data-action-id={VIEW_CMD.SHOW_RELATIONS.actionId}
                     onClick={() => dispatchObjectPanelAction(OBJECT_PANEL_ACTION.SHOW_RELATIONS)}>
-                    <span aria-hidden="true">{IconCharacter.RELATIONS}</span> Relaciones hijas
+                    <span aria-hidden="true">{IconCharacter.RELATIONS}</span> Child Relationships
                 </button>
                 <button type="button" role="tab" id="object-where-tab" aria-controls="object-where-panel"
                     aria-selected={activeTab === 'where'} tabIndex={activeTab === 'where' ? 0 : -1}
