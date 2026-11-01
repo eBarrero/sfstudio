@@ -17,6 +17,7 @@ Este plan convierte los criterios de éxito de [VISION_PRODUCTO.md](./VISION_PRO
 | [Sprint 07](./sprint07/guia%20del%20sprint.md) | Aplazado: experiencia de comparación y aceptación integral; reevaluar la paridad opcional antes de ejecutarlo. |
 | [Sprint 08](./sprint08/guia%20del%20sprint.md) | Interfaz más compacta de conexiones y exploración de objetos por pestañas. |
 | [Sprint 09](./sprint09/guia%20del%20sprint.md) | PBI-032 implementada: el WHERE del bloque mezcla condiciones locales y de relaciones padre. |
+| [Sprint 10](./sprint10/guia%20del%20sprint.md) | Planificado: gestionar `LIMIT` por bloque SOQL desde «Where Clause». |
 
 ## Trazabilidad con los criterios de éxito
 
@@ -24,12 +25,12 @@ Este plan convierte los criterios de éxito de [VISION_PRODUCTO.md](./VISION_PRO
 | --- | --- | --- |
 | Conectar al menos dos orgs en el mismo workspace | PBI-005, 006, 007, 012 | E2E multi-org y aceptación PBI-028 |
 | Alternar sin confundir contexto | PBI-009, 010, 011, 012 | Selector, etiqueta de destino y E2E |
-| Explorar y consultar cualquiera en solo lectura | PBI-013 a 020, 032 | E2E explorer/query, filtros en relaciones padre y rechazo de no-SELECT |
+| Explorar y consultar cualquiera en solo lectura | PBI-013 a 020, 032, 033 | E2E explorer/query, filtros en relaciones padre, control de `LIMIT` y rechazo de no-SELECT |
 | Comparar Integración y UAT por objeto, campo y relación | PBI-021 a 026 | Golden tests del diff y E2E comparación |
 | Acciones con ratón y comando gemelo acordadas | PBI-011, 015, 020, 027, 031 | Pruebas de paridad para las acciones que tengan ambas entradas |
 | Reinicio/expiración con reautenticación clara | PBI-007, 008, 025 | Prueba de registro vacío + estado REAUTH_REQUIRED |
 | No guardar tokens ni datos de negocio en MongoDB | PBI-003, 004, 007, 014, 020, 028 | Inspección automatizada de DB, stores y logs |
-| Consultas limitadas y resultados no persistidos | PBI-018, 019, 020 | Tests de límite/paginación y persistencia |
+| Consultas limitadas y resultados no persistidos | PBI-018, 019, 020, 033 | Tests de límite/paginación, control visual de `LIMIT` y persistencia |
 
 ## Dependencias principales
 
@@ -44,6 +45,7 @@ flowchart LR
     S6 --> S7
     S5 --> S8[Sprint 08<br/>UI]
     S8 --> S9[Sprint 09<br/>WHERE de relaciones padre]
+    S9 --> S10[Sprint 10<br/>LIMIT por bloque SOQL]
 ```
 
 Sprint 05 y Sprint 06 podrían desarrollarse en paralelo después de Sprint 04 si el equipo tiene capacidad independiente, pero ambos deben terminar antes de la aceptación del Sprint 07. Sprint 08 puede ejecutarse con Sprint 06 y 07 aplazados; no acredita por sí mismo la release de la primera fase.

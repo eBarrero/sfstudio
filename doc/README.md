@@ -26,7 +26,7 @@ El objetivo original era «administrar los datos de una org de Salesforce». La 
 - [VISION_PRODUCTO.md](./VISION_PRODUCTO.md): alcance, multi-org, comparación, comandos y decisión sobre tokens.
 - [GUIA_DESARROLLO.md](./GUIA_DESARROLLO.md): instalación, variables, comandos, Render y diagnóstico.
 - [EVALUACION_Y_HOJA_DE_RUTA.md](./EVALUACION_Y_HOJA_DE_RUTA.md): crítica constructiva, riesgos y plan recomendado.
-- [PLAN_DE_SPRINTS.md](./PLAN_DE_SPRINTS.md): sprints 01–09, con 06 y 07 aplazados y la PBI del 09 implementada, y trazabilidad con los criterios de éxito.
+- [PLAN_DE_SPRINTS.md](./PLAN_DE_SPRINTS.md): sprints 01–10, con 06 y 07 aplazados, el 09 implementado y el 10 planificado, y trazabilidad con los criterios de éxito.
 
 ## Mapa rápido del repositorio
 
