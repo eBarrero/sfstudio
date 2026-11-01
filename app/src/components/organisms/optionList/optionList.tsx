@@ -36,7 +36,6 @@ const OptionList = (props:OptionListProps) => {
        
 
     const handleSelect = (id: string) => () => {
-        console.log('OptionList: ' + id + ':' + level);
         if (secondLevel && level===1) {
             setLevel(2);
             setCurrentOptions(secondLevel.load2ndLevel(id));

@@ -12,10 +12,7 @@ import viewState from '../../../store/viewState';
 import TitleBar from '../../atoms/TitleBar/titleBar';
 import Tabs     from '../../atoms/Tabs/tabs';
 import Select from './selectBuilder';
-import WhereDataTime from './whereBuilder/dataTime';
-import WhereTextField from './whereBuilder/textFields';
-import WherePickListField from './whereBuilder/pickListField';
-import WhereNumberField from './whereBuilder/numberFields';
+import WhereBuilder from './whereBuilder/whereBuilder';
 
 
 
@@ -58,26 +55,9 @@ const FieldDialog = () => {
                                                 typeField={currentField.type} 
                                                 selectedFunctions={context ? selectedFunctions(queryState, context) : []}
                                                 doFieldAction={hanndleDoFieldAction} />}
-                    {activeTab === 'W' && whereDialog === 'DATATIME' &&
-                                                <WhereDataTime 
-                                                applyNewCondition={addWhere}     
-                                                field={currentField} 
-                                                path={ (currentPath===undefined) ?'':currentPath } />}
-                    {activeTab === 'W' && whereDialog === 'TEXT' &&
-                                                <WhereTextField 
-                                                applyNewCondition={addWhere}     
-                                                field={currentField} 
-                                                path={ (currentPath===undefined) ?'':currentPath } />}
-                    {activeTab === 'W' && whereDialog === 'PICKLIST' &&
-                                                <WherePickListField 
-                                                applyNewCondition={addWhere}     
-                                                field={currentField} 
-                                                path={ (currentPath===undefined) ?'':currentPath } />}                                                
-                    {activeTab === 'W' && whereDialog === 'NUMBER' &&
-                                                <WhereNumberField 
-                                                applyNewCondition={addWhere}     
-                                                field={currentField} 
-                                                path={ (currentPath===undefined) ?'':currentPath } />}
+                    {activeTab === 'W' && whereDialog !== 'NOT_ALLOWED' && <WhereBuilder
+                        key={`${queryState.indexCurrentElement}:${currentField.fieldApiName}`}
+                        applyNewCondition={addWhere} field={currentField} path={currentPath ?? ''} />}
 
 
                 </>}

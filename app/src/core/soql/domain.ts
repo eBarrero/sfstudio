@@ -135,18 +135,24 @@ export function escapeLiteral(value: Literal): string {
   }
 }
 
+/** Validate and render the same predicate representation used by full queries. */
+export function renderPredicate(value: Predicate): string {
+  const errors = validateQuery({ kind: 'root', from: 'Account',
+    select: [{ kind: 'expression', expression: { kind: 'field', path: 'Id' } }], where: value })
+    .filter(error => error.path.startsWith('query.where'));
+  if (errors.length) throw new SoqlValidationError(errors);
+  if (value.kind === 'logical') return `(${value.operands.map(renderPredicate).join(` ${value.operator} `)})`;
+  if (value.kind === 'set') return `${value.field} ${value.operator} (${value.values.map(escapeLiteral).join(', ')})`;
+  return `${value.field} ${value.operator} ${escapeLiteral(value.value)}`;
+}
+
 export function renderQuery(query: RootQuery): string {
   const errors = validateQuery(query);
   if (errors.length) throw new SoqlValidationError(errors);
   const expression = (value: Expression): string => value.kind === 'field' ? value.path :
     `${value.name}(${value.field ?? ''})`;
-  const predicate = (value: Predicate): string => {
-    if (value.kind === 'logical') return `(${value.operands.map(predicate).join(` ${value.operator} `)})`;
-    if (value.kind === 'set') return `${value.field} ${value.operator} (${value.values.map(escapeLiteral).join(', ')})`;
-    return `${value.field} ${value.operator} ${escapeLiteral(value.value)}`;
-  };
   const clauses = (value: QueryClauses): string => [
-    value.where && `WHERE ${predicate(value.where)}`,
+    value.where && `WHERE ${renderPredicate(value.where)}`,
     value.orderBy?.length && `ORDER BY ${value.orderBy.map(order => `${order.field} ${order.direction}`).join(', ')}`,
     value.limit !== undefined && `LIMIT ${value.limit}`,
     value.offset !== undefined && `OFFSET ${value.offset}`,
@@ -157,7 +163,7 @@ export function renderQuery(query: RootQuery): string {
     return `(SELECT ${value.query.select.map(select).join(', ')} FROM ${value.query.relationship}${clauses(value.query) ? ` ${clauses(value.query)}` : ''})`;
   };
   return [`SELECT ${query.select.map(select).join(', ')} FROM ${query.from}`,
-    query.where && `WHERE ${predicate(query.where)}`,
+    query.where && `WHERE ${renderPredicate(query.where)}`,
     query.groupBy?.length && `GROUP BY ${query.groupBy.map(expression).join(', ')}`,
     query.orderBy?.length && `ORDER BY ${query.orderBy.map(order => `${order.field} ${order.direction}`).join(', ')}`,
     query.limit !== undefined && `LIMIT ${query.limit}`,

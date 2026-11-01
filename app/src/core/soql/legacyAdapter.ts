@@ -19,6 +19,7 @@ function expression(field: SelectClauseField, prefix = ''): Expression {
 }
 
 function literal(value: unknown): Literal {
+  if (value && typeof value === 'object' && 'kind' in value) return value as Literal;
   if (value === null || value === 'null') return { kind: 'null' };
   if (typeof value === 'boolean') return { kind: 'boolean', value };
   if (typeof value === 'number' || typeof value === 'string' && /^-?\d+(?:\.\d+)?$/.test(value))
@@ -30,7 +31,7 @@ function literal(value: unknown): Literal {
   return { kind: 'text', value };
 }
 
-function predicate(condition: SimpleCondition | pairCondition): Predicate {
+export function legacyConditionToPredicate(condition: SimpleCondition | pairCondition): Predicate {
   const field = qualifiedFieldName(condition.field);
   if ('operatorTo' in condition) return { kind: 'logical', operator: condition.logicalOperator === 'OR' ? 'OR' : 'AND', operands: [
     { kind: 'comparison', field, operator: condition.operator as '=' , value: literal(condition.value) },
@@ -38,7 +39,8 @@ function predicate(condition: SimpleCondition | pairCondition): Predicate {
   ] };
   if (['IN', 'NOT IN', 'INCLUDES', 'EXCLUDES'].includes(condition.operator)) return {
     kind: 'set', field, operator: condition.operator as 'IN',
-    values: String(condition.value ?? '').split(/[\n,]/).filter(Boolean).map(value => literal(`'${value.trim()}'`)),
+    values: Array.isArray(condition.value) ? condition.value.map(literal) :
+      String(condition.value ?? '').split(/[\n,]/).filter(Boolean).map(value => literal(`'${value.trim()}'`)),
   };
   return { kind: 'comparison', field, operator: condition.operator as '=', value: literal(condition.value) };
 }
@@ -48,7 +50,7 @@ function conditions(items: (SimpleCondition | pairCondition)[] | undefined,
   if (!items?.length) return undefined;
   const tree = parseWhereLogic(logic ?? defaultWhereLogic(items.length), items.length);
   const convert = (node: WhereLogicNode): Predicate => node.kind === 'condition'
-    ? predicate(items[node.index])
+    ? legacyConditionToPredicate(items[node.index])
     : { kind: 'logical', operator: node.kind, operands: [convert(node.left), convert(node.right)] };
   return convert(tree);
 }

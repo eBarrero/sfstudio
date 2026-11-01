@@ -18,7 +18,7 @@ interface ListSelectionComponentProps {
 const ListSelectionComponent: React.FC<ListSelectionComponentProps> = ({ initialValues, onSelectionChange, availableCaption, selectedCaption }) => {
   const [availableValues, setAvailableValues] = useState<SelectItem[]>(initialValues);
   const [selectedValues, setSelectedValues] = useState<SelectItem[]>([]);
-  const [inList, setInList] = useState<boolean>(true);
+  const [notIn, setNotIn] = useState<boolean>(false);
 
   
   // Mueve un valor del contenedor de disponibles al de seleccionados
@@ -26,7 +26,7 @@ const ListSelectionComponent: React.FC<ListSelectionComponentProps> = ({ initial
     setAvailableValues(availableValues.filter((item) => item.code !== value.code));
     const localSelectedValues = [...selectedValues, value];
     setSelectedValues(localSelectedValues);
-    onSelectionChange && onSelectionChange(localSelectedValues.map((value) => value.code), inList);    
+    onSelectionChange(localSelectedValues.map((value) => value.code), notIn);
   };
 
   // Mueve un valor del contenedor de seleccionados al de disponibles
@@ -34,12 +34,12 @@ const ListSelectionComponent: React.FC<ListSelectionComponentProps> = ({ initial
     const localSelectedValues = selectedValues.filter((item) => item.code !== value.code)
     setSelectedValues(localSelectedValues);
     setAvailableValues([...availableValues, value]);
-    onSelectionChange && onSelectionChange(localSelectedValues.map((value) => value.code), inList);    
+    onSelectionChange(localSelectedValues.map((value) => value.code), notIn);
   };
 
   const onInListChange = (value: boolean) => {
-    setInList(value);
-    onSelectionChange && onSelectionChange(selectedValues.map((value) => value.code), value);    
+    setNotIn(value);
+    onSelectionChange(selectedValues.map((value) => value.code), value);
   }
 
   return (
@@ -49,9 +49,9 @@ const ListSelectionComponent: React.FC<ListSelectionComponentProps> = ({ initial
         <div>{availableCaption}</div>
         <div className={css.list}>
           {availableValues && availableValues.map((value,index ) => (
-            <div key={`${value.code}|${index}` } className={css.list_item} onClick={() => moveToSelected(value)}>
+            <button type="button" key={`${value.code}|${index}` } className={css.list_item} onClick={() => moveToSelected(value)}>
               {configDescription(value)} 
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -61,13 +61,13 @@ const ListSelectionComponent: React.FC<ListSelectionComponentProps> = ({ initial
       {/* Contenedor de valores seleccionados */}
       <div className={css.list_container}>
         <div>
-        <input type="checkbox" onChange={(e) => { onInListChange(e.target.checked)}} /> Not In {selectedCaption}
+        <label><input type="checkbox" checked={notIn} onChange={(e) => { onInListChange(e.target.checked)}} /> Not In {selectedCaption}</label>
         </div>
         <div className={css.list}>
           {selectedValues && selectedValues.map((value, index) => (
-            <div key={`${value.code}|${index}` } className={css.list_item} onClick={() => moveToAvailable(value)}>
+            <button type="button" key={`${value.code}|${index}` } className={css.list_item} onClick={() => moveToAvailable(value)}>
               {configDescription(value)}
-            </div>
+            </button>
           ))}
         </div>
       </div>
