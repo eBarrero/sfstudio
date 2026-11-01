@@ -5,11 +5,13 @@ import css from './style.module.css';
 export default function ActiveOrgContext() {
   const workspace = sessionState(state => state.publicSession);
   const active = workspace.connections.find(connection => connection.orgKey === workspace.activeOrgKey);
+  if (active?.status === 'CONNECTED' || (!active && workspace.connections.length === 0)) return null;
+
   return (
     <p className={css.activeContext} role="status" aria-live="polite">
       {active ? (
         <>
-          Destino de exploración y consulta: <strong>{active.alias}</strong> ·{' '}
+          Organización no disponible para explorar o consultar: <strong>{active.alias}</strong> ·{' '}
           {active.environmentKind === 'PRODUCTION' ? 'Producción' : 'Sandbox'} ·{' '}
           {active.userName} · <span title={active.organizationId}
             aria-label={`Organization ID ${active.organizationId}`}>

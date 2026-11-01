@@ -13,6 +13,7 @@ it('does not write Mongo duplicate values to logs or public errors', () => {
     };
     const error = new Error('E11000 duplicate key: connections.userId = private-fixture-id');
     error.name = 'MongoServerError';
+    error.code = 11000;
     try {
         errorHandler(error, { correlationId: 'fixture-correlation' }, response);
     } finally {
@@ -21,6 +22,7 @@ it('does not write Mongo duplicate values to logs or public errors', () => {
     assert.equal(response.statusCode, 500);
     assert.equal(response.body.error.code, 'INTERNAL_ERROR');
     assert.equal(messages.length, 1);
+    assert.equal(JSON.parse(messages[0]).mongoErrorNumber, 11000);
     assert.equal(messages[0].includes('private-fixture-id'), false);
     assert.equal(JSON.stringify(response.body).includes('private-fixture-id'), false);
 });

@@ -2,10 +2,21 @@
 
 
 .container {
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    flex-wrap: wrap;
+    display: block;
 }
+
+.tabs { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+.tabs button { border: 1px solid currentColor; background: transparent; color: inherit; padding: 0.4rem 0.65rem; cursor: pointer; }
+.tabs button[aria-selected='true'] { font-weight: bold; border-bottom-width: 3px; }
+.tabs button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+.whereConditions { padding-left: 1.5rem; overflow-wrap: anywhere; }
+.whereConditions li { margin-bottom: 0.5rem; }
+
+.limitTable { border-collapse: collapse; width: 100%; margin-bottom: 0.75rem; }
+.limitTable th, .limitTable td { border: 1px solid currentColor; padding: 0.4rem; text-align: left; }
+.limitTable td input[type='number'] { width: 6rem; }
+.limitTable td [role='alert'] { display: block; }
 
 .containerExtended {
     display:block

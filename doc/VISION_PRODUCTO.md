@@ -51,9 +51,9 @@ Una sesión de trabajo puede tener varias organizaciones autenticadas simultáne
 - **organización configurada**: org conocida que puede requerir reautenticación;
 - **organización activa**: destino actual de navegación o consulta.
 
-### 3. Ratón y comandos equivalentes
+### 3. Ratón y comandos
 
-Toda acción funcional disponible mediante ratón debe tener un comando gemelo. Ambas entradas deben invocar el mismo caso de uso, no mantener implementaciones paralelas.
+Los comandos gemelos son opcionales y se deciden por acción según su utilidad. Cuando existen ambas entradas, deben invocar el mismo caso de uso, sin implementaciones paralelas.
 
 Ejemplos:
 
@@ -65,7 +65,10 @@ Ejemplos:
 | Abrir objeto | `object open Account` |
 | Filtrar campos | `field filter custom on` |
 | Ejecutar consulta | `query run` |
+| Ver la SOQL generada | `query edit` |
 | Cerrar conexión | `org close <alias>` |
+| Ver campos de un objeto | `show_fields` |
+| Ver relaciones hijas | `Show_Relations` |
 
 El registro central de comandos ya existente es una buena base. La UI debería emitir identificadores de acción y parámetros hacia el mismo dispatcher usado por la consola.
 
@@ -194,7 +197,7 @@ flowchart TB
 - Puede alternar entre ellas sin confundir el contexto.
 - Puede explorar objetos y ejecutar consultas de solo lectura en cualquiera.
 - Puede comparar Integración y UAT a nivel de objeto, campo y relación.
-- Toda acción importante tiene botón/menú y comando equivalente.
+- Las acciones con botón/menú y comando equivalente producen el mismo resultado.
 - Reinicios y expiraciones producen una solicitud clara de reautenticación.
 - No se guardan tokens ni datos de negocio en MongoDB.
 - Las consultas tienen límites y el resultado no se conserva automáticamente.

@@ -24,6 +24,7 @@ interface pairCondition extends SimpleCondition {
 interface OrderBy {
     field: FieldId;
     direction: 'ASC' | 'DESC';
+    nulls?: 'FIRST' | 'LAST';
   }
 
 
@@ -56,23 +57,25 @@ interface QueryElementAbstract {
     sObjectId: SObjectId;
     parent: number;
     selectClause: SelectClause;
-    where?: (SimpleCondition | pairCondition)[];
-    whereLogic?: (LogicalOperator | number )[];
     orderBy?: OrderBy[];
-    level: 0|1|2|3|4|number;                       // It indicates the level of the query element in the query max. 5. ROOT and SUBQUERY are always level 0
+    level: number;                                  // Depth from the root; ROOT is 0.
 }
 
 interface PrimaryQuery extends QueryElementAbstract  {
     type: 'ROOT';
+    where?: (SimpleCondition | pairCondition)[];
+    whereLogic?: string;
     aggregatorQuery?: AggregatorQuery;
-    limit: number;
+    limit?: number;
     offset?: number;
 }
 
 interface NestedQuery extends QueryElementAbstract  {
     type: 'SUBQUERY';
+    where?: (SimpleCondition | pairCondition)[];
+    whereLogic?: string;
     aggregatorQuery?: AggregatorQuery;
-    limit: number;
+    limit?: number;
     offset?: number;    
     relationshipName: RelationshipName;
 }
@@ -137,6 +140,7 @@ interface ModelState {
     setOrg: (orgSfName: SchemaName) => void; 
     clearOrg: () => void;
     setSObject: (sObjectLocalId:SObjectLocalId) => void;
+    loadSavedQuery: (queryState: QueryState) => void;
     setField: (field: GetFieldsIndex) => void;
     gotoLookup: (field: GetFieldsIndex) => void; 
     gotoChild: (child: GetChildRelationships) => void;
@@ -144,5 +148,10 @@ interface ModelState {
     doFieldAction: (fieldIndex: number, action: string, string = '%1', isAggregateFunction: boolean = false, makeGroupBy: boolean = false) => void;
     setSelectAllFields: (value: SelectAllFields) => void;
     addWhere: (SimpleCondition: SimpleCondition) => void;
+    setWhereLogic: (elementIndex: number, expression: string) => void;
+    setLimit: (elementIndex: number, limit: number | undefined) => void;
+    addOrderBy: (field: GetFieldsIndex, direction: 'ASC' | 'DESC', nulls?: 'FIRST' | 'LAST') => void;
+    removeOrderBy: (elementIndex: number, orderIndex: number) => void;
+    moveOrderBy: (elementIndex: number, orderIndex: number, destination: number) => void;
     initializeModel: () => void;
   }

@@ -131,7 +131,11 @@ La API emite logs JSON mediante un logger estructurado. Cada petición obtiene u
 - filtra objetos y campos;
 - expone un `ModelReader` de solo lectura.
 
-El cliente HTTP compartido usa `/api/v1` relativo por defecto y conserva `code` y `correlationId` de los errores públicos. Metadata y SOQL usan temporalmente las rutas `/api` heredadas a través de ese mismo cliente. La caché de esquema sigue solo en memoria; no se copian respuestas Salesforce a `localStorage`.
+El cliente HTTP compartido usa `/api/v1` relativo por defecto y conserva `code` y `correlationId` de los errores públicos. Metadata y SOQL usan temporalmente las rutas `/api` heredadas a través de ese mismo cliente. Los snapshots de metadata usan memoria e IndexedDB con identidad de org, versión y expiración; no se copian respuestas Salesforce a `localStorage`.
+
+Las consultas SOQL guardadas se almacenan en IndexedDB del navegador mientras SF Studio no disponga de autenticación propia. Son definiciones de consulta, nunca resultados. Cada entrada contiene nombre, fechas de creación y modificación, texto SOQL, estado versionado del constructor, `OrgKey` de creación e identificadores de las conexiones en las que está disponible. Se guarda solo mediante una acción explícita, porque los literales pueden contener datos sensibles. Una consulta abierta desde otra conexión se incorpora a la lista de esa conexión sin crear una copia; las ediciones posteriores actualizan la misma entrada. El formato 4 guarda por separado la ruta de relaciones padre y el nombre API del campo final de cada condición `WHERE` y orden `ORDER BY`, conserva dirección y política de nulos, y permite omitir `limit` de los bloques `SELECT`; los índices locales son transitorios. La restauración resuelve cada relación y campo con la metadata de destino; una ruta ausente o ambigua impide la carga sin modificar la consulta actual ni añadir la org de destino a la lista. `SOQL Management` lista y carga, y la carga vuelve al contexto de objeto. IndexedDB pertenece al origen y perfil del navegador: no identifica por sí mismo al usuario ni sincroniza entre dispositivos.
+
+Cuando se incorpore autenticación propia a la entidad `User` actual, el mismo contrato de consultas podrá guardarse en MongoDB bajo ese usuario. Durante el desarrollo se puede reiniciar la persistencia; no se harán migraciones ni se mantendrá compatibilidad con esquemas anteriores. Tokens, resultados SOQL y registros Salesforce siguen excluidos de MongoDB.
 
 ### Modelo SOQL
 
@@ -147,6 +151,8 @@ El modelo representa:
 
 Después recorre esta estructura y produce el texto SOQL. La dirección es buena: el siguiente paso debería ser extraer esta lógica a un módulo puro con pruebas exhaustivas.
 
+El adaptador SOQL anida las subconsultas de relaciones hijas según el padre real de cada elemento del árbol. El objeto raíz cuenta como nivel uno y se admiten hasta cuatro niveles hijos adicionales, conforme a la consulta REST de Salesforce con API 58.0 o posterior. Una subconsulta necesita campos seleccionados para producir una SOQL ejecutable; superar la profundidad muestra un error antes de modificar el árbol. Esta compatibilidad aplica a objetos estándar y personalizados, no a objetos grandes o externos.
+
 ### Interfaz
 
 La página principal combina:
@@ -155,11 +161,15 @@ La página principal combina:
 - ruta de la consulta;
 - consola de comandos y menús;
 - panel de objetos;
-- panel de campos/relaciones;
+- panel de campos, relaciones y condiciones WHERE por elemento de consulta;
 - diálogo de selección y filtros;
 - tabla de resultados.
 
 La consola funciona como una «command palette» contextual. Los comandos se registran al inicializar cada store y algunos se generan dinámicamente a partir del esquema.
+
+En `CONTEXT_LEVEL.OBJECT`, la pestaña «Where Clause» muestra una lista y un editor por bloque `SELECT` (`ROOT` o `SUBQUERY`), con condiciones numeradas y rutas padre cualificadas. `RELETED` no posee un `WHERE`: las condiciones creadas desde él pertenecen al bloque `SELECT` ancestro más cercano. `whereLogic` referencia la lista única de ese bloque (`C1`, `C2`, etc.); el parser puro valida referencias, operadores y paréntesis antes de actualizar el estado. El adaptador SOQL transforma la expresión en el árbol de predicados del dominio. La selección visual de campos `WHERE` compara la ruta de relación, además del índice local, para evitar marcar campos de otro objeto. El botón de la pestaña, la opción «views → Where Clause» y el comando `Show_Where` usan `object.show_where`. Este comando no crea un botón en la barra de la consola. Al abrir otro objeto, el panel vuelve a Campos.
+
+La misma pestaña contiene una tabla de límites para la raíz y cada subconsulta hija. `All` omite `LIMIT` en la SOQL, `1` lo fija en uno y `Other` acepta de 2 a 2000. `modelState.setLimit` actualiza un solo bloque y regenera la SOQL. La ejecución solicita a la API el cupo correspondiente al límite de la raíz, o 2000 para `All`; la API conserva su máximo y la paginación. Los límites de subconsultas no afectan al cupo de registros raíz.
 
 Las acciones del workspace (`org.list`, `org.use`, `org.close`, `org.reconnect`, `org.connect`, `workspace.close`) tienen parámetros tipados y un único dispatcher en `app/src/core/workspaceActions.ts`. El parser de `app/src/core/workspaceCommandParser.ts`, los botones y los menús producen el mismo `ActionId`; el dispatcher valida contexto, pertenencia al workspace y estado de conexión antes de invocar el caso de uso del store. El registro dinámico de comandos de org se reemplaza al actualizar el workspace para evitar duplicados. Las acciones del editor SOQL conservan su registro anterior hasta su migración en los sprints siguientes.
 
@@ -203,6 +213,8 @@ La ruta `GET /api/soql/:orgKey/:soql` se retiró. `POST /api/v1/query` recibe `{
 Una primera página incompleta incluye `cursor`, nunca `nextRecordsUrl`. `POST /api/v1/query/next` recibe `{ "orgKey": "organizationId:userId", "cursor": "..." }`; el cursor expira a los cinco minutos, se usa una sola vez y solo funciona con el workspace y la org que iniciaron la consulta. Salesforce entrega páginas de hasta 100 registros y el servidor respeta el límite total. Al cambiar de org, el navegador aborta la petición en curso y descarta su resultado tardío.
 
 Los resultados y la tabla viven en memoria de Zustand; no se envían a IndexedDB, localStorage ni MongoDB. `query run`, `query next`, `query cancel` y `query clear` son los comandos gemelos de los botones y menús de consulta. Al cerrar el workspace se descartan resultados, petición activa y cursores del servidor. Recargar la página descarta los resultados.
+
+`query edit` abre desde el contexto de objeto la vista `SOQL_EDIT` con contexto `SQL_EDITION`. Muestra en modo de solo lectura la SOQL generada que ya reside en `modelState.sqlState`; el comando `Back` vuelve al objeto. Esta vista no modifica la consulta ni ejecuta llamadas a Salesforce.
 
 El frontend también intenta llamar a `GET /api/getObjectmetadata/:dbName/:sobject`, pero esa ruta no existe en el router.
 

@@ -289,7 +289,7 @@ Toda mutación debe mostrar organización, objeto, cantidad de registros, campos
 2. Solo lectura en la primera fase.
 3. No persistir refresh tokens inicialmente; varias conexiones viven durante el workspace y solicitan reautenticación tras reinicio o expiración.
 4. Producción y sandbox tienen las mismas capacidades; únicamente cambia la identidad visible del contexto.
-5. Toda acción de ratón tiene un comando gemelo y ambas usan la misma acción interna.
+5. Los comandos gemelos se deciden por acción; cuando existen, ratón y comando usan la misma acción interna.
 6. No es un data lake: consulta y presenta datos bajo demanda.
 7. Multi-org es una capacidad central, con comparación Integración–UAT como caso de uso principal.
 

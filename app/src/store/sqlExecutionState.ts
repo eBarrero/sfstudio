@@ -10,7 +10,7 @@ interface SqlExecutionState {
     targetOrgKey: string | null;
     cursor: string | null;
     records: Record<string, unknown>[];
-    executeSql: (orgKey: SchemaName, query: string) => void;
+    executeSql: (orgKey: SchemaName, query: string, limit?: number) => void;
     nextPage: () => void;
     cancel: () => void;
     clear: () => void;
@@ -40,7 +40,7 @@ const sqlExecutionState = create<SqlExecutionState>((set, get) => ({
         activeRequest = null;
         set({ sqlExecutionStatus: get().records.length ? 'DONE' : 'INIT', cursor: null });
     },
-    executeSql: (orgKey, query) => {
+    executeSql: (orgKey, query, limit = 200) => {
         const workspace = sessionState.getState().publicSession;
         if (get().sqlExecutionStatus === 'LOADING') return;
         if (workspace.activeOrgKey !== orgKey ||
@@ -50,7 +50,7 @@ const sqlExecutionState = create<SqlExecutionState>((set, get) => ({
         const controller = new AbortController();
         activeRequest = controller;
         set({ sqlExecutionStatus: 'LOADING', targetOrgKey: orgKey, cursor: null, records: [] });
-        void Proxy.sendSoqlAdapter(orgKey, query, controller.signal).then(page => {
+        void Proxy.sendSoqlAdapter(orgKey, query, controller.signal, limit).then(page => {
             if (version !== requestVersion) return;
             activeRequest = null;
             set({ records: page.records, cursor: page.cursor ?? null,
@@ -94,8 +94,10 @@ const sqlExecutionState = create<SqlExecutionState>((set, get) => ({
                 const target = workspace.connections.find(connection => connection.orgKey === model.state.orgSfName &&
                     connection.status === 'CONNECTED' && connection.orgKey === workspace.activeOrgKey);
                 if (!target) throw new Error('Reautentica y selecciona el destino de la consulta.');
-                if (!globalThis.confirm(`Ejecutar SELECT en ${target.alias} (${target.orgKey}) con límite de 200 filas?`)) return;
-                get().executeSql(model.state.orgSfName, model.sqlState.sql);
+                const root = model.queryState.queryElemnts[0];
+                const limit = root?.type === 'ROOT' ? root.limit ?? 2000 : 200;
+                if (!globalThis.confirm(`Ejecutar SELECT en ${target.alias} (${target.orgKey}) con límite de ${limit} filas?`)) return;
+                get().executeSql(model.state.orgSfName, model.sqlState.sql, limit);
                 view.setCurrentView('SQL_RESULT');
                 application.setContextLevel(CONTEXT_LEVEL.SQL_EXECUTION);
             },

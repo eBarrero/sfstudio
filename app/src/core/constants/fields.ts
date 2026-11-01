@@ -152,6 +152,7 @@ export const SelectClauseKeywords: { [key: string]: SelectClauseKeywords } = {
   SQL_NUMBER:   { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_NUMBER' } as const,
   SQL_PERCENT:  { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_PERCENT' } as const,
   SQL_TEXT:     { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_TEXT' } as const,
+  SQL_TEXT_GROUP: { keyWord: '%1 ',                 description: 'Group by',          makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.TEXT_GROUPBY' } as const,
   SQL_BOOLEAN:  { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: true,  help: '#SOQL_BOOLEAN' } as const,
   SQL_PICKLIST: { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_PICKLIST' } as const,
   // agregate functions
@@ -174,7 +175,6 @@ export const SelectClauseKeywords: { [key: string]: SelectClauseKeywords } = {
   SQL_FYEAR:    { keyWord: 'FISCAL_YEAR(%1)',       description: 'Fiscal Year',       makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.FISCAL_YEAR(%1)' } as const,
   SQL_HOUR:     { keyWord: 'HOUR_IN_DAY(%1)',       description: 'Hour In Day',       makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.HOUR_IN_DAY(%1)' } as const,
   SQL_WEEK:     { keyWord: 'WEEK_IN_YEAR(%1)',      description: 'Week In Year',      makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.WEEK_IN_YEAR(%1)' } as const,
-  SQL_CONV:     { keyWord: 'convertTimezone(%1)',   description: 'Convert Time',      makeGroupBy: false,  unGroupable: false, groupable: true,  help: '#SOQL.Fun.convertTimezone(%1)' } as const,
 };
 
  export type SelectClauseKeywordsEnum = typeof SelectClauseKeywords[keyof typeof SelectClauseKeywords];
@@ -218,7 +218,6 @@ export const SQLClauseAllowedByTypeField: Map<SFFieldTypesEnum, SelectClauseKeyw
     SelectClauseKeywords.SQL_FQUARTER,
     SelectClauseKeywords.SQL_FYEAR,   
     SelectClauseKeywords.SQL_HOUR,    
-    SelectClauseKeywords.SQL_CONV,
   ]],
   [SFFieldTypesEnum.Currency, [
     SelectClauseKeywords.SQL_CURRENCY,
@@ -242,7 +241,12 @@ export const SQLClauseAllowedByTypeField: Map<SFFieldTypesEnum, SelectClauseKeyw
     SelectClauseKeywords.SQL_MAX,
   ]],
   [SFFieldTypesEnum.Text, [
-    SelectClauseKeywords.SQL_TEXT
+    SelectClauseKeywords.SQL_TEXT,
+    SelectClauseKeywords.SQL_TEXT_GROUP,
+    SelectClauseKeywords.SQL_COUNT1,
+    SelectClauseKeywords.SQL_COUNT2,
+    SelectClauseKeywords.SQL_MIN,
+    SelectClauseKeywords.SQL_MAX,
   ]],
   [SFFieldTypesEnum.TextArea, [
     SelectClauseKeywords.SQL_TEXT

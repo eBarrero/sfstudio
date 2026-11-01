@@ -2,20 +2,24 @@
 
 .list_selection_container {
     display: flex;
+    flex-wrap: wrap;
     align-items: stretch;
     gap: 5px;
-    height: 250px;
+    min-height: 12rem;
   }
-  
+
   .list_container {
     flex: 1;
+    min-width: min(100%, 12rem);
+    min-height: 12rem;
+    max-height: 20rem;
     padding: 10px;
     border: 1px solid rgba(83, 80, 80, 0.5);
     border-radius: 5px;
     
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: auto;
   }
   
   .list {
@@ -25,6 +29,10 @@
   }
   
   .list_item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    overflow-wrap: anywhere;
     padding: 2px;
     margin: 1px 0;
     
@@ -43,6 +51,4 @@
     display: flex;
     align-items: center;
   }
-  
 
-  

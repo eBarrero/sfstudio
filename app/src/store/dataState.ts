@@ -11,6 +11,10 @@ const filtersByOrg = new Map<string, { objects: SObjectsFilter; fields: FieldsFi
 const fieldCommands = new Set<string>();
 const lookupCommands = new Set<string>();
 const childCommands = new Set<string>();
+function clearChildCommands(): void {
+    for (const command of childCommands) removeCommand(command, CONTEXT_LEVEL.OBJECT);
+    childCommands.clear();
+}
 function clearDynamicCommands(): void {
     for (const command of [...fieldCommands, ...lookupCommands, ...childCommands])
         removeCommand(command, CONTEXT_LEVEL.OBJECT);
@@ -138,6 +142,8 @@ const dataState = create<DataState>((set, get) => {
             if (orgSfName !== get().activeOrgKey) return;
             const version = ++fieldRequestVersion;
             if (sObjectIndex===undefined || sObjectIndex===null) throw new Error('sObjectIndex is undefined or null');
+            clearChildCommands();
+            set({ childRelationships: [] });
             const filter = get().fieldsFilter;
             Proxy.getFieldsAdapter(orgSfName, sObjectIndex, filter).then((data) => {
                 if (version === fieldRequestVersion && orgSfName === get().activeOrgKey && data!==null) {
@@ -145,6 +151,9 @@ const dataState = create<DataState>((set, get) => {
                          sObjectFields:  structuredClone(data), 
                          dataLastErrorMessage: '' 
                     });
+                    get().createFieldsCommands(data);
+                    get().createLookuoCommands(data);
+                    get().loadChildRelationships(orgSfName, sObjectIndex);
                 } else if (version === fieldRequestVersion && orgSfName === get().activeOrgKey) {
                     set({dataLastErrorMessage: `#CMD.Object_not_found|${sObjectIndex}`});
                 }
@@ -198,10 +207,13 @@ const dataState = create<DataState>((set, get) => {
             const {orgSfName, referenceToLocalId} = field;
             if (orgSfName !== get().activeOrgKey) return;
             const version = ++fieldRequestVersion;
+            clearChildCommands();
+            set({ childRelationships: [] });
             Proxy.getFieldsAdapter(orgSfName, referenceToLocalId![0], null).then((data) => {
                 if (data!==null && version === fieldRequestVersion && orgSfName === get().activeOrgKey) {
                     set({sObjectFields:  structuredClone(data), fieldsFilter: fieldFilterInit(), dataLastErrorMessage: ''});
                     get().createLookuoCommands(data);
+                    get().loadChildRelationships(orgSfName, referenceToLocalId![0]);
                 }
             }).catch(() => {
                 if (version === fieldRequestVersion && orgSfName === get().activeOrgKey)

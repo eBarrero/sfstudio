@@ -65,6 +65,10 @@ export function parseEnvironment(source: NodeJS.ProcessEnv): AppConfig {
     const redirectUri = withoutTrailingSlash(
         source.REDIRECT_URI?.trim() || `http://localhost:${port}`,
     );
+    if (environment === "PROD" &&
+        (!URL.canParse(redirectUri) || new URL(redirectUri).protocol !== "https:")) {
+        throw new ConfigurationError("REDIRECT_URI must use HTTPS in PROD");
+    }
 
     return {
         environment,
@@ -73,7 +77,7 @@ export function parseEnvironment(source: NodeJS.ProcessEnv): AppConfig {
         clientSecret: source.CLIENT_SECRET?.trim() ?? "",
         redirectUri,
         callbackUrl: `${redirectUri}/api/callback`,
-        salesforceApiVersion: source.API_SF_VERSION?.trim() || "58.0",
+        salesforceApiVersion: source.API_SF_VERSION?.trim() || "63.0",
         mongoUrl: source.MONGO?.trim() || "mongodb://127.0.0.1:27017/sfstudio-testing",
     };
 }

@@ -1,9 +1,12 @@
 
 import {create} from 'zustand';
-import { addCommand, searchCommand, readCommand, CONTEXT_LEVEL,APP_CMD } from '../core/commandManager';
+import { addCommand, searchCommand, readCommand, CONTEXT_LEVEL, APP_CMD, SOQL_CMD } from '../core/commandManager';
 import { parseWorkspaceCommand, WORKSPACE_COMMAND_HELP } from '../core/workspaceCommandParser';
 import { dispatchWorkspaceAction } from './sessionState';
 import { dispatchExplorerAction, parseExplorerCommand } from '../core/explorerActions';
+import { SAVED_SOQL_ACTION } from '../core/savedSoqlActions';
+
+let managementReturn: { view: string; context: CONTEXT_LEVEL } = { view: 'org', context: CONTEXT_LEVEL.ORG };
 
 
 
@@ -60,7 +63,7 @@ const applicationState = create<ApplicationState>((set, get) => {
 
             const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined, commandConfirmed: undefined};
             if (/^query(?:\s|$)/i.test(newCommand.trimStart())) {
-                newState.helpOnLine = 'query run | query next | query cancel | query clear';
+                newState.helpOnLine = 'query edit | query run | query next | query cancel | query clear | query management';
                 const exact = readCommand(newCommand.trim(), newState.context_level);
                 if (exact) newState.command = exact;
                 set(newState);
@@ -91,7 +94,7 @@ const applicationState = create<ApplicationState>((set, get) => {
             const newState: LocalAplicationState = {context_level: get().context_level, currentCommand: newCommand, helpOnLine:'',  filter: '', errorState: undefined, suggestions:[], command: undefined, commandConfirmed: undefined};
             const workspaceCommand = parseWorkspaceCommand(newCommand);
             const explorerAction = parseExplorerCommand(newCommand);
-            const queryCommand = /^query\s+(run|next|cancel|clear)$/i.test(newCommand.trim())
+            const queryCommand = /^query\s+(edit|run|next|cancel|clear|management)$/i.test(newCommand.trim())
                 ? readCommand(newCommand.trim(), get().context_level) : undefined;
             if (queryCommand) {
                 newState.commandConfirmed = queryCommand;
@@ -145,6 +148,27 @@ const applicationState = create<ApplicationState>((set, get) => {
         },   
              
         initializeApp: () => {
+            for (const definition of [SOQL_CMD.MANAGE_FROM_ORG, SOQL_CMD.MANAGE_FROM_OBJECT, SOQL_CMD.MANAGE_FROM_EDITION]) {
+                addCommand({ ...definition, actionId: SAVED_SOQL_ACTION.OPEN,
+                    action: (params: AcctionParams) => {
+                        managementReturn = { view: params.view.currentView, context: get().context_level };
+                        params.view.setCurrentView('SOQL_MANAGEMENT');
+                        get().setContextLevel(CONTEXT_LEVEL.SQL_MANAGEMENT);
+                    },
+                });
+            }
+            addCommand({ ...APP_CMD.BACK_FROM_SQL_MANAGEMENT, actionId: 'query.management.back',
+                action: (params: AcctionParams) => {
+                    params.view.setCurrentView(managementReturn.view);
+                    get().setContextLevel(managementReturn.context);
+                },
+            });
+            addCommand({ ...SOQL_CMD.EDIT_SOQL, actionId: 'query.edit',
+                action: (params: AcctionParams) => {
+                    params.view.setCurrentView('SOQL_EDIT');
+                    get().setContextLevel(CONTEXT_LEVEL.SQL_EDITION);
+                },
+            });
             addCommand( { ...APP_CMD.BACK_FROM_ORG,  action: (params: AcctionParams) => { 
                 // missing implementation
                 // close salesforce connection
@@ -162,6 +186,10 @@ const applicationState = create<ApplicationState>((set, get) => {
             addCommand( { ...APP_CMD.BACK_FROM_SQL,  action: (params: AcctionParams) => { 
                 const { view } = params;
                 view.setCurrentView('sobject');
+                get().setContextLevel(CONTEXT_LEVEL.OBJECT);
+            }} );
+            addCommand( { ...APP_CMD.BACK_FROM_SQL_EDIT, actionId: 'query.edit.back', action: (params: AcctionParams) => {
+                params.view.setCurrentView('sobject');
                 get().setContextLevel(CONTEXT_LEVEL.OBJECT);
             }} );
             addCommand( { ...APP_CMD.OBJEXT,  action: (params: AcctionParams) => {

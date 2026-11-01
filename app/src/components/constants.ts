@@ -20,6 +20,12 @@ export enum IconCharacter  {
     CHECK2 = '✔', // &#10004 U+2714
     CROSS = '❌',  // &#10007 U+274C
     GEAR_WHEEl = '⚙️', // &#9881 U+2699
+    CONNECTED = '●',
+    CONNECTING = '◌',
+    REAUTH_REQUIRED = '↻',
+    CONNECTION_ERROR = '!',
+    FIELDS = '▦',
+    RELATIONS = '🔗',
 
 
   }

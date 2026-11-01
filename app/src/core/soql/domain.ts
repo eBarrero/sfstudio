@@ -1,3 +1,5 @@
+import { isSupportedDateLiteral } from './dateLiterals';
+
 /** The supported, deliberately small SOQL syntax tree. No UI or transport types live here. */
 export type Literal =
   | { kind: 'text'; value: string }
@@ -5,6 +7,7 @@ export type Literal =
   | { kind: 'boolean'; value: boolean }
   | { kind: 'null' }
   | { kind: 'date'; value: string }
+  | { kind: 'likePattern'; value: string; match: 'contains' | 'startsWith' | 'endsWith' }
   | { kind: 'dateLiteral'; value: string };
 
 export type Expression =
@@ -28,7 +31,7 @@ export type Selection =
 interface QueryClauses {
   select: Selection[];
   where?: Predicate;
-  orderBy?: { field: string; direction: 'ASC' | 'DESC' }[];
+  orderBy?: { field: string; direction: 'ASC' | 'DESC'; nulls?: 'FIRST' | 'LAST' }[];
   limit?: number;
   offset?: number;
 }
@@ -46,10 +49,12 @@ export interface ChildQuery extends QueryClauses {
 
 export interface SoqlError { code: string; path: string; message: string }
 
+// Salesforce counts the root object as level one, leaving four child subquery levels.
+export const MAX_PARENT_TO_CHILD_LEVELS = 5;
+
 const identifier = /^[A-Za-z][A-Za-z0-9_]*$/;
 const pathIdentifier = /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/;
 const dateValue = /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)?$/;
-const dateLiteral = /^(?:TODAY|YESTERDAY|TOMORROW|THIS_WEEK|LAST_WEEK|NEXT_WEEK|THIS_MONTH|LAST_MONTH|NEXT_MONTH|THIS_YEAR|LAST_YEAR|NEXT_YEAR|LAST_N_DAYS:\d{1,3}|NEXT_N_DAYS:\d{1,3}|N_DAYS_AGO:\d{1,3})$/;
 
 export function validateQuery(query: RootQuery): SoqlError[] {
   const errors: SoqlError[] = [];
@@ -81,34 +86,40 @@ export function validateQuery(query: RootQuery): SoqlError[] {
     values.forEach((literal, i) => {
       if (literal.kind === 'number' && !Number.isFinite(literal.value)) add('INVALID_NUMBER', `${path}.values[${i}]`);
       if (literal.kind === 'date' && !dateValue.test(literal.value)) add('INVALID_DATE', `${path}.values[${i}]`);
-      if (literal.kind === 'dateLiteral' && !dateLiteral.test(literal.value)) add('INVALID_DATE_LITERAL', `${path}.values[${i}]`);
+      if (literal.kind === 'dateLiteral' && !isSupportedDateLiteral(literal.value)) add('INVALID_DATE_LITERAL', `${path}.values[${i}]`);
+      if (literal.kind === 'likePattern' && (value.kind !== 'comparison' || value.operator !== 'LIKE' ||
+        !['contains', 'startsWith', 'endsWith'].includes(literal.match))) add('INVALID_LIKE_PATTERN', `${path}.values[${i}]`);
       if (value.kind === 'set' && literal.kind === 'null') add('INVALID_SET_VALUE', `${path}.values[${i}]`);
     });
   };
-  const clauses = (value: QueryClauses, path: string, child: boolean) => {
+  const clauses = (value: QueryClauses, path: string, depth: number) => {
     if (!value.select.length) add('SELECT_REQUIRED', `${path}.select`);
     const fields = value.select.filter(item => item.kind === 'fields');
-    if (fields.length && (value.select.length !== 1 || child)) add('FIELDS_MUST_STAND_ALONE', `${path}.select`);
+    if (fields.length && (value.select.length !== 1 || depth > 1)) add('FIELDS_MUST_STAND_ALONE', `${path}.select`);
     value.select.forEach((item, i) => {
       const at = `${path}.select[${i}]`;
       if (item.kind === 'expression') {
         expression(item.expression, `${at}.expression`);
         if (item.alias) name(item.alias, `${at}.alias`);
       } else if (item.kind === 'subquery') {
-        if (child) add('NESTED_SUBQUERY_UNSUPPORTED', at);
+        if (depth >= MAX_PARENT_TO_CHILD_LEVELS) add('CHILD_RELATIONSHIP_DEPTH_EXCEEDED', at);
         name(item.query.relationship, `${at}.relationship`);
-        clauses(item.query, at, true);
+        clauses(item.query, at, depth + 1);
       } else if (!['ALL', 'CUSTOM', 'STANDARD'].includes(item.scope)) {
         add('INVALID_FIELDS_SCOPE', `${at}.scope`);
       }
     });
     if (value.where) predicate(value.where, `${path}.where`);
-    value.orderBy?.forEach((order, i) => name(order.field, `${path}.orderBy[${i}].field`, true));
+    value.orderBy?.forEach((order, i) => {
+      name(order.field, `${path}.orderBy[${i}].field`, true);
+      if (order.direction !== 'ASC' && order.direction !== 'DESC') add('INVALID_ORDER_DIRECTION', `${path}.orderBy[${i}].direction`);
+      if (order.nulls !== undefined && order.nulls !== 'FIRST' && order.nulls !== 'LAST') add('INVALID_NULL_POLICY', `${path}.orderBy[${i}].nulls`);
+    });
     if (value.limit !== undefined && (!Number.isSafeInteger(value.limit) || value.limit < 1 || value.limit > 2000)) add('INVALID_LIMIT', `${path}.limit`);
     if (value.offset !== undefined && (!Number.isSafeInteger(value.offset) || value.offset < 0 || value.offset > 2000)) add('INVALID_OFFSET', `${path}.offset`);
   };
   name(query.from, 'query.from');
-  clauses(query, 'query', false);
+  clauses(query, 'query', 1);
   query.groupBy?.forEach((part, i) => expression(part, `query.groupBy[${i}]`));
   const hasAggregate = query.select.some(item => item.kind === 'expression' && item.expression.kind === 'function' &&
     ['COUNT', 'COUNT_DISTINCT', 'SUM', 'AVG', 'MIN', 'MAX'].includes(item.expression.name));
@@ -128,8 +139,27 @@ export function escapeLiteral(value: Literal): string {
     case 'boolean': return value.value ? 'TRUE' : 'FALSE';
     case 'date':
     case 'dateLiteral': return value.value;
+    case 'likePattern': {
+      const term = value.value.replace(/[\\'%_\n\r]/g, character => ({
+        '\\': '\\\\', "'": "\\'", '%': '\\%', '_': '\\_', '\n': '\\n', '\r': '\\r',
+      })[character] ?? character);
+      const prefix = value.match === 'contains' || value.match === 'endsWith' ? '%' : '';
+      const suffix = value.match === 'contains' || value.match === 'startsWith' ? '%' : '';
+      return `'${prefix}${term}${suffix}'`;
+    }
     case 'text': return `'${value.value.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r')}'`;
   }
+}
+
+/** Validate and render the same predicate representation used by full queries. */
+export function renderPredicate(value: Predicate): string {
+  const errors = validateQuery({ kind: 'root', from: 'Account',
+    select: [{ kind: 'expression', expression: { kind: 'field', path: 'Id' } }], where: value })
+    .filter(error => error.path.startsWith('query.where'));
+  if (errors.length) throw new SoqlValidationError(errors);
+  if (value.kind === 'logical') return `(${value.operands.map(renderPredicate).join(` ${value.operator} `)})`;
+  if (value.kind === 'set') return `${value.field} ${value.operator} (${value.values.map(escapeLiteral).join(', ')})`;
+  return `${value.field} ${value.operator} ${escapeLiteral(value.value)}`;
 }
 
 export function renderQuery(query: RootQuery): string {
@@ -137,14 +167,11 @@ export function renderQuery(query: RootQuery): string {
   if (errors.length) throw new SoqlValidationError(errors);
   const expression = (value: Expression): string => value.kind === 'field' ? value.path :
     `${value.name}(${value.field ?? ''})`;
-  const predicate = (value: Predicate): string => {
-    if (value.kind === 'logical') return `(${value.operands.map(predicate).join(` ${value.operator} `)})`;
-    if (value.kind === 'set') return `${value.field} ${value.operator} (${value.values.map(escapeLiteral).join(', ')})`;
-    return `${value.field} ${value.operator} ${escapeLiteral(value.value)}`;
-  };
+  const order = (items: NonNullable<QueryClauses['orderBy']>) =>
+    items.map(item => `${item.field} ${item.direction}${item.nulls ? ` NULLS ${item.nulls}` : ''}`).join(', ');
   const clauses = (value: QueryClauses): string => [
-    value.where && `WHERE ${predicate(value.where)}`,
-    value.orderBy?.length && `ORDER BY ${value.orderBy.map(order => `${order.field} ${order.direction}`).join(', ')}`,
+    value.where && `WHERE ${renderPredicate(value.where)}`,
+    value.orderBy?.length && `ORDER BY ${order(value.orderBy)}`,
     value.limit !== undefined && `LIMIT ${value.limit}`,
     value.offset !== undefined && `OFFSET ${value.offset}`,
   ].filter(Boolean).join(' ');
@@ -154,9 +181,9 @@ export function renderQuery(query: RootQuery): string {
     return `(SELECT ${value.query.select.map(select).join(', ')} FROM ${value.query.relationship}${clauses(value.query) ? ` ${clauses(value.query)}` : ''})`;
   };
   return [`SELECT ${query.select.map(select).join(', ')} FROM ${query.from}`,
-    query.where && `WHERE ${predicate(query.where)}`,
+    query.where && `WHERE ${renderPredicate(query.where)}`,
     query.groupBy?.length && `GROUP BY ${query.groupBy.map(expression).join(', ')}`,
-    query.orderBy?.length && `ORDER BY ${query.orderBy.map(order => `${order.field} ${order.direction}`).join(', ')}`,
+    query.orderBy?.length && `ORDER BY ${order(query.orderBy)}`,
     query.limit !== undefined && `LIMIT ${query.limit}`,
     query.offset !== undefined && `OFFSET ${query.offset}`].filter(Boolean).join(' ');
 }

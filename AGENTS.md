@@ -97,13 +97,15 @@ Cada sprint contiene:
 Al implementar una PBI:
 
 1. Leer la guía del sprint, la PBI y sus dependencias.
-2. Al iniciar la implementación, ejecutar desde la raíz `./gitStartPBI.sh PBI-NNN`, con el nombre de la PBI como único parámetro. Por ejemplo: `./gitStartPBI.sh PBI-009`.
+2. Trabajar sobre la rama local `dev`. No ejecutar `gitStartPBI.sh` ni `gitMergePBI.sh`.
 3. No ampliar silenciosamente el alcance.
 4. Implementar todos sus criterios de aceptación.
 5. Añadir las pruebas exigidas.
 6. Actualizar documentación y contratos afectados.
 7. Informar qué criterios quedaron demostrados.
-8. Al finalizar la PBI, revisar que los cambios correspondan únicamente a ella y ejecutar desde la raíz `./gitMergePBI.sh PBI-NNN "Mensaje de commit" "Cuerpo del PR"`, pasando siempre los tres parámetros. El script realiza las validaciones, crea el commit, publica la rama, abre el Pull Request, espera la CI y lo fusiona en `dev` solo si pasa; no sustituir este paso por un commit manual.
+8. Al finalizar la PBI, revisar que los cambios correspondan únicamente a ella, ejecutar las validaciones y crear el commit directamente en `dev`.
+
+Todos los commits se crean en la rama local `dev`. No hacer `push`, abrir Pull Requests ni fusionar ramas remotas como parte de este protocolo.
 
 `doc/PLAN_DE_SPRINTS.md` contiene la secuencia y trazabilidad de los criterios de éxito.
 
@@ -128,10 +130,10 @@ Al implementar una PBI:
 
 ### Ratón y comandos
 
-- Toda acción funcional disponible con ratón debe tener un comando gemelo.
-- Ratón, menú, teclado y consola deben producir el mismo `ActionId` y llamar al mismo caso de uso.
+- La existencia de un comando gemelo es opcional y se decide para cada acción según su utilidad o por petición del equipo.
+- Cuando una acción tiene varias entradas (ratón, menú, teclado o consola), todas deben producir el mismo `ActionId` y llamar al mismo caso de uso.
 - No duplicar lógica de negocio dentro de componentes y parser de comandos.
-- Una acción nueva debe incluir pruebas de paridad.
+- Las acciones con comando gemelo deben incluir pruebas de paridad.
 
 ### Solo lectura
 
@@ -288,6 +290,7 @@ Reglas:
 
 ## 12. Estilo y mantenimiento
 
+- Estamos en fase de desarrollo: al cambiar esquemas o persistencia propios de SF Studio no se hacen migraciones ni se mantiene compatibilidad con versiones anteriores. Se puede reiniciar la persistencia local del proyecto tantas veces como sea necesario, sin esfuerzo adicional para conservar sus datos anteriores. Esta regla nunca se aplica a una organización Salesforce conectada: no autoriza borrar, reiniciar ni modificar sus datos o metadata. Tampoco autoriza guardar secretos ni datos de negocio.
 - Mantener TypeScript estricto.
 - Preferir unions discriminadas frente a estados stringly-typed.
 - Nombres de clases en PascalCase, funciones/variables en camelCase.
@@ -319,7 +322,7 @@ La release debe demostrar:
 2. Alternancia sin confusión de contexto.
 3. Exploración y SOQL de solo lectura en cualquiera.
 4. Comparación de objetos, campos y relaciones.
-5. Paridad entre ratón y comandos.
+5. Paridad entre ratón y comandos para las acciones que tengan ambas entradas.
 6. Reautenticación clara tras reinicio/expiración.
 7. Ausencia de tokens y datos de negocio persistidos.
 8. Límites de consulta y resultados efímeros.

@@ -9,6 +9,8 @@ import SObjectPanel from '../../organisms/sObjectPanel/sObjectPanel';
 import viewState from '../../../store/viewState';
 import Console from '../../organisms/console/console';
 import ResultSheet from '../../organisms/resultSheet/resultSheet';
+import SOQLEdit from '../../organisms/SOQLEdit/soqlEdit';
+import SOQLManagement from '../../organisms/SOQLManagement/soqlManagement';
 
 
 
@@ -24,18 +26,19 @@ const HomePage = () => {
                     </section>                    
                     <section className={css.frame_explorer}>
                         <ActiveOrgContext/>
-                        <SOQLPath/>
                         <Console/>
+                        <SOQLPath/>
                     </section>
                 </nav>
                 <section className={css.panel_container}>
                     <section className={css.frame_editor}>
-                        <ActiveOrgContext/>
                         {currentView==='INIT' && <AppIntro/> }
                         {currentView==='org' && <SchemaPanel/> }
                         {currentView==='sobject' && <SObjectPanel/> }     
                         {currentView==='OBJECT_EXTEND' && <SObjectPanel/> }
                         {currentView==='SQL_RESULT' && <ResultSheet/> }                   
+                        {currentView==='SOQL_EDIT' && <SOQLEdit/> }
+                        {currentView==='SOQL_MANAGEMENT' && <SOQLManagement/> }
                     </section>
                 </section>    
             </main>

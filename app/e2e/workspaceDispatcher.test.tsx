@@ -53,6 +53,7 @@ it('routes button, menu and console through the same ActionId and OrgKey', async
   sessionState.getState().setWorkspace(workspace);
   applicationState.setState({ context_level: CONTEXT_LEVEL.ORG });
   const view = render(<DBConnectionManager />);
+  fireEvent.click(screen.getByRole('button', { name: 'Gestionar organizaciones' }));
 
   fireEvent.click(screen.getByRole('button', { name: /Usar Integration/ }));
   const menu = getMenus(CONTEXT_LEVEL.ORG).find(item => item.label === 'Org')!;
@@ -92,6 +93,7 @@ it.each([
   sessionState.getState().setWorkspace(workspace);
   applicationState.setState({ context_level: CONTEXT_LEVEL.ORG });
   const view = render(<DBConnectionManager />);
+  fireEvent.click(screen.getByRole('button', { name: 'Gestionar organizaciones' }));
   const button = screen.getByRole('button', { name: buttonName });
   expect(button).toHaveAttribute('data-action-id', id);
   fireEvent.click(button);
@@ -113,6 +115,7 @@ it('routes reconnect with the same OrgKey from button and console', async () => 
   });
   applicationState.setState({ context_level: CONTEXT_LEVEL.ORG });
   const view = render(<DBConnectionManager />);
+  fireEvent.click(screen.getByRole('button', { name: 'Gestionar organizaciones' }));
   const button = screen.getByRole('button', { name: 'Reautenticar' });
   expect(button).toHaveAttribute('data-action-id', 'org.reconnect');
   fireEvent.click(button);

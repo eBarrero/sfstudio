@@ -1,116 +1,83 @@
-import { useState, useEffect } from 'react';
-import css from './style.module.css'
-import { t } from '../../../utils/utils';
-import {salesforceFieldTypesDefinition, SelectComponent} from '../../../core/constants/fields';
-
-
-import modelState  from '../../../store/modelState';  
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import css from './style.module.css';
+import { fieldCapabilities, fieldEditorContext, selectedFunctions } from '../../../core/soql/fieldEditor';
+import modelState from '../../../store/modelState';
 import viewState from '../../../store/viewState';
-
-// Components
-
-
 import TitleBar from '../../atoms/TitleBar/titleBar';
-import Tabs     from '../../atoms/Tabs/tabs';
+import Tabs from '../../atoms/Tabs/tabs';
 import Select from './selectBuilder';
-import WhereDataTime from './whereBuilder/dataTime';
-import WhereTextField from './whereBuilder/textFields';
-import WherePickListField from './whereBuilder/pickListField';
-import WhereNumberField from './whereBuilder/numberFields';
-import Orderby from './orderByBuilder';
+import WhereBuilder from './whereBuilder/whereBuilder';
+import OrderByBuilder from './orderByBuilder';
 
+/** The initial section is SELECT when no opening intent was supplied. */
+export default function FieldDialog() {
+  const { state, queryState, addWhere, doFieldAction } = modelState();
+  const currentField = state.currentField;
+  const popDialog = viewState(value => value.popDialog);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const [currentTab, setCurrentTab] = useState('S');
+  const [feedback, setFeedback] = useState('');
+  const context = currentField ? fieldEditorContext(queryState, queryState.indexCurrentElement, currentField) : undefined;
+  const owner = context ? queryState.queryElemnts[context.ownerIndex] as PrimaryQuery | NestedQuery : undefined;
+  const path = context?.relationshipPath.join('.') ?? '';
+  const fieldPath = `${path ? `${path}.` : ''}${currentField?.fieldApiName ?? ''}`;
+  const capabilities = currentField ? fieldCapabilities(currentField.type) : undefined;
+  const availableTabs: [string, string][] = capabilities?.where === 'NOT_ALLOWED'
+    ? [['Select', 'S'], ['Order', 'O']]
+    : [['Select', 'S'], ['Where', 'W'], ['Order', 'O']];
+  const activeTab = availableTabs.some(([, code]) => code === currentTab) ? currentTab : 'S';
+  const blockName = owner?.sObjectId.sObjectApiName ?? 'query';
+  const selections = context ? selectedFunctions(queryState, context) : [];
 
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialogRef.current?.querySelector<HTMLButtonElement>('[role="tab"]')?.focus();
+    return () => previousFocus?.focus();
+  }, []);
+  useEffect(() => setFeedback(''), [fieldPath, context?.ownerIndex]);
 
-
-
-
-
-
-
-const FieldDialog = () => { 
-    const { state, addWhere, currentSOQLFieldSelection, doFieldAction   }  = modelState();
-    const { currentField, currentPath }  = state;
-    const { popDialog } = viewState();  
-
-    const [currentTab, setCurrentTab] = useState('W');
-    const [whereDialog, setWhereDialog] = useState<SelectComponent>('NOT_ALLOWED');
-
-    function onClose() {
-        popDialog();
-    }   
-
-    const hanndleDoFieldAction = ( action: string, value: string,  isAggregateFunction:boolean, makeGroupBy:boolean) => {
-        if (currentField) {
-            doFieldAction(currentField.fieldLocalId, action, value, isAggregateFunction,  makeGroupBy);
-        }
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      popDialog();
+      return;
     }
-
-    
-    useEffect(() => {
-            if (!currentField) return;
-            const typeDefinition = salesforceFieldTypesDefinition.get(currentField.type);
-            setWhereDialog(typeDefinition!.selectComponent);
-            
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    },[]);
-
-    return (
-        <article className={css.container}>
-            <div className={css.win}>
-                {currentField &&  <>
-                    <TitleBar title={`${currentField.type} - ${currentPath}${currentField.fieldApiName}`} onClose={onClose}  />
-                    {whereDialog !== 'NOT_ALLOWED' && 
-                    <Tabs tabs={[['Select',"S"],['Where',"W"],['Order',"O"]]} value={currentTab} onTabChange={setCurrentTab}/>}
-                    {whereDialog === 'NOT_ALLOWED' && <div>{t('#NOTE.TYPE.CANNOT.BEUSED.IN.SOQL')}</div>}
-                    {currentTab === 'S' && <Select 
-                                                typeField={currentField.type} 
-                                                currentFieldSelection={currentSOQLFieldSelection.get(currentField.fieldLocalId)!} 
-                                                doFieldAction={hanndleDoFieldAction} />}
-                    {currentTab === 'W' && whereDialog === 'DATATIME' &&
-                                                <WhereDataTime 
-                                                applyNewCondition={addWhere}     
-                                                field={currentField} 
-                                                path={ (currentPath===undefined) ?'':currentPath } />}
-                    {currentTab === 'W' && whereDialog === 'TEXT' &&
-                                                <WhereTextField 
-                                                applyNewCondition={addWhere}     
-                                                field={currentField} 
-                                                path={ (currentPath===undefined) ?'':currentPath } />}
-                    {currentTab === 'W' && whereDialog === 'PICKLIST' &&
-                                                <WherePickListField 
-                                                applyNewCondition={addWhere}     
-                                                field={currentField} 
-                                                path={ (currentPath===undefined) ?'':currentPath } />}                                                
-                    {currentTab === 'W' && whereDialog === 'NUMBER' &&
-                                                <WhereNumberField 
-                                                applyNewCondition={addWhere}     
-                                                field={currentField} 
-                                                path={ (currentPath===undefined) ?'':currentPath } />}
-
-
-                    {currentTab === 'O' && <Orderby/>}
-                </>}
-            </div>
-        </article>
-    );
-} 
-
-export default FieldDialog ;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    if (event.key !== 'Tab') return;
+    const focusable = [...(dialogRef.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]):not([tabindex="-1"]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]') ?? [])];
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) {
+      event.preventDefault(); last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current?.contains(document.activeElement))) {
+      event.preventDefault(); first.focus();
+    }
+  }
+  return <div className={css.container}>
+    <div className={css.win} ref={dialogRef} role="dialog" aria-modal="true"
+      aria-labelledby="field-dialog-heading" onKeyDown={onKeyDown} tabIndex={-1}>
+      <TitleBar titleId="field-dialog-heading" title={`Edit field: ${fieldPath || 'No field selected'}`}
+        onClose={popDialog} />
+      {currentField && context && owner && <>
+        <Tabs idPrefix="field-dialog" tabs={availableTabs} value={activeTab} onTabChange={setCurrentTab} />
+        {availableTabs.map(([, code]) => <div key={code} role="tabpanel"
+          id={`field-dialog-${code}-panel`} aria-labelledby={`field-dialog-${code}`}
+          hidden={code !== activeTab}>
+          {code === 'S' && code === activeTab && <Select key={`${context.elementIndex}:${fieldPath}`}
+            typeField={currentField.type} selectedFunctions={selections}
+            doFieldAction={(action, value, aggregate, groupBy) =>
+              doFieldAction(currentField.fieldLocalId, action, value, aggregate, groupBy)}
+            onApplied={message => setFeedback(`${message} Block: ${blockName}.`)} />}
+          {code === 'W' && code === activeTab && <WhereBuilder key={`${context.elementIndex}:${fieldPath}`}
+            applyNewCondition={addWhere} field={currentField} path={state.currentPath ?? ''}
+            onApplied={() => setFeedback(`WHERE condition added to ${blockName}.`)} />}
+          {code === 'O' && code === activeTab && <OrderByBuilder key={`${context.elementIndex}:${fieldPath}`}
+            field={currentField} path={state.currentPath ?? ''}
+            onApplied={() => setFeedback(`ORDER BY field added to ${blockName}.`)} />}
+        </div>)}
+        {feedback && <p role="status">{feedback}</p>}
+      </>}
+    </div>
+  </div>;
+}

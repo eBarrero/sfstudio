@@ -38,6 +38,7 @@ Notas:
 
 - `CLIENT_ID`, `CLIENT_SECRET`, `REDIRECT_URI` y `MONGO` son obligatorias en `DEV` y `PROD`; la API falla antes de escuchar el puerto si falta alguna.
 - `REDIRECT_URI` es la URL pública base de la API, sin `/api/callback`; el callback se deriva añadiendo esa ruta.
+- En `PROD`, `REDIRECT_URI` debe usar HTTPS. En ugelab, aunque sea un entorno de desarrollo, se usa `ENV=PROD` para servir la interfaz compilada y marcar las cookies como `Secure`; su base OAuth es `https://sfstudio.ugelab` y la callback que se registra en Salesforce es `https://sfstudio.ugelab/api/callback`. El certificado de Nginx debe incluir `sfstudio.ugelab` en sus SAN y estar firmado por una CA de confianza para el navegador de Windows.
 - `TESTING` permite valores aislados por defecto y no necesita credenciales reales.
 - La variable externa de MongoDB se llama `MONGO`; el módulo tipado la expone internamente como `mongoUrl`.
 - `ENCRYPTION_KEY` pertenece a un wrapper que actualmente no se usa.
@@ -67,6 +68,25 @@ npm --workspace app run dev
 
 Vite abre normalmente `http://localhost:5173` y proxyfica `/api` a `http://localhost:3000`.
 
+### Desarrollo en ugelab desde Windows
+
+La instancia de ugelab se abre desde Windows en `https://sfstudio.ugelab`. Nginx reenvía ese host a la API en el puerto 3000, que sirve la interfaz compilada. En `api/.env` se usan `ENV=PROD`, `REDIRECT_URI=https://sfstudio.ugelab` y una base MongoDB de desarrollo separada (`sfstudioDev`). En Salesforce, registra exactamente `https://sfstudio.ugelab/api/callback` para el mismo client ID. Abre siempre la interfaz y comienza OAuth desde ese host para conservar la cookie del workspace.
+
+El certificado que usa Nginx debe incluir `sfstudio.ugelab` en Subject Alternative Name. Para emitir uno con una CA local dedicada, instalarlo solo en el virtual host de SF Studio y comprobar Nginx, ejecuta desde la raíz del repositorio en ugelab:
+
+```bash
+sudo ./scripts/setupUgelabTls.sh
+```
+
+El script deja la clave privada de la CA y la del servidor bajo `/etc/sfstudio/tls` con acceso restringido. Después, copia **solo** `/etc/sfstudio/tls/ca.crt` a Windows e impórtalo en `Cert:\CurrentUser\Root`; no copies ninguna clave privada. Por ejemplo, desde PowerShell:
+
+```powershell
+scp uge@192.168.1.55:/etc/sfstudio/tls/ca.crt .\sfstudio-ugelab-ca.crt
+Import-Certificate -FilePath .\sfstudio-ugelab-ca.crt -CertStoreLocation Cert:\CurrentUser\Root
+```
+
+Reabre el navegador y comprueba que el certificado de `https://sfstudio.ugelab` no presenta avisos. La CA es local y solo debe instalarse en los equipos que acceden a este entorno. Para actualizar la interfaz, ejecuta `npm --workspace app run build`; para cambios de API, reinicia `npm --workspace api run start_local`.
+
 El cliente del navegador usa `/api/v1` en el mismo host. Las rutas de metadata y SOQL que todavía no tienen contrato v1 pasan por el mismo cliente usando `/api`; sus contratos se renovarán en sprints posteriores. Solo se permite cambiar la base con `VITE_API_BASE_URL` al compilar la app: debe terminar en `/api/v1`, usar HTTPS si es absoluta y no contener credenciales, query ni fragmento. En desarrollo se acepta HTTP para `localhost` y `127.0.0.1`. El cliente envía la cookie y `X-Correlation-Id`; la API valida y devuelve ese identificador en cabecera y errores.
 
 El gestor de conexiones distingue las orgs por `OrgKey`, incluso cuando comparten alias. **Usar** selecciona una org conectada mediante `POST /api/v1/workspace/active-org`. El destino visible junto al explorador y al panel de consulta se actualiza al alternar. El estado de consulta anterior se limpia para que nunca aparezca bajo la identidad nueva.
@@ -95,7 +115,7 @@ npm run audit
 
 ## Cierre de una PBI
 
-Desde `feature/PBI-NNN`, ejecuta `./gitMergePBI.sh PBI-NNN "Mensaje de commit" "Cuerpo del PR"`. El script valida, crea el commit y el PR hacia `dev`, espera a que aparezca y pase el job `CI / validate` del evento `pull_request` y fusiona con un merge commit. Comprueba que el commit de la rama y la base `dev` no hayan cambiado mientras corría la CI. Si la CI falla, no aparece en cinco minutos o `dev` avanza, deja el PR abierto sin fusionar para revisar y volver a validar.
+Trabaja sobre la rama local `dev`. Al terminar una PBI, revisa que el diff solo incluya sus cambios, ejecuta las validaciones de la sección anterior y crea el commit directamente en `dev`. No ejecutes `gitStartPBI.sh` ni `gitMergePBI.sh`. Este flujo no publica ramas, no abre Pull Requests y no hace `push`.
 
 ## Calidad
 
@@ -231,6 +251,7 @@ Verificaciones después del deploy:
 | --- | --- |
 | `OAUTH_CONTEXT_INVALID` al conectar | La tecnología o el host guardado no corresponde al entorno Salesforce. |
 | `SALESFORCE_AUTH_FAILED` | Revisa callback, permisos y credenciales de la app OAuth en Salesforce sin registrar el código ni el token. |
+| `INTERNAL_ERROR` en `/api/callback` con `MongoServerError` | Busca el `correlationId` en los logs de Render. `mongoErrorNumber` permite distinguir el tipo de error de MongoDB sin registrar documentos ni valores; comprueba también `/ready` antes de reintentar OAuth. |
 | En producción el navegador intenta conectar a otro host | Revisa el valor de `VITE_API_BASE_URL` usado en el build; sin override se usa el mismo host. |
 | `REAUTH_REQUIRED` tras deploy/reinicio o expiración del token | El registro de drivers vive solo en memoria; usa **Reautenticar** en la org afectada. La misma identidad Salesforce conserva su `OrgKey`. |
 | Metadatos de descripción de campos fallan con 404 | Falta la ruta `/api/getObjectmetadata/...`. |
@@ -247,3 +268,7 @@ Verificaciones después del deploy:
 - No imprimir cookies, OAuth URLs, códigos ni identidad en logs.
 - No mutar arrays/maps recuperados desde Zustand; crear una nueva referencia.
 - Nombres de clases en PascalCase y corrección gradual de typos, sin reescritura masiva.
+
+### Editores modales y cláusulas SOQL
+
+`FieldDialog` abre por defecto en **Select** cuando el comando no expresa otra intención. Un editor modal conserva el elemento que tenía foco, enfoca su primera pestaña, contiene la navegación con Tab y devuelve el foco al cerrarse. Las pestañas usan `role="tablist"`, `role="tab"`, `aria-selected` y paneles asociados; las flechas, Home y End cambian de pestaña. Los controles de WHERE mantienen un borrador local y solo habilitan **Apply** cuando `buildWhereCondition` produce un predicado validado; su vista previa procede de `renderPredicate`. Las acciones del store aplican los cambios al bloque propietario. Las cláusulas completas se consultan en las pestañas globales WHERE y ORDER BY del panel de objeto.

@@ -62,9 +62,10 @@ for (const input of ['mouse', 'command'] as const) {
       // OAuth callbacks are exercised against the HTTP API in sprint03Journey.test.js.
       act(() => sessionState.getState().setWorkspace({ ...both, activeOrgKey: integrationKey,
         connections: [integration] }));
-      expect(screen.getByText('Integration')).toBeInTheDocument();
+      expect(screen.getAllByText('Integration').length).toBeGreaterThan(0);
       act(() => sessionState.getState().setWorkspace(both));
-      expect(screen.getByText('UAT')).toBeInTheDocument();
+      expect(screen.getAllByText('UAT').length).toBeGreaterThan(0);
+      fireEvent.click(screen.getByRole('button', { name: 'Gestionar organizaciones' }));
 
       if (input === 'mouse') fireEvent.click(screen.getByRole('button', { name: /Usar Integration/ }));
       else execute(`org use ${integrationKey}`);

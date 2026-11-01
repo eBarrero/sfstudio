@@ -1,11 +1,15 @@
 
 import {t} from '../utils/utils'
+import { IconCharacter } from '../components/constants';
+import { OBJECT_PANEL_ACTION } from './objectPanelActions';
 
 export enum CONTEXT_LEVEL  {
     INIT = 'init',
     ORG = 'org',
     OBJECT = 'object',
-    SQL_EXECUTION = 'sql_execution'
+    SQL_EXECUTION = 'sql_execution',
+    SQL_EDITION = 'sql_edition',
+    SQL_MANAGEMENT = 'sql_management'
 } 
 
 export const VIEW_CMD : { [key: string]: CommandDefinition } = {
@@ -13,7 +17,16 @@ export const VIEW_CMD : { [key: string]: CommandDefinition } = {
     HELP0:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.INIT } as const,
     HELP1:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.ORG } as const,
     HELP2:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.OBJECT } as const,
-    HELP3:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.SQL_EXECUTION } as const
+    HELP3:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.SQL_EXECUTION } as const,
+    HELP4:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.SQL_EDITION } as const,
+    HELP5:  { command: 'Help',   description: '#CMD.help',           iconSymbol: '❓', context: CONTEXT_LEVEL.SQL_MANAGEMENT } as const,
+    SHOW_FIELDS: { command: 'show_fields', description: 'Mostrar campos', iconSymbol: IconCharacter.FIELDS,
+        actionId: OBJECT_PANEL_ACTION.SHOW_FIELDS, context: CONTEXT_LEVEL.OBJECT } as const,
+    SHOW_RELATIONS: { command: 'Show_Relations', description: 'Mostrar relaciones hijas', iconSymbol: IconCharacter.RELATIONS,
+        actionId: OBJECT_PANEL_ACTION.SHOW_RELATIONS, context: CONTEXT_LEVEL.OBJECT } as const,
+    SHOW_WHERE: { command: 'Show_Where', description: 'Mostrar cláusulas WHERE',
+        actionId: OBJECT_PANEL_ACTION.SHOW_WHERE, context: CONTEXT_LEVEL.OBJECT,
+        menuItem: 'views', menuCaption: 'Where Clause' } as const
   };
   
 export const SESSION_CMD : { [key: string]: CommandDefinition } = {
@@ -25,7 +38,9 @@ export const APP_CMD : { [key: string]: CommandDefinition } = {
     BACK_FROM_ORG:          { command: 'Back',                   description: '#CMD.back', iconSymbol: '⇦', context: CONTEXT_LEVEL.ORG   } as const,
     BACK_FROM_OBJ:          { command: 'Back',                   description: '#CMD.back', iconSymbol: '⇦', context: CONTEXT_LEVEL.OBJECT } as const,
     BACK_FROM_SQL:          { command: 'Back',                   description: '#CMD.back', iconSymbol: '⇦', context: CONTEXT_LEVEL.SQL_EXECUTION } as const,
-    OBJEXT:                 { command: 'Extend',                 description: '#CMD.Extend', iconSymbol: '', context: CONTEXT_LEVEL.OBJECT,  menuItem: 'view', menuCaption: 'View extended'  } as const,    
+    BACK_FROM_SQL_EDIT:     { command: 'Back',                   description: '#CMD.back', iconSymbol: '⇦', context: CONTEXT_LEVEL.SQL_EDITION } as const,
+    BACK_FROM_SQL_MANAGEMENT: { command: 'Back', description: '#CMD.back', iconSymbol: '⇦', context: CONTEXT_LEVEL.SQL_MANAGEMENT } as const,
+    OBJEXT:                 { command: 'Extend',                 description: '#CMD.Extend', iconSymbol: '', context: CONTEXT_LEVEL.OBJECT,  menuItem: 'views', menuCaption: 'View extended'  } as const,
   }; 
 
 export const NODEL_CMD : { [key: string]: CommandDefinition } = {
@@ -36,6 +51,14 @@ export const NODEL_CMD : { [key: string]: CommandDefinition } = {
   };
 
 export const SOQL_CMD : { [key: string]: CommandDefinition } = {
+    MANAGE_FROM_ORG:        { command: 'query management', description: 'SOQL Management', context: CONTEXT_LEVEL.ORG,
+        menuItem:'SOQL', menuCaption:'SOQL Management' } as const,
+    MANAGE_FROM_OBJECT:     { command: 'query management', description: 'SOQL Management', context: CONTEXT_LEVEL.OBJECT,
+        menuItem:'SOQL', menuCaption:'SOQL Management' } as const,
+    MANAGE_FROM_EDITION:    { command: 'query management', description: 'SOQL Management', context: CONTEXT_LEVEL.SQL_EDITION,
+        menuItem:'SOQL', menuCaption:'SOQL Management' } as const,
+    EDIT_SOQL:              { command: 'query edit', description: '#CMD.editsoql', iconSymbol: '✎', context: CONTEXT_LEVEL.OBJECT,
+        menuItem:'SOQL', menuCaption:'Edit SOQL' } as const,
     RUN_SOQL:               { command: 'query run', description: '#CMD.soql', iconSymbol: '🗲', context: CONTEXT_LEVEL.OBJECT,
         menuItem:'SOQL', menuCaption:'Run SOQL' } as const,
     NEXT_PAGE:              { command: 'query next', description: 'Cargar siguiente página', context: CONTEXT_LEVEL.SQL_EXECUTION,

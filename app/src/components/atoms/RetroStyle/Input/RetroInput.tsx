@@ -1,5 +1,5 @@
 import css from './style.module.css';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 
 
@@ -54,6 +54,8 @@ interface RetroAreaInputProps extends React.TextareaHTMLAttributes<HTMLTextAreaE
 }
 
 export const RetroInput: React.FC<RetroInputProps> = ({type='text', label, onChangeValue, ...props }) => {
+  const generatedId = useId();
+  const inputId = props.id ?? generatedId;
   function onChangeValueHandle(newValue: string) {
     onChangeValue && onChangeValue({typeHTML:type, from: newValue, to: ''});
   }
@@ -61,9 +63,10 @@ export const RetroInput: React.FC<RetroInputProps> = ({type='text', label, onCha
 
     return (
       <div>
-        {label && <label className={css.retro_label}>{label}</label>}
+        {label && <label className={css.retro_label} htmlFor={inputId}>{label}</label>}
         <input
           {...props}
+          id={inputId}
           type = {type}
           className={css.retro_input}
           onKeyDown={(e) => handleKeyDown(e, onChangeValueHandle)}
@@ -85,12 +88,14 @@ export const RetroRangeInput: React.FC<RetroRangeInputProps> = ({ labelFrom = 'F
     const [ inputString, setInputString ] = useState<ReturnOnChangeValues>({typeHTML:type, from: '', to: ''});
 
     function onChange1stValue(newValue: ReturnOnChangeValues)  {
-      setInputString({typeHTML: newValue.typeHTML, from: newValue.from, to: newValue.from});
-      onChangeRangeValue && onChangeRangeValue(inputString);
+      const next = {typeHTML: newValue.typeHTML, from: newValue.from, to: inputString.to};
+      setInputString(next);
+      onChangeRangeValue?.(next);
     } 
     function onChange2stValue(newValue: ReturnOnChangeValues)  {
-      setInputString({typeHTML: newValue.typeHTML, from: inputString.from, to: newValue.from});
-      onChangeRangeValue && onChangeRangeValue(inputString);
+      const next = {typeHTML: newValue.typeHTML, from: inputString.from, to: newValue.from};
+      setInputString(next);
+      onChangeRangeValue?.(next);
     } 
 
 
@@ -116,6 +121,8 @@ export const RetroRangeInput: React.FC<RetroRangeInputProps> = ({ labelFrom = 'F
 // textArea 
 export const RetroListInput: React.FC<RetroAreaInputProps> = ({label, onChangeValue, ...props }) => {
   const [value, setValue] = useState<string>('');
+  const generatedId = useId();
+  const inputId = props.id ?? generatedId;
 
   const areaHandleKeyDown = ( e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key !== 'Enter') return;
@@ -136,9 +143,10 @@ export const RetroListInput: React.FC<RetroAreaInputProps> = ({label, onChangeVa
   }
   return (
     <div>
-      {label && <label className={css.retro_label}>{label}</label>}
+      {label && <label className={css.retro_label} htmlFor={inputId}>{label}</label>}
       <textarea
         {...props}
+        id={inputId}
         rows={10}
         value={value}
         className={css.retro_input}

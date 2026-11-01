@@ -1,5 +1,7 @@
 # Guía del sprint 07: Experiencia de comparación y cierre de primera fase
 
+Estado: aplazado hasta reevaluar su alcance e implementación. Al retomarlo, revisar los criterios de paridad de comandos según la norma opcional vigente.
+
 ## Objetivo
 
 Entregar la comparación multi-org utilizable por ratón y comandos y demostrar todos los criterios de éxito de la primera fase.
