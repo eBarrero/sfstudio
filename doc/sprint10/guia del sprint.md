@@ -2,7 +2,7 @@
 
 ## Estado y objetivo
 
-Implementado en PBI-033. «Where Clause» incluye una tabla para gestionar el `LIMIT` de la consulta raíz y de cada subconsulta hija. Los sprints 06 y 07 siguen aplazados.
+Cerrado. PBI-033 implementó en «Where Clause» una tabla para gestionar el `LIMIT` de la consulta raíz y de cada subconsulta hija. Los sprints 06 y 07 siguen aplazados.
 
 ## Criterios de entrada
 

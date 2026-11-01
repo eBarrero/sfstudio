@@ -52,3 +52,5 @@ El diálogo reúne tres tareas relacionadas, pero hoy solo **SELECT simple y par
 5. **Añadir pruebas de regresión por flujo**, empezando por los fallos concretos: rango, nulo, picklist `IN`/`NOT IN`, dos funciones SELECT del mismo campo, apertura desde relación/hijo, función no soportada, ORDER BY raíz/subconsulta/relación, y paridad de entradas si se añade un comando gemelo.
 
 No conviene ampliar el catálogo de operadores o funciones antes de que los controles actuales produzcan el mismo resultado en la vista previa, el árbol SOQL y la consulta ejecutable.
+
+Estas recomendaciones se planifican en la [guía del sprint 11](./sprint11/guia%20del%20sprint.md) mediante PBI-034 a PBI-037.
