@@ -91,3 +91,20 @@ test('changing the field while mounted updates the heading and clears applied fe
   expect(screen.getByRole('dialog', { name: 'Edit field: OtherName' })).toBeInTheDocument();
   expect(screen.getByRole('checkbox', { name: /Default/i })).not.toBeChecked();
 });
+
+test.each(['date', 'datetime'] as const)('%s fields expose relative date literals in the FieldDialog WHERE tab', type => {
+  setup();
+  act(() => modelState.setState({ state: { ...modelState.getState().state,
+    currentField: { ...currentField, fieldApiName: 'CreatedDate', type } } }));
+  render(<Harness />);
+  fireEvent.click(screen.getByRole('button', { name: 'Open editor' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Where' }));
+  expect(screen.getByRole('combobox', { name: 'Value type' })).toHaveValue('literal');
+  expect(screen.getByRole('combobox', { name: 'Relative date' })).toHaveValue('TODAY');
+  expect(screen.getByText('CreatedDate = TODAY')).toBeInTheDocument();
+  fireEvent.change(screen.getByRole('combobox', { name: 'Relative date' }), { target: { value: 'LAST_N_DAYS' } });
+  fireEvent.change(screen.getByRole('spinbutton', { name: 'Number of periods' }), { target: { value: '7' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+  const where = (modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).where;
+  expect(where?.[0].sqlString).toBe('CreatedDate = LAST_N_DAYS:7');
+});

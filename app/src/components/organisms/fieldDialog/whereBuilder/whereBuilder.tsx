@@ -23,7 +23,8 @@ const comparisonOperators = ['=', '!=', '>', '<', '>=', '<='];
 
 export default function WhereBuilder({ field, path, applyNewCondition, onApplied }: Props) {
   const kind = fieldKind(field.type);
-  const [mode, setMode] = useState<WhereMode>(kind === 'picklist' || kind === 'multiselect' ? 'list' : 'single');
+  const [mode, setMode] = useState<WhereMode>(kind === 'picklist' || kind === 'multiselect' ? 'list'
+    : kind === 'date' || kind === 'datetime' ? 'literal' : 'single');
   const [operator, setOperator] = useState(kind === 'picklist' ? 'IN' : kind === 'multiselect' ? 'INCLUDES' : '=');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');

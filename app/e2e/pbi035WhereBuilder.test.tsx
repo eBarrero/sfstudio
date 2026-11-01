@@ -65,7 +65,7 @@ test.each(['date', 'datetime'] as const)('%s editor explains date literals, para
   const apply = jest.fn();
   const dateField = { ...field, fieldApiName: 'CreatedDate', type: kind } as GetFieldsIndex;
   render(<WhereBuilder field={dateField} path="" applyNewCondition={apply} />);
-  fireEvent.change(screen.getByRole('combobox', { name: 'Value type' }), { target: { value: 'literal' } });
+  expect(screen.getByRole('combobox', { name: 'Value type' })).toHaveValue('literal');
   expect(screen.getByText('CreatedDate = TODAY')).toBeInTheDocument();
   expect(screen.getByText('The current calendar day.')).toBeInTheDocument();
   fireEvent.change(screen.getByRole('combobox', { name: 'Relative date' }), { target: { value: 'LAST_N_DAYS' } });
