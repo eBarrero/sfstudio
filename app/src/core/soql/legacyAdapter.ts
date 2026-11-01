@@ -79,9 +79,14 @@ export function legacyQueryToAst(state: QueryState): RootQuery | undefined {
     ];
   };
   const select = selections(rootIndex);
+  const groupedSelections = (parent: number, prefix = ''): Expression[] => [
+    ...elements[parent].selectClause.fields.filter(field => field.makeGroupBy).map(field => expression(field, prefix)),
+    ...elements.flatMap((element, index) => element.type === 'RELETED' && element.parent === parent
+      ? groupedSelections(index, `${prefix}${element.relatedTo}.`) : []),
+  ];
   return { kind: 'root', from: root.sObjectId.sObjectApiName, select,
     where: conditions(root.where, root.whereLogic), limit: root.limit, offset: root.offset,
-    groupBy: root.selectClause.fields.filter(field => field.makeGroupBy).map(field => expression(field)),
+    groupBy: groupedSelections(rootIndex),
     orderBy: root.orderBy?.map(order => ({ field: order.field.fieldApiName, direction: order.direction })) };
 }
 

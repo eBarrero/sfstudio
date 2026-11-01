@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import css from './style.module.css'
-import { t } from '../../../utils/utils';
-import {salesforceFieldTypesDefinition, SelectComponent} from '../../../core/constants/fields';
+import { fieldCapabilities, fieldEditorContext, selectedFunctions } from '../../../core/soql/fieldEditor';
 
 
 import modelState  from '../../../store/modelState';  
@@ -17,7 +16,6 @@ import WhereDataTime from './whereBuilder/dataTime';
 import WhereTextField from './whereBuilder/textFields';
 import WherePickListField from './whereBuilder/pickListField';
 import WhereNumberField from './whereBuilder/numberFields';
-import Orderby from './orderByBuilder';
 
 
 
@@ -28,12 +26,15 @@ import Orderby from './orderByBuilder';
 
 
 const FieldDialog = () => { 
-    const { state, addWhere, currentSOQLFieldSelection, doFieldAction   }  = modelState();
+    const { state, queryState, addWhere, doFieldAction } = modelState();
     const { currentField, currentPath }  = state;
     const { popDialog } = viewState();  
 
     const [currentTab, setCurrentTab] = useState('W');
-    const [whereDialog, setWhereDialog] = useState<SelectComponent>('NOT_ALLOWED');
+    const capabilities = currentField ? fieldCapabilities(currentField.type) : undefined;
+    const whereDialog = capabilities?.where ?? 'NOT_ALLOWED';
+    const activeTab = currentTab === 'W' && whereDialog === 'NOT_ALLOWED' ? 'S' : currentTab;
+    const context = currentField ? fieldEditorContext(queryState, queryState.indexCurrentElement, currentField) : undefined;
 
     function onClose() {
         popDialog();
@@ -46,50 +47,39 @@ const FieldDialog = () => {
     }
 
     
-    useEffect(() => {
-            if (!currentField) return;
-            const typeDefinition = salesforceFieldTypesDefinition.get(currentField.type);
-            setWhereDialog(typeDefinition!.selectComponent);
-            
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    },[]);
-
     return (
         <article className={css.container}>
             <div className={css.win}>
                 {currentField &&  <>
                     <TitleBar title={`${currentField.type} - ${currentPath}${currentField.fieldApiName}`} onClose={onClose}  />
-                    {whereDialog !== 'NOT_ALLOWED' && 
-                    <Tabs tabs={[['Select',"S"],['Where',"W"],['Order',"O"]]} value={currentTab} onTabChange={setCurrentTab}/>}
-                    {whereDialog === 'NOT_ALLOWED' && <div>{t('#NOTE.TYPE.CANNOT.BEUSED.IN.SOQL')}</div>}
-                    {currentTab === 'S' && <Select 
+                    <Tabs tabs={whereDialog === 'NOT_ALLOWED' ? [['Select', 'S']] : [['Select', 'S'], ['Where', 'W']]}
+                        value={activeTab} onTabChange={setCurrentTab}/>
+                    {activeTab === 'S' && <Select
                                                 typeField={currentField.type} 
-                                                currentFieldSelection={currentSOQLFieldSelection.get(currentField.fieldLocalId)!} 
+                                                selectedFunctions={context ? selectedFunctions(queryState, context) : []}
                                                 doFieldAction={hanndleDoFieldAction} />}
-                    {currentTab === 'W' && whereDialog === 'DATATIME' &&
+                    {activeTab === 'W' && whereDialog === 'DATATIME' &&
                                                 <WhereDataTime 
                                                 applyNewCondition={addWhere}     
                                                 field={currentField} 
                                                 path={ (currentPath===undefined) ?'':currentPath } />}
-                    {currentTab === 'W' && whereDialog === 'TEXT' &&
+                    {activeTab === 'W' && whereDialog === 'TEXT' &&
                                                 <WhereTextField 
                                                 applyNewCondition={addWhere}     
                                                 field={currentField} 
                                                 path={ (currentPath===undefined) ?'':currentPath } />}
-                    {currentTab === 'W' && whereDialog === 'PICKLIST' &&
+                    {activeTab === 'W' && whereDialog === 'PICKLIST' &&
                                                 <WherePickListField 
                                                 applyNewCondition={addWhere}     
                                                 field={currentField} 
                                                 path={ (currentPath===undefined) ?'':currentPath } />}                                                
-                    {currentTab === 'W' && whereDialog === 'NUMBER' &&
+                    {activeTab === 'W' && whereDialog === 'NUMBER' &&
                                                 <WhereNumberField 
                                                 applyNewCondition={addWhere}     
                                                 field={currentField} 
                                                 path={ (currentPath===undefined) ?'':currentPath } />}
 
 
-                    {currentTab === 'O' && <Orderby/>}
                 </>}
             </div>
         </article>

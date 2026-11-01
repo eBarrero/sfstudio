@@ -7,6 +7,7 @@ import { legacySqlState } from '../core/soql/legacyAdapter';
 import { MAX_PARENT_TO_CHILD_LEVELS } from '../core/soql/domain';
 import { defaultWhereLogic, parseWhereLogic } from '../core/soql/whereLogic';
 import { whereOwner } from '../core/soql/whereOwnership';
+import { fieldCapabilities } from '../core/soql/fieldEditor';
 import savedSoqlState from './savedSoqlState';
 
 
@@ -81,10 +82,7 @@ import savedSoqlState from './savedSoqlState';
             });
         },
         setField: (field: GetFieldsIndex) => {
-            const state = get().state;
-            state.currentField = field;
-            state.action = 'field';
-            set({state});
+            set({state: {...get().state, currentField: field, action: 'field'}});
         },
         gotoLookup: (field: GetFieldsIndex) => {
             const orgSfName = get().state.orgSfName;
@@ -117,7 +115,7 @@ import savedSoqlState from './savedSoqlState';
                          action: 'quitar action'}, 
                  queryState, 
                  sqlState: sqlState(queryState),
-                 currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>,
+                 currentSOQLFieldSelection: createSOQLFieldSelection(queryState, queryState.indexCurrentElement),
                  rankQueryElements: rankQueryElements(queryState.queryElemnts)            
 
             }); 
@@ -158,7 +156,7 @@ import savedSoqlState from './savedSoqlState';
                 
             set({state: {orgSfName, sObjectApiName:childSObject, sObjectLocalId, action: 'sobject', currentPath:''},
                  queryState, sqlState: sqlState(queryState),
-                 currentSOQLFieldSelection: new Map<FieldLocalId, SOQLFieldSelectionState>,
+                 currentSOQLFieldSelection: createSOQLFieldSelection(queryState, queryState.indexCurrentElement),
                  rankQueryElements: rankQueryElements(queryState.queryElemnts)            
             });
         },
@@ -191,27 +189,39 @@ import savedSoqlState from './savedSoqlState';
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement;
             const query = queryState.queryElemnts[currentElement];  
+            const { ownerIndex } = whereOwner(queryState, currentElement);
+            const owner = queryState.queryElemnts[ownerIndex];
+            const fieldApiName = modelReader.getFieldApiName(orgSfName, query.sObjectId.sObjectLocalId, fieldIndex);
+            const field = modelReader.getSObject(orgSfName, query.sObjectId.sObjectLocalId)?.fields?.find(item => item.fieldLocalId === fieldIndex);
+            if (action === constants.SELECTED && field &&
+                !fieldCapabilities(field.type).select.some(option => option.keyWord === soqlFunction)) {
+                throw new Error('This SELECT expression is not supported for the field type.');
+            }
+            const sameExpression = (item: SelectClauseField) =>
+                item.fieldId.fieldApiName === fieldApiName && item.soqlFunction === soqlFunction;
 
             if (action === constants.SELECTED) {
-                const rootQuery = queryState.queryElemnts[0] as PrimaryQuery;
+                if (owner.selectClause.fieldsAll) throw new Error('Individual fields cannot be combined with FIELDS(...).');
+                if (query.selectClause.fields.some(sameExpression)) return;
+                if (isAggregateFunction && owner.type === 'SUBQUERY')
+                    throw new Error('Aggregate expressions are not supported in child query blocks.');
+                const blockFields = queryState.queryElemnts.flatMap((element, index) =>
+                    whereOwner(queryState, index).ownerIndex === ownerIndex ? element.selectClause.fields : []);
+                const hasAggregate = blockFields.some(item => item.isAggregateFunction) || isAggregateFunction;
+                const hasUngroupedField = blockFields.some(item => !item.isAggregateFunction && !item.makeGroupBy) ||
+                    (!isAggregateFunction && !makeGroupBy);
+                if (hasAggregate && hasUngroupedField)
+                    throw new Error('Group plain fields before combining them with aggregate expressions.');
+                if (hasAggregate && ownerIndex === 0 && queryState.queryElemnts.some(item => item.type === 'SUBQUERY'))
+                    throw new Error('Aggregate expressions cannot be combined with child queries.');
 
-                if (rootQuery.selectClause.fieldsAll) {
-                    throw new Error('You can not mix all fields and individual fields in the same query');
-                }
-
-                if (rootQuery.selectClause.fields.length>0 &&
-                   rootQuery.selectClause.fields[0].isAggregateFunction !== isAggregateFunction) {
-                    throw new Error('You can not mix aggregate and non-aggregate functions in the same query');
-                }
-
-
-                const fieldId: FieldId = {fieldApiName: modelReader.getFieldApiName(orgSfName, query.sObjectId.sObjectLocalId, fieldIndex), fieldIndex};
+                const fieldId: FieldId = {fieldApiName, fieldIndex};
                 const SelectClauseField = {fieldId: fieldId, alias: undefined, soqlFunction, isAggregateFunction, makeGroupBy};
                 query.selectClause!.fields!.push(SelectClauseField);
             }
 
             if (action === constants.UNSELECTED) {
-                query.selectClause!.fields = query.selectClause!.fields?.filter((field) => field.fieldId.fieldIndex !== fieldIndex);
+                query.selectClause.fields = query.selectClause.fields.filter(item => !sameExpression(item));
             }
 
             const currentSOQLFieldSelection  =  createSOQLFieldSelection(queryState, currentElement);
@@ -322,16 +332,21 @@ function createSOQLFieldSelection(queryState: QueryState, index: number): Map<Fi
 
 
     const { orgSfName, sObjectLocalId } = query.sObjectId;
-    const object =  modelReader.getSObject(orgSfName,  sObjectLocalId);    
+    let fields: Fields[] = [];
+    try {
+        fields = modelReader.getSObject(orgSfName, sObjectLocalId).fields ?? [];
+    } catch {
+        // Navigation may precede loading metadata for the destination object.
+    }
 
     // initialize the map with all fields of the object
-    object.fields!.forEach((field) => {
+    fields.forEach((field) => {
         map.set(field.fieldLocalId, {isSelected:false, isWhere: false, isOrderBy: false, isSelectNotAlled:false, selectFunction: []});
     });    
 
     // if we use "ALL" or "CUSTOM" or "STANDARD", we need to: remove teh acurate fields from current selection and mark them as not selectable
     if (query.selectClause?.fieldsAll!==undefined ) {
-        object.fields!.forEach((field) => {
+        fields.forEach((field) => {
             if ((query.selectClause?.fieldsAll === SelectAllFieldsEnum.ALL) || 
                 (query.selectClause?.fieldsAll === SelectAllFieldsEnum.CUSTOM && field.custom) ||
                 (query.selectClause?.fieldsAll === SelectAllFieldsEnum.STANDARD && !field.custom)) {
@@ -341,10 +356,10 @@ function createSOQLFieldSelection(queryState: QueryState, index: number): Map<Fi
     }
 
     query.selectClause?.fields?.forEach((field) => {
-        const current =  map.get(field.fieldId.fieldIndex);
-        current!.isSelected = true;
-        current!.selectFunction.push(field.soqlFunction);
-        map.set(field.fieldId.fieldIndex, current!);
+        const current = map.get(field.fieldId.fieldIndex) ??
+            {isSelected:false, isWhere: false, isOrderBy: false, isSelectNotAlled:false, selectFunction: []};
+        map.set(field.fieldId.fieldIndex, {...current, isSelected: true,
+            selectFunction: [...current.selectFunction, field.soqlFunction]});
     });
 
     owner.where?.filter(where => (where.field.relationshipPath ?? []).join('.') === relationshipPath.join('.'))

@@ -174,7 +174,6 @@ export const SelectClauseKeywords: { [key: string]: SelectClauseKeywords } = {
   SQL_FYEAR:    { keyWord: 'FISCAL_YEAR(%1)',       description: 'Fiscal Year',       makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.FISCAL_YEAR(%1)' } as const,
   SQL_HOUR:     { keyWord: 'HOUR_IN_DAY(%1)',       description: 'Hour In Day',       makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.HOUR_IN_DAY(%1)' } as const,
   SQL_WEEK:     { keyWord: 'WEEK_IN_YEAR(%1)',      description: 'Week In Year',      makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.WEEK_IN_YEAR(%1)' } as const,
-  SQL_CONV:     { keyWord: 'convertTimezone(%1)',   description: 'Convert Time',      makeGroupBy: false,  unGroupable: false, groupable: true,  help: '#SOQL.Fun.convertTimezone(%1)' } as const,
 };
 
  export type SelectClauseKeywordsEnum = typeof SelectClauseKeywords[keyof typeof SelectClauseKeywords];
@@ -218,7 +217,6 @@ export const SQLClauseAllowedByTypeField: Map<SFFieldTypesEnum, SelectClauseKeyw
     SelectClauseKeywords.SQL_FQUARTER,
     SelectClauseKeywords.SQL_FYEAR,   
     SelectClauseKeywords.SQL_HOUR,    
-    SelectClauseKeywords.SQL_CONV,
   ]],
   [SFFieldTypesEnum.Currency, [
     SelectClauseKeywords.SQL_CURRENCY,
