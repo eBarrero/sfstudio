@@ -209,6 +209,7 @@ interface FieldsFilter {
 interface FieldId  {
     fieldApiName: FieldApiName;
     fieldIndex: FieldLocalId;
+    relationshipPath?: RelationshipName[];
 }    
 
 interface SObjectId {

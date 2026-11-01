@@ -56,14 +56,14 @@ interface QueryElementAbstract {
     sObjectId: SObjectId;
     parent: number;
     selectClause: SelectClause;
-    where?: (SimpleCondition | pairCondition)[];
-    whereLogic?: string; // C1 refers to the first condition in this element's where array.
     orderBy?: OrderBy[];
     level: number;                                  // Depth from the root; ROOT is 0.
 }
 
 interface PrimaryQuery extends QueryElementAbstract  {
     type: 'ROOT';
+    where?: (SimpleCondition | pairCondition)[];
+    whereLogic?: string;
     aggregatorQuery?: AggregatorQuery;
     limit: number;
     offset?: number;
@@ -71,6 +71,8 @@ interface PrimaryQuery extends QueryElementAbstract  {
 
 interface NestedQuery extends QueryElementAbstract  {
     type: 'SUBQUERY';
+    where?: (SimpleCondition | pairCondition)[];
+    whereLogic?: string;
     aggregatorQuery?: AggregatorQuery;
     limit: number;
     offset?: number;    

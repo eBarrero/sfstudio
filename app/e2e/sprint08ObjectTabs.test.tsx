@@ -147,12 +147,12 @@ it('numbers conditions and applies only valid WHERE logic from the panel', () =>
   fireEvent.change(input, { target: { value: '(C1 OR C0)' } });
   fireEvent.click(within(panel).getByRole('button', { name: 'Aplicar lógica' }));
   expect(within(panel).getByRole('alert')).toHaveTextContent('Usa índices entre C1 y C2.');
-  expect(modelState.getState().queryState.queryElemnts[0].whereLogic).toBe('C1 AND C2');
+  expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).whereLogic).toBe('C1 AND C2');
 
   fireEvent.change(input, { target: { value: '(C1 OR C2)' } });
   fireEvent.click(within(panel).getByRole('button', { name: 'Aplicar lógica' }));
   expect(within(panel).queryByRole('alert')).not.toBeInTheDocument();
-  expect(modelState.getState().queryState.queryElemnts[0].whereLogic).toBe('(C1 OR C2)');
+  expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).whereLogic).toBe('(C1 OR C2)');
   expect(modelState.getState().sqlState.sql).toContain("WHERE (Name = 'Alice' OR Industry = 'Tech')");
 });
 

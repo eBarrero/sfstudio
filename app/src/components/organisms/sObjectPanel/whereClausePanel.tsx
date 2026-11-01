@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { defaultWhereLogic, WhereLogicError } from '../../../core/soql/whereLogic';
+import { qualifiedFieldName } from '../../../core/soql/whereOwnership';
 import modelState from '../../../store/modelState';
 import css from './style.module.css';
 
-function WhereGroup({ element, index }: { element: QueryElement; index: number }) {
+function WhereGroup({ element, index }: { element: PrimaryQuery | NestedQuery; index: number }) {
     const conditions = element.where ?? [];
     const storedLogic = element.whereLogic ?? defaultWhereLogic(conditions.length);
     const [draft, setDraft] = useState(storedLogic);
@@ -31,12 +32,12 @@ function WhereGroup({ element, index }: { element: QueryElement; index: number }
     return <section>
         <h3>{element.sObjectId.sObjectApiName}
             {element.type === 'SUBQUERY' && ` · ${element.relationshipName}`}
-            {element.type === 'RELETED' && ` · ${element.relatedTo}`}
         </h3>
         <ol className={css.whereConditions}>
             {conditions.map((condition, conditionIndex) =>
                 <li key={conditionIndex}><strong>C{conditionIndex + 1}</strong>{' '}
-                    <code>{condition.sqlString}</code></li>)}
+                    <code>{condition.sqlString}</code>{' '}
+                    <small>({qualifiedFieldName(condition.field)})</small></li>)}
         </ol>
         <form onSubmit={apply}>
             <label htmlFor={`where-logic-${index}`}>Lógica WHERE de {element.sObjectId.sObjectApiName}</label>
@@ -51,7 +52,7 @@ function WhereGroup({ element, index }: { element: QueryElement; index: number }
 export default function WhereClausePanel() {
     const elements = modelState(state => state.queryState.queryElemnts);
     const withWhere = elements.flatMap((element, index) =>
-        element.where?.length ? [{ element, index, conditions: element.where }] : []);
+        element.type !== 'RELETED' && element.where?.length ? [{ element, index }] : []);
 
     return <section aria-labelledby="where-clause-heading">
         <h2 id="where-clause-heading">Where Clause</h2>

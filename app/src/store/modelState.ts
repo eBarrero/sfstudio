@@ -6,6 +6,7 @@ import { SelectAllFieldsEnum } from "../core/constants/fields";
 import { legacySqlState } from '../core/soql/legacyAdapter';
 import { MAX_PARENT_TO_CHILD_LEVELS } from '../core/soql/domain';
 import { defaultWhereLogic, parseWhereLogic } from '../core/soql/whereLogic';
+import { whereOwner } from '../core/soql/whereOwnership';
 import savedSoqlState from './savedSoqlState';
 
 
@@ -62,7 +63,7 @@ import savedSoqlState from './savedSoqlState';
             const queryState:QueryState = {queryElemnts: [mainQuery], indexCurrentElement: 0};
             set({state: {orgSfName, action:'sobject', sObjectApiName,  sObjectLocalId, currentPath:'' },queryState, 
                 sqlState: sqlState(queryState),
-                currentSOQLFieldSelection: createSOQLFieldSelection(queryState.queryElemnts[0]),
+                currentSOQLFieldSelection: createSOQLFieldSelection(queryState, 0),
                 rankQueryElements: rankQueryElements(queryState.queryElemnts)                
             });
         },
@@ -75,7 +76,7 @@ import savedSoqlState from './savedSoqlState';
                 state: {orgSfName, action: 'sobject', sObjectApiName, sObjectLocalId, currentField: null, currentPath: ''},
                 queryState,
                 sqlState: sqlState(queryState),
-                currentSOQLFieldSelection: createSOQLFieldSelection(root),
+                currentSOQLFieldSelection: createSOQLFieldSelection(queryState, 0),
                 rankQueryElements: rankQueryElements(queryState.queryElemnts),
             });
         },
@@ -182,7 +183,7 @@ import savedSoqlState from './savedSoqlState';
                 }, 
                 queryState, 
                 sqlState: sqlState(queryState),
-                currentSOQLFieldSelection: createSOQLFieldSelection(query),
+                currentSOQLFieldSelection: createSOQLFieldSelection(queryState, currentElement),
             });
         },
         doFieldAction: (fieldIndex: FieldLocalId, action: string, soqlFunction: string = '%1', isAggregateFunction: boolean = false, makeGroupBy: boolean = false ) => {
@@ -213,7 +214,7 @@ import savedSoqlState from './savedSoqlState';
                 query.selectClause!.fields = query.selectClause!.fields?.filter((field) => field.fieldId.fieldIndex !== fieldIndex);
             }
 
-            const currentSOQLFieldSelection  =  createSOQLFieldSelection(query);
+            const currentSOQLFieldSelection  =  createSOQLFieldSelection(queryState, currentElement);
 
             set({queryState, sqlState: sqlState(queryState), currentSOQLFieldSelection});
         },
@@ -223,7 +224,7 @@ import savedSoqlState from './savedSoqlState';
             const query = queryState.queryElemnts[currentElement];  
 
             query.selectClause.fieldsAll = value;
-            const currentSOQLFieldSelection  =  createSOQLFieldSelection(query);
+            const currentSOQLFieldSelection  =  createSOQLFieldSelection(queryState, currentElement);
 
             // Rebuild select: Remove fields from query.selectClause?.fields based on the map conditions
             const newSelect =  query.selectClause.fields.filter((field) => {
@@ -241,28 +242,41 @@ import savedSoqlState from './savedSoqlState';
         addWhere: (SimpleCondition: SimpleCondition | pairCondition) => {
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement;
-            const query = queryState.queryElemnts[currentElement];  
+            const { ownerIndex, relationshipPath } = whereOwner(queryState, currentElement);
+            const query = queryState.queryElemnts[ownerIndex] as PrimaryQuery | NestedQuery;
+            const provided = SimpleCondition.field.fieldApiName.split('.');
+            const fieldApiName = provided.pop();
+            if (!fieldApiName || (provided.length && provided.join('.') !== relationshipPath.join('.')))
+                throw new Error('La ruta del campo no coincide con la relación actual.');
+            const condition = { ...SimpleCondition, field: {
+                ...SimpleCondition.field, fieldApiName, relationshipPath,
+            } };
             if (!query.where) {
                 query.where = [];
             }
             const previousCount = query.where.length;
             const previousLogic = query.whereLogic?.trim();
-            query.where!.push(SimpleCondition);
+            query.where!.push(condition);
             query.whereLogic = !previousLogic || previousLogic === defaultWhereLogic(previousCount)
                 ? defaultWhereLogic(query.where.length)
                 : `(${previousLogic}) AND C${query.where.length}`;
-            set({queryState, 
-                sqlState: sqlState(queryState)
-                });  
+            const currentSOQLFieldSelection = new Map(get().currentSOQLFieldSelection);
+            const selected = currentSOQLFieldSelection.get(condition.field.fieldIndex);
+            if (selected) currentSOQLFieldSelection.set(condition.field.fieldIndex, { ...selected, isWhere: true });
+            set({queryState,
+                sqlState: sqlState(queryState),
+                currentSOQLFieldSelection,
+            });
         },
         setWhereLogic: (elementIndex: number, expression: string) => {
             const current = get().queryState;
-            const element = current.queryElemnts[elementIndex];
+            const { ownerIndex } = whereOwner(current, elementIndex);
+            const element = current.queryElemnts[ownerIndex] as PrimaryQuery | NestedQuery;
             if (!element?.where?.length) throw new Error('No hay condiciones WHERE en este elemento.');
             const normalized = expression.trim();
             parseWhereLogic(normalized, element.where.length);
             const queryState = structuredClone(current);
-            queryState.queryElemnts[elementIndex].whereLogic = normalized;
+            (queryState.queryElemnts[ownerIndex] as PrimaryQuery | NestedQuery).whereLogic = normalized;
             set({queryState, sqlState: sqlState(queryState)});
         },
         initializeModel: () => {
@@ -287,8 +301,11 @@ import savedSoqlState from './savedSoqlState';
 export default modelState;
 
 
-function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFieldSelectionState> {
+function createSOQLFieldSelection(queryState: QueryState, index: number): Map<FieldLocalId, SOQLFieldSelectionState> {
     const map = new Map<FieldLocalId, SOQLFieldSelectionState>();
+    const query = queryState.queryElemnts[index];
+    const { ownerIndex, relationshipPath } = whereOwner(queryState, index);
+    const owner = queryState.queryElemnts[ownerIndex] as PrimaryQuery | NestedQuery;
 
 
     const { orgSfName, sObjectLocalId } = query.sObjectId;
@@ -317,7 +334,8 @@ function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFi
         map.set(field.fieldId.fieldIndex, current!);
     });
 
-    query.where?.forEach((where) => {
+    owner.where?.filter(where => (where.field.relationshipPath ?? []).join('.') === relationshipPath.join('.'))
+      .forEach((where) => {
         if (map.has(where.field.fieldIndex)) {
             const item = map.get(where.field.fieldIndex);
             item!.isWhere = true;
@@ -325,7 +343,7 @@ function createSOQLFieldSelection(query: QueryElement): Map<FieldLocalId, SOQLFi
         } else {
             map.set(where.field.fieldIndex, {isSelected:true, isWhere: true, isOrderBy: false, isSelectNotAlled:false, selectFunction: []});
         }
-    });
+      });
 
     query.orderBy?.forEach((orderBy) => {
         if (map.has(orderBy.field.fieldIndex)) {

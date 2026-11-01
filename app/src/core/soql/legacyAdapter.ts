@@ -2,6 +2,7 @@ import type { ChildQuery, Expression, Literal, Predicate, RootQuery, Selection }
 import { renderQuery, validateQuery } from './domain';
 import { defaultWhereLogic, parseWhereLogic, WhereLogicError,
   type WhereLogicNode } from './whereLogic';
+import { qualifiedFieldName } from './whereOwnership';
 
 const aggregateNames = new Set(['COUNT', 'COUNT_DISTINCT', 'SUM', 'AVG', 'MIN', 'MAX', 'FORMAT',
   'CALENDAR_MONTH', 'CALENDAR_QUARTER', 'CALENDAR_YEAR', 'DAY_ONLY', 'FISCAL_MONTH',
@@ -30,7 +31,7 @@ function literal(value: unknown): Literal {
 }
 
 function predicate(condition: SimpleCondition | pairCondition): Predicate {
-  const field = condition.field.fieldApiName;
+  const field = qualifiedFieldName(condition.field);
   if ('operatorTo' in condition) return { kind: 'logical', operator: condition.logicalOperator === 'OR' ? 'OR' : 'AND', operands: [
     { kind: 'comparison', field, operator: condition.operator as '=' , value: literal(condition.value) },
     { kind: 'comparison', field, operator: condition.operatorTo as '=', value: literal(condition.valueTo) },

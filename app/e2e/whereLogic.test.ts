@@ -52,7 +52,7 @@ test('the model builds defaults, applies grouped OR and preserves it when a cond
   modelState.getState().addWhere(condition('Name', 0));
   modelState.getState().addWhere(condition('Industry', 1));
   modelState.getState().addWhere(condition('Type', 2));
-  expect(modelState.getState().queryState.queryElemnts[0].whereLogic).toBe('C1 AND C2 AND C3');
+  expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).whereLogic).toBe('C1 AND C2 AND C3');
 
   modelState.getState().setWhereLogic(0, '(C1 AND C2) OR C3');
   expect(modelState.getState().sqlState.sql).toContain(
@@ -62,14 +62,14 @@ test('the model builds defaults, applies grouped OR and preserves it when a cond
   expect(modelState.getState().queryState).toBe(before);
 
   modelState.getState().addWhere(condition('OwnerId', 3));
-  expect(modelState.getState().queryState.queryElemnts[0].whereLogic)
+  expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).whereLogic)
     .toBe('((C1 AND C2) OR C3) AND C4');
 });
 
 test('each query element keeps its own WHERE logic', () => {
   const state = queryState();
-  state.queryElemnts[0].where = [condition('Name', 0), condition('Industry', 1)];
-  state.queryElemnts[0].whereLogic = 'C1 AND C2';
+  (state.queryElemnts[0] as PrimaryQuery).where = [condition('Name', 0), condition('Industry', 1)];
+  (state.queryElemnts[0] as PrimaryQuery).whereLogic = 'C1 AND C2';
   state.queryElemnts.push({
     type: 'SUBQUERY', parent: 0, level: 1, limit: 50, relationshipName: 'Contacts',
     sObjectId: { orgSfName: 'fixture', sObjectApiName: 'Contact', sObjectLocalId: 1 },
@@ -80,8 +80,8 @@ test('each query element keeps its own WHERE logic', () => {
   modelState.setState({ queryState: state });
   modelState.getState().setWhereLogic(1, 'C1 OR C2');
   const current = modelState.getState();
-  expect(current.queryState.queryElemnts[0].whereLogic).toBe('C1 AND C2');
-  expect(current.queryState.queryElemnts[1].whereLogic).toBe('C1 OR C2');
+  expect((current.queryState.queryElemnts[0] as PrimaryQuery).whereLogic).toBe('C1 AND C2');
+  expect((current.queryState.queryElemnts[1] as NestedQuery).whereLogic).toBe('C1 OR C2');
   expect(current.sqlState.sql).toContain(
     "FROM Contacts WHERE (Email = 'Email' OR LastName = 'LastName')");
   expect(current.sqlState.sql).toContain(
