@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import WhereBuilder from '../src/components/organisms/fieldDialog/whereBuilder/whereBuilder';
 import { RetroRangeInput } from '../src/components/atoms/RetroStyle/Input/RetroInput';
 import { buildWhereCondition, type WhereDraft } from '../src/core/soql/whereDraft';
+import { dateLiterals, isSupportedDateLiteral } from '../src/core/soql/dateLiterals';
 import { legacyConditionToPredicate, legacyQueryToAst } from '../src/core/soql/legacyAdapter';
 import { renderPredicate } from '../src/core/soql/domain';
 import modelState from '../src/store/modelState';
@@ -42,6 +43,45 @@ test('typed predicates render ranges, NULL, booleans, lists and dates consistent
     .toBe('Name = 2026-01-15T12:30:00Z');
   expect(buildWhereCondition(draft({ kind: 'date', mode: 'literal', dateLiteral: 'TODAY' })).sqlString)
     .toBe('Name = TODAY');
+});
+
+test('every date literal offered by the editor is accepted by the builder and SOQL validator', () => {
+  for (const definition of dateLiterals) {
+    const value = definition.count ? `${definition.code}:30` : definition.code;
+    expect(isSupportedDateLiteral(value)).toBe(true);
+    expect(buildWhereCondition(draft({ kind: 'date', mode: 'literal', dateLiteral: value })).sqlString)
+      .toBe(`Name = ${value}`);
+    expect(buildWhereCondition(draft({ kind: 'datetime', mode: 'literal', dateLiteral: value })).sqlString)
+      .toBe(`Name = ${value}`);
+  }
+  for (const invalid of ['NEXT_N_YEARS', 'LAST_N_DAYS:0', 'LAST_N_DAYS:1000',
+    'LAST_N_DAYS:-1', 'TODAY:1', 'NEXT_N_DAYS:1:2', 'ACUSTOM_YEAR']) {
+    expect(isSupportedDateLiteral(invalid)).toBe(false);
+    expect(() => buildWhereCondition(draft({ kind: 'date', mode: 'literal', dateLiteral: invalid }))).toThrow();
+  }
+});
+
+test.each(['date', 'datetime'] as const)('%s editor explains date literals, parameters and fiscal periods', kind => {
+  const apply = jest.fn();
+  const dateField = { ...field, fieldApiName: 'CreatedDate', type: kind } as GetFieldsIndex;
+  render(<WhereBuilder field={dateField} path="" applyNewCondition={apply} />);
+  fireEvent.change(screen.getByRole('combobox', { name: 'Value type' }), { target: { value: 'literal' } });
+  expect(screen.getByText('CreatedDate = TODAY')).toBeInTheDocument();
+  expect(screen.getByText('The current calendar day.')).toBeInTheDocument();
+  fireEvent.change(screen.getByRole('combobox', { name: 'Relative date' }), { target: { value: 'LAST_N_DAYS' } });
+  expect(screen.getByRole('spinbutton', { name: 'Number of periods' })).toHaveValue(1);
+  fireEvent.change(screen.getByRole('spinbutton', { name: 'Number of periods' }), { target: { value: '30' } });
+  expect(screen.getByText('Today and the previous 30 days.')).toBeInTheDocument();
+  expect(screen.getByText('CreatedDate = LAST_N_DAYS:30')).toBeInTheDocument();
+  fireEvent.change(screen.getByRole('spinbutton', { name: 'Number of periods' }), { target: { value: '0' } });
+  expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
+  fireEvent.change(screen.getByRole('spinbutton', { name: 'Number of periods' }), { target: { value: '30' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Fiscal quarter' }));
+  expect(screen.getByText("Fiscal periods follow the connected organization's fiscal calendar.")).toBeInTheDocument();
+  fireEvent.change(screen.getByRole('combobox', { name: 'Relative date' }), { target: { value: 'NEXT_N_FISCAL_QUARTERS' } });
+  expect(screen.getByText('CreatedDate = NEXT_N_FISCAL_QUARTERS:1')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+  expect(apply).toHaveBeenCalledWith(expect.objectContaining({ sqlString: 'CreatedDate = NEXT_N_FISCAL_QUARTERS:1' }));
 });
 
 test('incomplete or unsupported drafts are rejected without a preview or mutation', () => {

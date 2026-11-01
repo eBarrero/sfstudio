@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import css from '../style.module.css';
-import { buildWhereCondition, supportedDateLiterals, type WhereDraft, type WhereKind, type WhereMode } from '../../../../core/soql/whereDraft';
+import { buildWhereCondition, type WhereDraft, type WhereKind, type WhereMode } from '../../../../core/soql/whereDraft';
 import { RetroInput, RetroRangeInput } from '../../../atoms/RetroStyle/Input/RetroInput';
 import ListSelection from '../../../atoms/ListSelecction/ListSelection';
+import DateLiteralPicker from './dateLiteralPicker';
 
 interface Props {
   field: GetFieldsIndex;
@@ -80,9 +81,7 @@ export default function WhereBuilder({ field, path, applyNewCondition, onApplied
       {mode === 'range' && <RetroRangeInput key={`${fieldId.fieldApiName}-range`}
         type={inputType} labelFrom="From" labelTo="To"
         onChangeRangeValue={value => { setFrom(value.from); setTo(value.to); }} />}
-      {mode === 'literal' && <label>Relative date <select value={dateLiteral} onChange={event => setDateLiteral(event.target.value)}>
-        {supportedDateLiterals.map(value => <option key={value} value={value}>{value}</option>)}
-      </select></label>}
+      {mode === 'literal' && <DateLiteralPicker value={dateLiteral} onChange={setDateLiteral} />}
       {mode === 'list' && (kind === 'picklist' || kind === 'multiselect') &&
         <ListSelection key={fieldId.fieldApiName}
           initialValues={field.picklistValues.map(item => ({ code: item.value, description: item.label }))}

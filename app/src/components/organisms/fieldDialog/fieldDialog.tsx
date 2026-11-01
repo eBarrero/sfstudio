@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import css from './style.module.css';
 import { fieldCapabilities, fieldEditorContext, selectedFunctions } from '../../../core/soql/fieldEditor';
-import { qualifiedFieldName } from '../../../core/soql/whereOwnership';
-import { legacyConditionPreview } from '../../../core/soql/legacyAdapter';
-import { dispatchObjectPanelAction, OBJECT_PANEL_ACTION } from '../../../core/objectPanelActions';
 import modelState from '../../../store/modelState';
-import sessionState from '../../../store/sessionState';
 import viewState from '../../../store/viewState';
 import TitleBar from '../../atoms/TitleBar/titleBar';
 import Tabs from '../../atoms/Tabs/tabs';
@@ -18,13 +14,11 @@ export default function FieldDialog() {
   const { state, queryState, addWhere, doFieldAction } = modelState();
   const currentField = state.currentField;
   const popDialog = viewState(value => value.popDialog);
-  const connections = sessionState(value => value.publicSession.connections);
   const dialogRef = useRef<HTMLDivElement>(null);
   const [currentTab, setCurrentTab] = useState('S');
   const [feedback, setFeedback] = useState('');
   const context = currentField ? fieldEditorContext(queryState, queryState.indexCurrentElement, currentField) : undefined;
   const owner = context ? queryState.queryElemnts[context.ownerIndex] as PrimaryQuery | NestedQuery : undefined;
-  const currentElement = queryState.queryElemnts[queryState.indexCurrentElement];
   const path = context?.relationshipPath.join('.') ?? '';
   const fieldPath = `${path ? `${path}.` : ''}${currentField?.fieldApiName ?? ''}`;
   const capabilities = currentField ? fieldCapabilities(currentField.type) : undefined;
@@ -32,13 +26,8 @@ export default function FieldDialog() {
     ? [['Select', 'S'], ['Order', 'O']]
     : [['Select', 'S'], ['Where', 'W'], ['Order', 'O']];
   const activeTab = availableTabs.some(([, code]) => code === currentTab) ? currentTab : 'S';
-  const org = connections.find(connection => connection.orgKey === context?.orgKey);
   const blockName = owner?.sObjectId.sObjectApiName ?? 'query';
   const selections = context ? selectedFunctions(queryState, context) : [];
-  const conditions = owner?.where?.flatMap((condition, index) =>
-    qualifiedFieldName(condition.field) === fieldPath ? [{ condition, index }] : []) ?? [];
-  const orders = owner?.orderBy?.flatMap((order, index) =>
-    qualifiedFieldName(order.field) === fieldPath ? [{ order, index }] : []) ?? [];
 
   useEffect(() => {
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -65,20 +54,12 @@ export default function FieldDialog() {
       event.preventDefault(); first.focus();
     }
   }
-  function openPanel(action: typeof OBJECT_PANEL_ACTION.SHOW_WHERE | typeof OBJECT_PANEL_ACTION.SHOW_ORDER) {
-    popDialog();
-    dispatchObjectPanelAction(action);
-  }
-
   return <div className={css.container}>
     <div className={css.win} ref={dialogRef} role="dialog" aria-modal="true"
       aria-labelledby="field-dialog-heading" onKeyDown={onKeyDown} tabIndex={-1}>
       <TitleBar titleId="field-dialog-heading" title={`Edit field: ${fieldPath || 'No field selected'}`}
         onClose={popDialog} />
       {currentField && context && owner && <>
-        <p className={css.context}>Organization: {org?.alias ?? context.orgKey} ({context.orgKey})<br />
-          Object: {currentElement.sObjectId.sObjectApiName} · Query block: {blockName}<br />
-          Field: {fieldPath}</p>
         <Tabs idPrefix="field-dialog" tabs={availableTabs} value={activeTab} onTabChange={setCurrentTab} />
         {availableTabs.map(([, code]) => <div key={code} role="tabpanel"
           id={`field-dialog-${code}-panel`} aria-labelledby={`field-dialog-${code}`}
@@ -96,16 +77,6 @@ export default function FieldDialog() {
             onApplied={() => setFeedback(`ORDER BY field added to ${blockName}.`)} />}
         </div>)}
         {feedback && <p role="status">{feedback}</p>}
-        <section className={css.applied} aria-label="Applied query clauses">
-          <h3>Applied to this field</h3>
-          <p>SELECT: {selections.length ? selections.map(value => value.replace('%1', fieldPath)).join(', ') : 'None'}</p>
-          <p>WHERE: {conditions.length ? conditions.map(({ condition, index }) =>
-            `C${index + 1} ${legacyConditionPreview(condition)}`).join('; ') : 'None'}</p>
-          <p>ORDER BY: {orders.length ? orders.map(({ order, index }) =>
-            `${index + 1}. ${fieldPath} ${order.direction} NULLS ${order.nulls}`).join('; ') : 'None'}</p>
-          <button type="button" onClick={() => openPanel(OBJECT_PANEL_ACTION.SHOW_WHERE)}>View all WHERE conditions</button>{' '}
-          <button type="button" onClick={() => openPanel(OBJECT_PANEL_ACTION.SHOW_ORDER)}>View all ORDER BY fields</button>
-        </section>
       </>}
     </div>
   </div>;

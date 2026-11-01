@@ -1,3 +1,5 @@
+import { isSupportedDateLiteral } from './dateLiterals';
+
 /** The supported, deliberately small SOQL syntax tree. No UI or transport types live here. */
 export type Literal =
   | { kind: 'text'; value: string }
@@ -52,7 +54,6 @@ export const MAX_PARENT_TO_CHILD_LEVELS = 5;
 const identifier = /^[A-Za-z][A-Za-z0-9_]*$/;
 const pathIdentifier = /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/;
 const dateValue = /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)?$/;
-const dateLiteral = /^(?:TODAY|YESTERDAY|TOMORROW|THIS_WEEK|LAST_WEEK|NEXT_WEEK|THIS_MONTH|LAST_MONTH|NEXT_MONTH|THIS_YEAR|LAST_YEAR|NEXT_YEAR|LAST_N_DAYS:\d{1,3}|NEXT_N_DAYS:\d{1,3}|N_DAYS_AGO:\d{1,3})$/;
 
 export function validateQuery(query: RootQuery): SoqlError[] {
   const errors: SoqlError[] = [];
@@ -84,7 +85,7 @@ export function validateQuery(query: RootQuery): SoqlError[] {
     values.forEach((literal, i) => {
       if (literal.kind === 'number' && !Number.isFinite(literal.value)) add('INVALID_NUMBER', `${path}.values[${i}]`);
       if (literal.kind === 'date' && !dateValue.test(literal.value)) add('INVALID_DATE', `${path}.values[${i}]`);
-      if (literal.kind === 'dateLiteral' && !dateLiteral.test(literal.value)) add('INVALID_DATE_LITERAL', `${path}.values[${i}]`);
+      if (literal.kind === 'dateLiteral' && !isSupportedDateLiteral(literal.value)) add('INVALID_DATE_LITERAL', `${path}.values[${i}]`);
       if (value.kind === 'set' && literal.kind === 'null') add('INVALID_SET_VALUE', `${path}.values[${i}]`);
     });
   };

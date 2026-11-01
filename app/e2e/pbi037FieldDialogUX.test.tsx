@@ -6,7 +6,6 @@ import { modelReader } from '../src/services/salesforceSchema/proxy';
 import modelState from '../src/store/modelState';
 import sessionState from '../src/store/sessionState';
 import viewState from '../src/store/viewState';
-import objectPanelState from '../src/store/objectPanelState';
 
 globalThis.structuredClone ??= <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const orgKey = '00D000000000001:005000000000001';
@@ -26,7 +25,6 @@ function setup() {
       alias: 'Integration', userName: 'fixture', instanceUrl: 'https://example.my.salesforce.com',
       loginHost: 'test.salesforce.com', environmentKind: 'SANDBOX', status: 'CONNECTED' }] } });
   viewState.setState({ dialogStack: [] });
-  objectPanelState.getState().resetTab();
 }
 
 function Harness() {
@@ -46,10 +44,11 @@ test('dialog opens on SELECT, traps focus, supports arrow keys and Escape restor
   expect(dialog).toHaveAttribute('aria-modal', 'true');
   expect(screen.getByRole('tab', { name: 'Select' })).toHaveFocus();
   const close = screen.getByRole('button', { name: 'Close dialog' });
+  const lastControl = screen.getByRole('checkbox', { name: /Default/i });
   close.focus();
   fireEvent.keyDown(close, { key: 'Tab', shiftKey: true });
-  expect(screen.getByRole('button', { name: 'View all ORDER BY fields' })).toHaveFocus();
-  fireEvent.keyDown(screen.getByRole('button', { name: 'View all ORDER BY fields' }), { key: 'Tab' });
+  expect(lastControl).toHaveFocus();
+  fireEvent.keyDown(lastControl, { key: 'Tab' });
   expect(close).toHaveFocus();
   screen.getByRole('tab', { name: 'Select' }).focus();
   fireEvent.keyDown(screen.getByRole('tab', { name: 'Select' }), { key: 'ArrowRight' });
@@ -60,32 +59,28 @@ test('dialog opens on SELECT, traps focus, supports arrow keys and Escape restor
   expect(trigger).toHaveFocus();
 });
 
-test('SELECT, WHERE and ORDER BY show applied state and route to the global panels', () => {
+test('SELECT, WHERE and ORDER BY update the query and show concise feedback', () => {
   setup();
   render(<Harness />);
   fireEvent.click(screen.getByRole('button', { name: 'Open editor' }));
   const dialog = screen.getByRole('dialog');
-  expect(within(dialog).getByText(/Organization: Integration/)).toHaveTextContent(orgKey);
-  expect(within(dialog).getByText(/Object: Account/)).toHaveTextContent('Query block: Account');
+  expect(within(dialog).queryByLabelText('Applied query clauses')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('checkbox', { name: /Default/i }));
-  expect(within(dialog).getByText('SELECT: Name')).toBeInTheDocument();
+  expect(modelState.getState().sqlState.sql).toBe('SELECT Name FROM Account');
   expect(screen.getByRole('status')).toHaveTextContent('Block: Account');
   fireEvent.click(screen.getByRole('tab', { name: 'Where' }));
   expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
   fireEvent.change(screen.getByRole('textbox', { name: 'Value' }), { target: { value: 'Ada' } });
   expect(screen.getByRole('button', { name: 'Apply' })).toBeEnabled();
   fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
-  expect(within(dialog).getByText("WHERE: C1 Name = 'Ada'")).toBeInTheDocument();
+  expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).where).toHaveLength(1);
   expect(screen.getByText('WHERE condition added to Account.')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('tab', { name: 'Order' }));
   fireEvent.change(screen.getByRole('combobox', { name: 'Direction' }), { target: { value: 'DESC' } });
   fireEvent.change(screen.getByRole('combobox', { name: 'NULLS policy' }), { target: { value: 'FIRST' } });
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(within(dialog).getByText('ORDER BY: 1. Name DESC NULLS FIRST')).toBeInTheDocument();
+  expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).orderBy).toHaveLength(1);
   expect(modelState.getState().sqlState.sql).toBe("SELECT Name FROM Account WHERE Name = 'Ada' ORDER BY Name DESC NULLS FIRST");
-  fireEvent.click(screen.getByRole('button', { name: 'View all ORDER BY fields' }));
-  expect(objectPanelState.getState().activeTab).toBe('order');
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
 
 test('changing the field while mounted updates the heading and clears applied feedback', () => {
@@ -94,5 +89,5 @@ test('changing the field while mounted updates the heading and clears applied fe
   act(() => modelState.setState({ state: { ...modelState.getState().state,
     currentField: { ...currentField, fieldApiName: 'OtherName', fieldLocalId: 1 } } }));
   expect(screen.getByRole('dialog', { name: 'Edit field: OtherName' })).toBeInTheDocument();
-  expect(screen.getByText('SELECT: None')).toBeInTheDocument();
+  expect(screen.getByRole('checkbox', { name: /Default/i })).not.toBeChecked();
 });

@@ -1,6 +1,7 @@
 import type { Literal } from './domain';
 import { renderPredicate } from './domain';
 import { legacyConditionToPredicate } from './legacyAdapter';
+import { isSupportedDateLiteral } from './dateLiterals';
 
 export type WhereMode = 'null' | 'single' | 'range' | 'list' | 'literal';
 export type WhereKind = 'text' | 'number' | 'date' | 'datetime' | 'boolean' | 'picklist' | 'multiselect';
@@ -15,8 +16,6 @@ export interface WhereDraft {
   dateLiteral: string;
 }
 
-export const supportedDateLiterals = ['TODAY', 'YESTERDAY', 'TOMORROW', 'THIS_WEEK', 'LAST_WEEK',
-  'NEXT_WEEK', 'THIS_MONTH', 'LAST_MONTH', 'NEXT_MONTH', 'THIS_YEAR', 'LAST_YEAR', 'NEXT_YEAR'];
 const comparisonOperators = ['=', '!=', '>', '<', '>=', '<='];
 
 function typedLiteral(kind: WhereKind, raw: string): Literal {
@@ -53,7 +52,7 @@ export function buildWhereCondition(draft: WhereDraft): SimpleCondition | pairCo
     if (operator !== '=' && operator !== '!=') throw new Error('Choose Equals or Not equal for NULL.');
     condition = { field, operator, value: { kind: 'null' }, sqlString: '' };
   } else if (mode === 'literal') {
-    if ((kind !== 'date' && kind !== 'datetime') || !supportedDateLiterals.includes(dateLiteral))
+    if ((kind !== 'date' && kind !== 'datetime') || !isSupportedDateLiteral(dateLiteral))
       throw new Error('Choose a supported date literal.');
     if (!comparisonOperators.includes(operator)) throw new Error('Choose a comparison operator.');
     condition = { field, operator, value: { kind: 'dateLiteral', value: dateLiteral }, sqlString: '' };
