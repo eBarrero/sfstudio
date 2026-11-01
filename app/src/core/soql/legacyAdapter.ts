@@ -1,5 +1,7 @@
 import type { ChildQuery, Expression, Literal, Predicate, RootQuery, Selection } from './domain';
 import { renderQuery, validateQuery } from './domain';
+import { defaultWhereLogic, parseWhereLogic, WhereLogicError,
+  type WhereLogicNode } from './whereLogic';
 
 const aggregateNames = new Set(['COUNT', 'COUNT_DISTINCT', 'SUM', 'AVG', 'MIN', 'MAX', 'FORMAT',
   'CALENDAR_MONTH', 'CALENDAR_QUARTER', 'CALENDAR_YEAR', 'DAY_ONLY', 'FISCAL_MONTH',
@@ -40,10 +42,14 @@ function predicate(condition: SimpleCondition | pairCondition): Predicate {
   return { kind: 'comparison', field, operator: condition.operator as '=', value: literal(condition.value) };
 }
 
-function conditions(conditions: (SimpleCondition | pairCondition)[] | undefined): Predicate | undefined {
-  if (!conditions?.length) return undefined;
-  if (conditions.length === 1) return predicate(conditions[0]);
-  return { kind: 'logical', operator: 'AND', operands: conditions.map(predicate) };
+function conditions(items: (SimpleCondition | pairCondition)[] | undefined,
+  logic?: string): Predicate | undefined {
+  if (!items?.length) return undefined;
+  const tree = parseWhereLogic(logic ?? defaultWhereLogic(items.length), items.length);
+  const convert = (node: WhereLogicNode): Predicate => node.kind === 'condition'
+    ? predicate(items[node.index])
+    : { kind: 'logical', operator: node.kind, operands: [convert(node.left), convert(node.right)] };
+  return convert(tree);
 }
 
 export function legacyQueryToAst(state: QueryState): RootQuery | undefined {
@@ -65,7 +71,7 @@ export function legacyQueryToAst(state: QueryState): RootQuery | undefined {
       ...elements.flatMap((element, index): Selection[] => {
         if (element.type !== 'SUBQUERY' || element.parent !== parent) return [];
         const child: ChildQuery = { kind: 'child', relationship: element.relationshipName,
-          select: selections(index), where: conditions(element.where), limit: element.limit, offset: element.offset,
+          select: selections(index), where: conditions(element.where, element.whereLogic), limit: element.limit, offset: element.offset,
           orderBy: element.orderBy?.map(order => ({ field: order.field.fieldApiName, direction: order.direction })) };
         return [{ kind: 'subquery', query: child }];
       }),
@@ -73,13 +79,18 @@ export function legacyQueryToAst(state: QueryState): RootQuery | undefined {
   };
   const select = selections(rootIndex);
   return { kind: 'root', from: root.sObjectId.sObjectApiName, select,
-    where: conditions(root.where), limit: root.limit, offset: root.offset,
+    where: conditions(root.where, root.whereLogic), limit: root.limit, offset: root.offset,
     groupBy: root.selectClause.fields.filter(field => field.makeGroupBy).map(field => expression(field)),
     orderBy: root.orderBy?.map(order => ({ field: order.field.fieldApiName, direction: order.direction })) };
 }
 
 export function legacySqlState(state: QueryState): SQLState {
-  const ast = legacyQueryToAst(state);
-  if (!ast || validateQuery(ast).length) return { sql: '', isValid: false };
-  return { sql: renderQuery(ast), isValid: true };
+  try {
+    const ast = legacyQueryToAst(state);
+    if (!ast || validateQuery(ast).length) return { sql: '', isValid: false };
+    return { sql: renderQuery(ast), isValid: true };
+  } catch (error) {
+    if (error instanceof WhereLogicError) return { sql: '', isValid: false };
+    throw error;
+  }
 }

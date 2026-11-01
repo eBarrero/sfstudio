@@ -7,6 +7,10 @@ import modelState from '../src/store/modelState';
 import objectPanelState from '../src/store/objectPanelState';
 import viewState from '../src/store/viewState';
 
+globalThis.structuredClone ??= function cloneForTest<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+};
+
 jest.mock('../src/components/organisms/tableFields/tableFields', () => ({
   __esModule: true,
   default: () => <div>Tabla de campos</div>,
@@ -112,6 +116,44 @@ it('shows every stored WHERE condition and shares an action across tab, menu and
   const refreshedPanel = screen.getByRole('tabpanel', { name: 'Where Clause' });
   expect(within(refreshedPanel).getByText('No hay condiciones WHERE en la consulta.')).toBeInTheDocument();
   expect(within(refreshedPanel).queryByText("Name LIKE 'A%'")).not.toBeInTheDocument();
+});
+
+it('numbers conditions and applies only valid WHERE logic from the panel', () => {
+  const conditions: SimpleCondition[] = [
+    { field: { fieldApiName: 'Name', fieldIndex: 0 }, operator: '=',
+      value: "'Alice'", sqlString: "Name = 'Alice'" },
+    { field: { fieldApiName: 'Industry', fieldIndex: 1 }, operator: '=',
+      value: "'Tech'", sqlString: "Industry = 'Tech'" },
+  ];
+  act(() => {
+    viewState.getState().setCurrentView('sobject');
+    objectPanelState.getState().resetTab();
+    modelState.setState({ queryState: { indexCurrentElement: 0, queryElemnts: [{
+      type: 'ROOT', parent: -1, level: 0, limit: 50,
+      sObjectId: { orgSfName: 'fixture', sObjectApiName: 'Account', sObjectLocalId: 0 },
+      selectClause: { fields: [{ fieldId: { fieldApiName: 'Name', fieldIndex: 0 },
+        isAggregateFunction: false, makeGroupBy: false, soqlFunction: '%1' }] },
+      where: conditions, whereLogic: 'C1 AND C2',
+    }] } });
+  });
+  render(<SObjectPanel />);
+  fireEvent.click(screen.getByRole('tab', { name: 'Where Clause' }));
+  const panel = screen.getByRole('tabpanel', { name: 'Where Clause' });
+  expect(within(panel).getByText('C1')).toBeInTheDocument();
+  expect(within(panel).getByText('C2')).toBeInTheDocument();
+  const input = within(panel).getByRole('textbox', { name: 'Lógica WHERE de Account' });
+  expect(input).toHaveValue('C1 AND C2');
+
+  fireEvent.change(input, { target: { value: '(C1 OR C0)' } });
+  fireEvent.click(within(panel).getByRole('button', { name: 'Aplicar lógica' }));
+  expect(within(panel).getByRole('alert')).toHaveTextContent('Usa índices entre C1 y C2.');
+  expect(modelState.getState().queryState.queryElemnts[0].whereLogic).toBe('C1 AND C2');
+
+  fireEvent.change(input, { target: { value: '(C1 OR C2)' } });
+  fireEvent.click(within(panel).getByRole('button', { name: 'Aplicar lógica' }));
+  expect(within(panel).queryByRole('alert')).not.toBeInTheDocument();
+  expect(modelState.getState().queryState.queryElemnts[0].whereLogic).toBe('(C1 OR C2)');
+  expect(modelState.getState().sqlState.sql).toContain("WHERE (Name = 'Alice' OR Industry = 'Tech')");
 });
 
 it('keeps the extended fields view and resets to fields for a new object', () => {

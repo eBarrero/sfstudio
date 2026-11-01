@@ -57,7 +57,7 @@ interface QueryElementAbstract {
     parent: number;
     selectClause: SelectClause;
     where?: (SimpleCondition | pairCondition)[];
-    whereLogic?: (LogicalOperator | number )[];
+    whereLogic?: string; // C1 refers to the first condition in this element's where array.
     orderBy?: OrderBy[];
     level: number;                                  // Depth from the root; ROOT is 0.
 }
@@ -145,5 +145,6 @@ interface ModelState {
     doFieldAction: (fieldIndex: number, action: string, string = '%1', isAggregateFunction: boolean = false, makeGroupBy: boolean = false) => void;
     setSelectAllFields: (value: SelectAllFields) => void;
     addWhere: (SimpleCondition: SimpleCondition) => void;
+    setWhereLogic: (elementIndex: number, expression: string) => void;
     initializeModel: () => void;
   }

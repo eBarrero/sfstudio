@@ -5,6 +5,7 @@ import { addCommand, NODEL_CMD } from '../core/commandManager';
 import { SelectAllFieldsEnum } from "../core/constants/fields";
 import { legacySqlState } from '../core/soql/legacyAdapter';
 import { MAX_PARENT_TO_CHILD_LEVELS } from '../core/soql/domain';
+import { defaultWhereLogic, parseWhereLogic } from '../core/soql/whereLogic';
 import savedSoqlState from './savedSoqlState';
 
 
@@ -244,10 +245,25 @@ import savedSoqlState from './savedSoqlState';
             if (!query.where) {
                 query.where = [];
             }
+            const previousCount = query.where.length;
+            const previousLogic = query.whereLogic?.trim();
             query.where!.push(SimpleCondition);
+            query.whereLogic = !previousLogic || previousLogic === defaultWhereLogic(previousCount)
+                ? defaultWhereLogic(query.where.length)
+                : `(${previousLogic}) AND C${query.where.length}`;
             set({queryState, 
                 sqlState: sqlState(queryState)
                 });  
+        },
+        setWhereLogic: (elementIndex: number, expression: string) => {
+            const current = get().queryState;
+            const element = current.queryElemnts[elementIndex];
+            if (!element?.where?.length) throw new Error('No hay condiciones WHERE en este elemento.');
+            const normalized = expression.trim();
+            parseWhereLogic(normalized, element.where.length);
+            const queryState = structuredClone(current);
+            queryState.queryElemnts[elementIndex].whereLogic = normalized;
+            set({queryState, sqlState: sqlState(queryState)});
         },
         initializeModel: () => {
             // Create the commands for the field filter
