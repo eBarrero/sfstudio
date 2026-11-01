@@ -279,6 +279,19 @@ import savedSoqlState from './savedSoqlState';
             (queryState.queryElemnts[ownerIndex] as PrimaryQuery | NestedQuery).whereLogic = normalized;
             set({queryState, sqlState: sqlState(queryState)});
         },
+        setLimit: (elementIndex: number, limit: number | undefined) => {
+            const current = get().queryState;
+            const element = current.queryElemnts[elementIndex];
+            if (!Number.isInteger(elementIndex) || !element || element.type === 'RELETED')
+                throw new Error('El bloque SOQL no es válido.');
+            if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 1 || limit > 2000))
+                throw new Error('El límite debe ser un entero entre 1 y 2000.');
+            const queryState = structuredClone(current);
+            const block = queryState.queryElemnts[elementIndex] as PrimaryQuery | NestedQuery;
+            if (limit === undefined) delete block.limit;
+            else block.limit = limit;
+            set({ queryState, sqlState: sqlState(queryState) });
+        },
         initializeModel: () => {
             // Create the commands for the field filter
             addCommand({...NODEL_CMD.SELECT_ALL_FIELDS ,     action: () => { get().setSelectAllFields(SelectAllFieldsEnum.ALL); } });

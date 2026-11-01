@@ -17,7 +17,7 @@ Este plan convierte los criterios de éxito de [VISION_PRODUCTO.md](./VISION_PRO
 | [Sprint 07](./sprint07/guia%20del%20sprint.md) | Aplazado: experiencia de comparación y aceptación integral; reevaluar la paridad opcional antes de ejecutarlo. |
 | [Sprint 08](./sprint08/guia%20del%20sprint.md) | Interfaz más compacta de conexiones y exploración de objetos por pestañas. |
 | [Sprint 09](./sprint09/guia%20del%20sprint.md) | PBI-032 implementada: el WHERE del bloque mezcla condiciones locales y de relaciones padre. |
-| [Sprint 10](./sprint10/guia%20del%20sprint.md) | Planificado: gestionar `LIMIT` por bloque SOQL desde «Where Clause». |
+| [Sprint 10](./sprint10/guia%20del%20sprint.md) | PBI-033 implementada: gestión de `LIMIT` por bloque SOQL desde «Where Clause». |
 
 ## Trazabilidad con los criterios de éxito
 

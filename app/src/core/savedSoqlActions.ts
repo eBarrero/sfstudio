@@ -46,7 +46,7 @@ export async function saveCurrentSoql(name: string): Promise<SavedSoql> {
     body: model.sqlState.sql,
     createdOrgKey: previous?.createdOrgKey ?? orgKey,
     availableOrgKeys: [...new Set([...(previous?.availableOrgKeys ?? []), orgKey])],
-    formatVersion: 2,
+    formatVersion: 3,
     queryState: structuredClone(model.queryState),
   };
   await savedSoqlRepository.put(query);

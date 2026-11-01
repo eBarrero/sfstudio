@@ -65,7 +65,7 @@ interface PrimaryQuery extends QueryElementAbstract  {
     where?: (SimpleCondition | pairCondition)[];
     whereLogic?: string;
     aggregatorQuery?: AggregatorQuery;
-    limit: number;
+    limit?: number;
     offset?: number;
 }
 
@@ -74,7 +74,7 @@ interface NestedQuery extends QueryElementAbstract  {
     where?: (SimpleCondition | pairCondition)[];
     whereLogic?: string;
     aggregatorQuery?: AggregatorQuery;
-    limit: number;
+    limit?: number;
     offset?: number;    
     relationshipName: RelationshipName;
 }
@@ -148,5 +148,6 @@ interface ModelState {
     setSelectAllFields: (value: SelectAllFields) => void;
     addWhere: (SimpleCondition: SimpleCondition) => void;
     setWhereLogic: (elementIndex: number, expression: string) => void;
+    setLimit: (elementIndex: number, limit: number | undefined) => void;
     initializeModel: () => void;
   }

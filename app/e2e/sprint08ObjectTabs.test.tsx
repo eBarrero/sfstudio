@@ -96,7 +96,7 @@ it('shows every stored WHERE condition and shares an action across tab, menu and
   const panel = screen.getByRole('tabpanel', { name: 'Where Clause' });
   expect(within(panel).getByText("Name LIKE 'A%'")).toBeInTheDocument();
   expect(within(panel).getByText("Status = 'Open'")).toBeInTheDocument();
-  expect(within(panel).getByText('Account')).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Account' })).toBeInTheDocument();
   expect(within(panel).getByText('Contact · Contacts')).toBeInTheDocument();
 
   act(() => objectPanelState.getState().selectTab('fields'));

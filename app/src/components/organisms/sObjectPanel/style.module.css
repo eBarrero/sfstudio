@@ -13,6 +13,11 @@
 .whereConditions { padding-left: 1.5rem; overflow-wrap: anywhere; }
 .whereConditions li { margin-bottom: 0.5rem; }
 
+.limitTable { border-collapse: collapse; width: 100%; margin-bottom: 0.75rem; }
+.limitTable th, .limitTable td { border: 1px solid currentColor; padding: 0.4rem; text-align: left; }
+.limitTable td input[type='number'] { width: 6rem; }
+.limitTable td [role='alert'] { display: block; }
+
 .containerExtended {
     display:block
 }

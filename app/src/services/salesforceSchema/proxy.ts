@@ -290,8 +290,8 @@ export default class Proxy {
     }
 
 
-    public static async sendSoqlAdapter(orgSfName: string, query: string, signal?: AbortSignal): Promise<SalesforceQueryResponse> {
-        return await sendQuery(orgSfName, query, 200, signal);
+    public static async sendSoqlAdapter(orgSfName: string, query: string, signal?: AbortSignal, limit = 200): Promise<SalesforceQueryResponse> {
+        return await sendQuery(orgSfName, query, limit, signal);
     }
 
     public static async nextSoqlPage(orgSfName: string, cursor: string, signal?: AbortSignal): Promise<SalesforceQueryResponse> {

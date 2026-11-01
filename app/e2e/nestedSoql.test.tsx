@@ -62,6 +62,6 @@ it('shows and executes SOQL with a child of a child under the correct parent', (
   const run = readCommand('query run', CONTEXT_LEVEL.OBJECT)!;
   act(() => run.action({ model: modelState.getState(), view: viewState.getState(),
     application: applicationState.getState(), data: dataState.getState() }));
-  expect(execute).toHaveBeenCalledWith(orgKey, expected, expect.any(AbortSignal));
+  expect(execute).toHaveBeenCalledWith(orgKey, expected, expect.any(AbortSignal), 50);
   expect(viewState.getState().currentView).toBe('SQL_RESULT');
 });

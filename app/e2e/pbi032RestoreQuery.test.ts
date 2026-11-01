@@ -81,7 +81,7 @@ test('loads one saved related query into a compatible org without losing its WHE
   await savedSoqlRepository.put({ id, name: 'Shared Contacts',
     createdDate: '2026-01-01T00:00:00.000Z', lastModifiedDate: '2026-01-01T00:00:00.000Z',
     body: "SELECT Id FROM Contact WHERE (LastName = 'Soto' OR Account.Industry = 'Tech') LIMIT 50",
-    createdOrgKey: source, availableOrgKeys: [source], formatVersion: 2, queryState: savedQuery() });
+    createdOrgKey: source, availableOrgKeys: [source], formatVersion: 3, queryState: savedQuery() });
   await loadSavedSoql(id);
   expect(modelState.getState().sqlState.sql).toContain(
     "WHERE (LastName = 'Soto' OR Account.Industry = 'Tech')");
@@ -101,7 +101,7 @@ test.each([
   const id = `pbi032-${mode}`;
   await savedSoqlRepository.put({ id, name: id, createdDate: '2026-01-01T00:00:00.000Z',
     lastModifiedDate: '2026-01-01T00:00:00.000Z', body: 'SELECT Id FROM Contact',
-    createdOrgKey: source, availableOrgKeys: [source], formatVersion: 2, queryState: savedQuery() });
+    createdOrgKey: source, availableOrgKeys: [source], formatVersion: 3, queryState: savedQuery() });
   const before = modelState.getState().queryState;
   await expect(loadSavedSoql(id)).rejects.toThrow(message);
   expect(modelState.getState().queryState).toBe(before);

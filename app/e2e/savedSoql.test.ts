@@ -33,7 +33,7 @@ test('IndexedDB keeps one shared definition and preserves dates when it is updat
   const first = new IndexedDbSavedSoqlRepository(idb);
   const query = { id: 'query-one', name: 'Accounts', createdDate: '2026-01-01T00:00:00.000Z',
     lastModifiedDate: '2026-01-01T00:00:00.000Z', body: 'SELECT Id FROM Account',
-    createdOrgKey: source, availableOrgKeys: [source], formatVersion: 2 as const, queryState };
+    createdOrgKey: source, availableOrgKeys: [source], formatVersion: 3 as const, queryState };
   await first.put(query);
   const reopened = new IndexedDbSavedSoqlRepository(idb);
   expect(await reopened.get(query.id)).toEqual(query);
