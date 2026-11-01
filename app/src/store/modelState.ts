@@ -218,6 +218,8 @@ import savedSoqlState from './savedSoqlState';
                 const fieldId: FieldId = {fieldApiName, fieldIndex};
                 const SelectClauseField = {fieldId: fieldId, alias: undefined, soqlFunction, isAggregateFunction, makeGroupBy};
                 query.selectClause!.fields!.push(SelectClauseField);
+                if (isAggregateFunction && owner.type === 'ROOT' && !blockFields.some(item => item.makeGroupBy))
+                    delete owner.limit;
             }
 
             if (action === constants.UNSELECTED) {

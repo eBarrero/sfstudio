@@ -152,6 +152,7 @@ export const SelectClauseKeywords: { [key: string]: SelectClauseKeywords } = {
   SQL_NUMBER:   { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_NUMBER' } as const,
   SQL_PERCENT:  { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_PERCENT' } as const,
   SQL_TEXT:     { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_TEXT' } as const,
+  SQL_TEXT_GROUP: { keyWord: '%1 ',                 description: 'Group by',          makeGroupBy: true,   unGroupable: false, groupable: true,  help: '#SOQL.Fun.TEXT_GROUPBY' } as const,
   SQL_BOOLEAN:  { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: true,  help: '#SOQL_BOOLEAN' } as const,
   SQL_PICKLIST: { keyWord: '%1',                    description: 'Default',           makeGroupBy: false,  unGroupable: true,  groupable: false, help: '#SOQL_PICKLIST' } as const,
   // agregate functions
@@ -240,7 +241,12 @@ export const SQLClauseAllowedByTypeField: Map<SFFieldTypesEnum, SelectClauseKeyw
     SelectClauseKeywords.SQL_MAX,
   ]],
   [SFFieldTypesEnum.Text, [
-    SelectClauseKeywords.SQL_TEXT
+    SelectClauseKeywords.SQL_TEXT,
+    SelectClauseKeywords.SQL_TEXT_GROUP,
+    SelectClauseKeywords.SQL_COUNT1,
+    SelectClauseKeywords.SQL_COUNT2,
+    SelectClauseKeywords.SQL_MIN,
+    SelectClauseKeywords.SQL_MAX,
   ]],
   [SFFieldTypesEnum.TextArea, [
     SelectClauseKeywords.SQL_TEXT

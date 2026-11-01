@@ -44,7 +44,7 @@ test('dialog opens on SELECT, traps focus, supports arrow keys and Escape restor
   expect(dialog).toHaveAttribute('aria-modal', 'true');
   expect(screen.getByRole('tab', { name: 'Select' })).toHaveFocus();
   const close = screen.getByRole('button', { name: 'Close dialog' });
-  const lastControl = screen.getByRole('checkbox', { name: /Default/i });
+  const lastControl = screen.getByRole('checkbox', { name: /Maximum/i });
   close.focus();
   fireEvent.keyDown(close, { key: 'Tab', shiftKey: true });
   expect(lastControl).toHaveFocus();

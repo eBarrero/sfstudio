@@ -100,6 +100,39 @@ test('visible SELECT functions are supported by the AST and unsupported types re
   expect(screen.getByText('No SELECT expressions are available for this field type.')).toBeInTheDocument();
 });
 
+test('string fields show supported aggregate choices and render a usable query', () => {
+  setup();
+  const textField = { fieldLocalId: 0, fieldApiName: 'Name', type: 'string' } as GetFieldsIndex;
+  jest.spyOn(modelReader, 'getFieldApiName').mockReturnValue('Name');
+  jest.spyOn(modelReader, 'getSObject').mockReturnValue({ fields: [textField] } as unknown as SObject);
+  modelState.setState({ state: { ...modelState.getState().state, currentField: textField } });
+  expect(fieldCapabilities('string').select.map(item => item.keyWord)).toEqual([
+    '%1', '%1 ', 'COUNT(%1)', 'COUNT_DISTINCT(%1)', 'MIN(%1)', 'MAX(%1)',
+  ]);
+  render(<FieldDialog />);
+  expect(screen.getByRole('group', { name: 'Aggregate and grouped expressions' })).toBeInTheDocument();
+  expect(screen.getByRole('checkbox', { name: /Count fields/i })).toBeInTheDocument();
+  expect(screen.getByRole('checkbox', { name: /Count Distinct/i })).toBeInTheDocument();
+  expect(screen.getByRole('checkbox', { name: /Minimum/i })).toBeInTheDocument();
+  expect(screen.getByRole('checkbox', { name: /Maximum/i })).toBeInTheDocument();
+  expect(screen.getByRole('checkbox', { name: /Group by/i })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('checkbox', { name: /Count Distinct/i }));
+  expect(modelState.getState().sqlState.sql).toBe('SELECT COUNT_DISTINCT(Name) FROM Account');
+  expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).limit).toBeUndefined();
+});
+
+test('string Group by can combine with a string aggregate and keeps an explicit limit', () => {
+  setup();
+  const textField = { fieldLocalId: 0, fieldApiName: 'Name', type: 'string' } as GetFieldsIndex;
+  jest.spyOn(modelReader, 'getFieldApiName').mockReturnValue('Name');
+  jest.spyOn(modelReader, 'getSObject').mockReturnValue({ fields: [textField] } as unknown as SObject);
+  modelState.setState({ state: { ...modelState.getState().state, currentField: textField } });
+  render(<FieldDialog />);
+  fireEvent.click(screen.getByRole('checkbox', { name: /Group by/i }));
+  fireEvent.click(screen.getByRole('checkbox', { name: /Count fields/i }));
+  expect(modelState.getState().sqlState.sql).toBe('SELECT Name, COUNT(Name) FROM Account GROUP BY Name LIMIT 50');
+});
+
 test('the mounted editor follows the current field without keeping stale selections', () => {
   setup();
   modelState.getState().doFieldAction(0, constants.SELECTED, 'MIN(%1)', true);
