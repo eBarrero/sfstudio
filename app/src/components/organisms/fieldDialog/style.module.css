@@ -12,6 +12,9 @@
 .datePeriods button { padding: 0.25rem 0.5rem; }
 .datePeriods button[aria-pressed="true"] { font-weight: bold; outline: 2px solid currentColor; outline-offset: -2px; }
 .dateHelp { margin: 0; }
+.orderEditor { display: grid; justify-items: start; gap: 0.75rem; }
+.orderEditor p { margin: 0; }
+.orderEditor label { display: grid; gap: 0.25rem; }
 .card { grid-column: 1 / -1; display: grid; gap: 0.5rem; border: 1px solid currentColor; padding: 0.75rem; min-width: 0; }
 .cardTitle { font-weight: bold; }
 .sql { display: block; overflow-wrap: anywhere; white-space: pre-wrap; }

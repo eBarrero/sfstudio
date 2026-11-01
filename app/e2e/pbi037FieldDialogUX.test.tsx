@@ -77,7 +77,7 @@ test('SELECT, WHERE and ORDER BY update the query and show concise feedback', ()
   expect(screen.getByText('WHERE condition added to Account.')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('tab', { name: 'Order' }));
   fireEvent.change(screen.getByRole('combobox', { name: 'Direction' }), { target: { value: 'DESC' } });
-  fireEvent.change(screen.getByRole('combobox', { name: 'NULLS policy' }), { target: { value: 'FIRST' } });
+  fireEvent.change(screen.getByRole('combobox', { name: 'Nulls' }), { target: { value: 'FIRST' } });
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).orderBy).toHaveLength(1);
   expect(modelState.getState().sqlState.sql).toBe("SELECT Name FROM Account WHERE Name = 'Ada' ORDER BY Name DESC NULLS FIRST");

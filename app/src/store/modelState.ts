@@ -302,11 +302,12 @@ import savedSoqlState from './savedSoqlState';
             else block.limit = limit;
             set({ queryState, sqlState: sqlState(queryState) });
         },
-        addOrderBy: (field: GetFieldsIndex, direction: 'ASC' | 'DESC', nulls: 'FIRST' | 'LAST') => {
+        addOrderBy: (field: GetFieldsIndex, direction: 'ASC' | 'DESC', nulls?: 'FIRST' | 'LAST') => {
             if (field.sortable === false || fieldCapabilities(field.type).order === false)
                 throw new Error('This field cannot be used in ORDER BY.');
-            if (!['ASC', 'DESC'].includes(direction) || !['FIRST', 'LAST'].includes(nulls))
-                throw new Error('Choose a direction and a NULLS policy.');
+            if (!['ASC', 'DESC'].includes(direction) ||
+                (nulls !== undefined && !['FIRST', 'LAST'].includes(nulls)))
+                throw new Error('Choose a valid direction and NULLS policy.');
             const queryState = structuredClone(get().queryState);
             const { ownerIndex, relationshipPath } = whereOwner(queryState, queryState.indexCurrentElement);
             const owner = queryState.queryElemnts[ownerIndex] as PrimaryQuery | NestedQuery;
@@ -315,7 +316,8 @@ import savedSoqlState from './savedSoqlState';
             const name = qualifiedFieldName(fieldId);
             if (owner.orderBy?.some(order => qualifiedFieldName(order.field) === name))
                 throw new Error(`${name} is already used in ORDER BY for this query block.`);
-            owner.orderBy = [...(owner.orderBy ?? []), { field: fieldId, direction, nulls }];
+            owner.orderBy = [...(owner.orderBy ?? []), { field: fieldId, direction,
+                ...(nulls ? { nulls } : {}) }];
             set({ queryState, sqlState: sqlState(queryState),
                 currentSOQLFieldSelection: createSOQLFieldSelection(queryState, queryState.indexCurrentElement) });
         },

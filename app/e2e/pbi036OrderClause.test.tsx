@@ -31,7 +31,7 @@ function setup() { modelState.setState({ queryState: query(),
   state: { ...modelState.getState().state, orgSfName: orgKey }, currentSOQLFieldSelection: new Map() }); }
 afterEach(() => cleanup());
 
-test('AST renders root, child and related orders with mandatory direction and NULLS policy', () => {
+test('AST renders root, child and related orders with optional NULLS policy', () => {
   const ast: RootQuery = { kind: 'root', from: 'Contact',
     select: [{ kind: 'expression', expression: { kind: 'field', path: 'Id' } },
       { kind: 'subquery', query: { kind: 'child', relationship: 'Cases',
@@ -41,6 +41,9 @@ test('AST renders root, child and related orders with mandatory direction and NU
       { field: 'CreatedDate', direction: 'DESC', nulls: 'FIRST' }] };
   expect(renderQuery(ast)).toContain('ORDER BY Subject DESC NULLS FIRST');
   expect(renderQuery(ast)).toContain('ORDER BY Account.Name ASC NULLS LAST, CreatedDate DESC NULLS FIRST');
+  delete ast.orderBy![1].nulls;
+  expect(validateQuery(ast)).toEqual([]);
+  expect(renderQuery(ast)).toContain('ORDER BY Account.Name ASC NULLS LAST, CreatedDate DESC');
   ast.orderBy![0].nulls = 'UNKNOWN' as 'LAST';
   expect(validateQuery(ast).map(error => error.code)).toContain('INVALID_NULL_POLICY');
 });
@@ -75,21 +78,30 @@ test('adding, moving and removing orders changes only owner blocks and SQL prior
   expect(modelState.getState().queryState).toBe(beforeInvalid);
 });
 
-test('editor requires both choices and the panel lists priorities without a RELETED group', () => {
+test('editor requires direction, allows default null order and lists priorities without a RELETED group', () => {
   setup();
   const view = render(<OrderByBuilder field={field('LastName', 1)} path="" />);
   expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
   fireEvent.change(screen.getByRole('combobox', { name: 'Direction' }), { target: { value: 'ASC' } });
-  expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
-  fireEvent.change(screen.getByRole('combobox', { name: 'NULLS policy' }), { target: { value: 'LAST' } });
+  expect(screen.getByRole('button', { name: 'Add' })).toBeEnabled();
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(modelState.getState().sqlState.sql).toContain('ORDER BY LastName ASC NULLS LAST');
+  expect(modelState.getState().sqlState.sql).toContain('ORDER BY LastName ASC LIMIT 50');
+  expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).orderBy?.[0].nulls).toBeUndefined();
   view.unmount();
   render(<OrderClausePanel />);
-  expect(screen.getByText('LastName ASC NULLS LAST')).toBeInTheDocument();
+  expect(screen.getByText('LastName ASC')).toBeInTheDocument();
   expect(screen.queryByRole('heading', { name: 'Account' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Remove LastName' }));
   expect(screen.getByText('No ORDER BY fields have been added.')).toBeInTheDocument();
+});
+
+test('editor retains explicit NULLS FIRST and LAST when selected', () => {
+  setup();
+  render(<OrderByBuilder field={field('LastName', 1)} path="" />);
+  fireEvent.change(screen.getByRole('combobox', { name: 'Direction' }), { target: { value: 'DESC' } });
+  fireEvent.change(screen.getByRole('combobox', { name: 'Nulls' }), { target: { value: 'LAST' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  expect(modelState.getState().sqlState.sql).toContain('ORDER BY LastName DESC NULLS LAST');
 });
 
 test('Order Clause tab shares an action and responds to keyboard navigation', () => {

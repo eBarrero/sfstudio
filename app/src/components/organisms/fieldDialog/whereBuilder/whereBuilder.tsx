@@ -49,7 +49,7 @@ export default function WhereBuilder({ field, path, applyNewCondition, onApplied
             { value: 'list', label: 'List' }, { value: 'null', label: 'NULL' }];
   const operators = mode === 'null' || mode === 'range' ? ['=', '!='] : mode === 'list'
     ? kind === 'multiselect' ? ['INCLUDES', 'EXCLUDES'] : ['IN', 'NOT IN']
-    : kind === 'boolean' ? ['=', '!='] : kind === 'text' ? [...comparisonOperators, 'LIKE'] : comparisonOperators;
+    : kind === 'boolean' ? ['=', '!='] : kind === 'text' ? [...comparisonOperators, 'CONTAINS', 'STARTS_WITH', 'ENDS_WITH'] : comparisonOperators;
   const inputType = kind === 'number' ? 'number' : kind === 'date' ? 'date' : 'text';
 
   function changeMode(next: WhereMode) {
@@ -97,7 +97,9 @@ export default function WhereBuilder({ field, path, applyNewCondition, onApplied
     </div>
     {!(mode === 'list' && (kind === 'picklist' || kind === 'multiselect')) && <div className={css.panel}>
       <label>Condition <select value={operator} onChange={event => setOperator(event.target.value)}>
-        {operators.map(value => <option key={value} value={value}>{value}</option>)}
+        {operators.map(value => <option key={value} value={value}>{{
+          CONTAINS: 'Contains', STARTS_WITH: 'Starts with', ENDS_WITH: 'Ends with',
+        }[value] ?? value}</option>)}
       </select></label>
     </div>}
     <section className={css.card}>

@@ -45,6 +45,25 @@ test('typed predicates render ranges, NULL, booleans, lists and dates consistent
     .toBe('Name = TODAY');
 });
 
+test('text matching choices produce safe SOQL LIKE patterns', () => {
+  expect(buildWhereCondition(draft({ operator: 'CONTAINS', from: 'Ada' })).sqlString).toBe("Name LIKE '%Ada%'");
+  expect(buildWhereCondition(draft({ operator: 'STARTS_WITH', from: 'Ada' })).sqlString).toBe("Name LIKE 'Ada%'");
+  expect(buildWhereCondition(draft({ operator: 'ENDS_WITH', from: 'Ada' })).sqlString).toBe("Name LIKE '%Ada'");
+  expect(buildWhereCondition(draft({ operator: 'CONTAINS', from: "A%_\\'" })).sqlString)
+    .toBe("Name LIKE '%A\\%\\_\\\\\\'%'");
+  expect(() => buildWhereCondition(draft({ operator: 'CONTAINS', from: '' }))).toThrow();
+  expect(() => buildWhereCondition(draft({ kind: 'number', operator: 'CONTAINS', from: '2' }))).toThrow();
+  const apply = jest.fn();
+  render(<WhereBuilder field={field} path="" applyNewCondition={apply} />);
+  const condition = screen.getByRole('combobox', { name: 'Condition' });
+  expect(screen.queryByRole('option', { name: 'LIKE' })).not.toBeInTheDocument();
+  fireEvent.change(condition, { target: { value: 'ENDS_WITH' } });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Value' }), { target: { value: 'Ada' } });
+  expect(screen.getByText("Name LIKE '%Ada'")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+  expect(apply).toHaveBeenCalledWith(expect.objectContaining({ operator: 'LIKE' }));
+});
+
 test('every date literal offered by the editor is accepted by the builder and SOQL validator', () => {
   for (const definition of dateLiterals) {
     const value = definition.count ? `${definition.code}:30` : definition.code;

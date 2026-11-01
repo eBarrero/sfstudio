@@ -18,7 +18,7 @@ export default function OrderClausePanel() {
         {element.type === 'SUBQUERY' && ` · ${element.relationshipName}`}</h3>
       <ol className={css.whereConditions}>
         {element.orderBy?.map((order, priority) => <li key={qualifiedFieldName(order.field)}>
-          <code>{qualifiedFieldName(order.field)} {order.direction} NULLS {order.nulls}</code>{' '}
+          <code>{qualifiedFieldName(order.field)} {order.direction}{order.nulls ? ` NULLS ${order.nulls}` : ''}</code>{' '}
           <button type="button" disabled={priority === 0}
             aria-label={`Move ${qualifiedFieldName(order.field)} up`}
             onClick={() => move(index, priority, priority - 1)}>Up</button>{' '}

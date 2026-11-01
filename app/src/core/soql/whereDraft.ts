@@ -74,10 +74,15 @@ export function buildWhereCondition(draft: WhereDraft): SimpleCondition | pairCo
       ? { field, operator: '>=', value: first, logicalOperator: 'AND', operatorTo: '<=', valueTo: last, sqlString: '' }
       : { field, operator: '<', value: first, logicalOperator: 'OR', operatorTo: '>', valueTo: last, sqlString: '' };
   } else {
-    if (!['=', '!=', '>', '<', '>=', '<=', 'LIKE'].includes(operator))
+    if (!['=', '!=', '>', '<', '>=', '<=', 'CONTAINS', 'STARTS_WITH', 'ENDS_WITH'].includes(operator))
       throw new Error('Choose a comparison operator.');
-    if (operator === 'LIKE' && kind !== 'text') throw new Error('LIKE is only available for text fields.');
-    condition = { field, operator, value: typedLiteral(kind, from), sqlString: '' };
+    if (['CONTAINS', 'STARTS_WITH', 'ENDS_WITH'].includes(operator)) {
+      if (kind !== 'text') throw new Error('Text matching is only available for text fields.');
+      if (!from.trim()) throw new Error('Enter a value before applying the condition.');
+      const match = { CONTAINS: 'contains', STARTS_WITH: 'startsWith', ENDS_WITH: 'endsWith' } as const;
+      condition = { field, operator: 'LIKE', value: { kind: 'likePattern', value: from,
+        match: match[operator as keyof typeof match] }, sqlString: '' };
+    } else condition = { field, operator, value: typedLiteral(kind, from), sqlString: '' };
   }
   return { ...condition, sqlString: renderPredicate(legacyConditionToPredicate(condition)) };
 }

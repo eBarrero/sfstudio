@@ -7,6 +7,7 @@ export type Literal =
   | { kind: 'boolean'; value: boolean }
   | { kind: 'null' }
   | { kind: 'date'; value: string }
+  | { kind: 'likePattern'; value: string; match: 'contains' | 'startsWith' | 'endsWith' }
   | { kind: 'dateLiteral'; value: string };
 
 export type Expression =
@@ -30,7 +31,7 @@ export type Selection =
 interface QueryClauses {
   select: Selection[];
   where?: Predicate;
-  orderBy?: { field: string; direction: 'ASC' | 'DESC'; nulls: 'FIRST' | 'LAST' }[];
+  orderBy?: { field: string; direction: 'ASC' | 'DESC'; nulls?: 'FIRST' | 'LAST' }[];
   limit?: number;
   offset?: number;
 }
@@ -86,6 +87,8 @@ export function validateQuery(query: RootQuery): SoqlError[] {
       if (literal.kind === 'number' && !Number.isFinite(literal.value)) add('INVALID_NUMBER', `${path}.values[${i}]`);
       if (literal.kind === 'date' && !dateValue.test(literal.value)) add('INVALID_DATE', `${path}.values[${i}]`);
       if (literal.kind === 'dateLiteral' && !isSupportedDateLiteral(literal.value)) add('INVALID_DATE_LITERAL', `${path}.values[${i}]`);
+      if (literal.kind === 'likePattern' && (value.kind !== 'comparison' || value.operator !== 'LIKE' ||
+        !['contains', 'startsWith', 'endsWith'].includes(literal.match))) add('INVALID_LIKE_PATTERN', `${path}.values[${i}]`);
       if (value.kind === 'set' && literal.kind === 'null') add('INVALID_SET_VALUE', `${path}.values[${i}]`);
     });
   };
@@ -110,7 +113,7 @@ export function validateQuery(query: RootQuery): SoqlError[] {
     value.orderBy?.forEach((order, i) => {
       name(order.field, `${path}.orderBy[${i}].field`, true);
       if (order.direction !== 'ASC' && order.direction !== 'DESC') add('INVALID_ORDER_DIRECTION', `${path}.orderBy[${i}].direction`);
-      if (order.nulls !== 'FIRST' && order.nulls !== 'LAST') add('INVALID_NULL_POLICY', `${path}.orderBy[${i}].nulls`);
+      if (order.nulls !== undefined && order.nulls !== 'FIRST' && order.nulls !== 'LAST') add('INVALID_NULL_POLICY', `${path}.orderBy[${i}].nulls`);
     });
     if (value.limit !== undefined && (!Number.isSafeInteger(value.limit) || value.limit < 1 || value.limit > 2000)) add('INVALID_LIMIT', `${path}.limit`);
     if (value.offset !== undefined && (!Number.isSafeInteger(value.offset) || value.offset < 0 || value.offset > 2000)) add('INVALID_OFFSET', `${path}.offset`);
@@ -136,6 +139,14 @@ export function escapeLiteral(value: Literal): string {
     case 'boolean': return value.value ? 'TRUE' : 'FALSE';
     case 'date':
     case 'dateLiteral': return value.value;
+    case 'likePattern': {
+      const term = value.value.replace(/[\\'%_\n\r]/g, character => ({
+        '\\': '\\\\', "'": "\\'", '%': '\\%', '_': '\\_', '\n': '\\n', '\r': '\\r',
+      })[character] ?? character);
+      const prefix = value.match === 'contains' || value.match === 'endsWith' ? '%' : '';
+      const suffix = value.match === 'contains' || value.match === 'startsWith' ? '%' : '';
+      return `'${prefix}${term}${suffix}'`;
+    }
     case 'text': return `'${value.value.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r')}'`;
   }
 }
@@ -156,9 +167,11 @@ export function renderQuery(query: RootQuery): string {
   if (errors.length) throw new SoqlValidationError(errors);
   const expression = (value: Expression): string => value.kind === 'field' ? value.path :
     `${value.name}(${value.field ?? ''})`;
+  const order = (items: NonNullable<QueryClauses['orderBy']>) =>
+    items.map(item => `${item.field} ${item.direction}${item.nulls ? ` NULLS ${item.nulls}` : ''}`).join(', ');
   const clauses = (value: QueryClauses): string => [
     value.where && `WHERE ${renderPredicate(value.where)}`,
-    value.orderBy?.length && `ORDER BY ${value.orderBy.map(order => `${order.field} ${order.direction} NULLS ${order.nulls}`).join(', ')}`,
+    value.orderBy?.length && `ORDER BY ${order(value.orderBy)}`,
     value.limit !== undefined && `LIMIT ${value.limit}`,
     value.offset !== undefined && `OFFSET ${value.offset}`,
   ].filter(Boolean).join(' ');
@@ -170,7 +183,7 @@ export function renderQuery(query: RootQuery): string {
   return [`SELECT ${query.select.map(select).join(', ')} FROM ${query.from}`,
     query.where && `WHERE ${renderPredicate(query.where)}`,
     query.groupBy?.length && `GROUP BY ${query.groupBy.map(expression).join(', ')}`,
-    query.orderBy?.length && `ORDER BY ${query.orderBy.map(order => `${order.field} ${order.direction} NULLS ${order.nulls}`).join(', ')}`,
+    query.orderBy?.length && `ORDER BY ${order(query.orderBy)}`,
     query.limit !== undefined && `LIMIT ${query.limit}`,
     query.offset !== undefined && `OFFSET ${query.offset}`].filter(Boolean).join(' ');
 }
