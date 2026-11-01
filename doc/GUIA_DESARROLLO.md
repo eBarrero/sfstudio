@@ -115,7 +115,7 @@ npm run audit
 
 ## Cierre de una PBI
 
-Desde `feature/PBI-NNN`, ejecuta `./gitMergePBI.sh PBI-NNN "Mensaje de commit" "Cuerpo del PR"`. El script valida, crea el commit y el PR hacia `dev`, espera a que aparezca y pase el job `CI / validate` del evento `pull_request` y fusiona con un merge commit. Comprueba que el commit de la rama y la base `dev` no hayan cambiado mientras corría la CI. Si la CI falla, no aparece en cinco minutos o `dev` avanza, deja el PR abierto sin fusionar para revisar y volver a validar.
+Trabaja sobre la rama local `dev`. Al terminar una PBI, revisa que el diff solo incluya sus cambios, ejecuta las validaciones de la sección anterior y crea el commit directamente en `dev`. No ejecutes `gitStartPBI.sh` ni `gitMergePBI.sh`. Este flujo no publica ramas, no abre Pull Requests y no hace `push`.
 
 ## Calidad
 
