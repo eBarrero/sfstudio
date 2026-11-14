@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import 'fake-indexeddb/auto';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import WhereClausePanel from '../src/components/organisms/sObjectPanel/whereClausePanel';
+import LimitClausePanel from '../src/components/organisms/sObjectPanel/limitClausePanel';
 import { CONTEXT_LEVEL, readCommand } from '../src/core/commandManager';
 import { saveCurrentSoql, loadSavedSoql } from '../src/core/savedSoqlActions';
 import { savedSoqlRepository } from '../src/services/savedSoql/savedSoqlRepository';
@@ -56,7 +56,7 @@ test('uses default limits when creating a root and a child query', () => {
   modelState.getState().setSObject(0);
   modelState.getState().gotoChild({ orgSfName: orgKey, sObjectLocalId: 2,
     childSObject: 'Contact', relationshipName: 'Contacts', fieldNameAPI: 'AccountId' });
-  render(<WhereClausePanel />);
+  render(<LimitClausePanel />);
   expect(screen.getByRole('spinbutton', { name: 'Other Account 0' })).toHaveValue(50);
   expect(screen.getByRole('checkbox', { name: '1 Contact 1' })).toBeChecked();
 });
@@ -80,13 +80,12 @@ test('sets independent limits atomically and renders or omits LIMIT in the right
 
 test('shows four columns, exclusive modes and an accessible error without WHERE conditions', () => {
   setup();
-  render(<WhereClausePanel />);
+  render(<LimitClausePanel />);
   const table = screen.getByRole('table', { name: 'LIMIT by object' });
   expect(within(table).getAllByRole('columnheader').map(cell => cell.textContent))
     .toEqual(['Object', 'All', '1', 'Other']);
   expect(within(table).getAllByRole('row')).toHaveLength(3);
   expect(within(table).queryByText('User')).not.toBeInTheDocument();
-  expect(screen.getByText('No WHERE conditions have been added.')).toBeInTheDocument();
   const rootAll = screen.getByRole('checkbox', { name: 'All Account 0' });
   const rootOne = screen.getByRole('checkbox', { name: '1 Account 0' });
   const rootOther = screen.getByRole('spinbutton', { name: 'Other Account 0' });

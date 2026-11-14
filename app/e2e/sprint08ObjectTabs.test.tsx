@@ -59,6 +59,8 @@ it('switches one visible panel through tabs and matching OBJECT commands', () =>
   expect(fields).toHaveFocus();
   expect(fields).toHaveAttribute('aria-selected', 'true');
   fireEvent.keyDown(fields, { key: 'End' });
+  expect(screen.getByRole('tab', { name: 'Limit Clause' })).toHaveFocus();
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'Limit Clause' }), { key: 'ArrowLeft' });
   expect(screen.getByRole('tab', { name: 'Order Clause' })).toHaveFocus();
   fireEvent.keyDown(screen.getByRole('tab', { name: 'Order Clause' }), { key: 'ArrowLeft' });
   expect(screen.getByRole('tab', { name: 'Where Clause' })).toHaveFocus();

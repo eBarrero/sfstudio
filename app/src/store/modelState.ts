@@ -1,7 +1,7 @@
 import {create} from 'zustand';
 import { modelReader } from '../services/salesforceSchema/proxy';
 import constants from '../components/constants';
-import { addCommand, NODEL_CMD } from '../core/commandManager';
+import { addCommand, CONTEXT_LEVEL, NODEL_CMD } from '../core/commandManager';
 import { SelectAllFieldsEnum } from "../core/constants/fields";
 import { legacySqlState } from '../core/soql/legacyAdapter';
 import { MAX_PARENT_TO_CHILD_LEVELS } from '../core/soql/domain';
@@ -9,6 +9,7 @@ import { defaultWhereLogic, parseWhereLogic } from '../core/soql/whereLogic';
 import { qualifiedFieldName, whereOwner } from '../core/soql/whereOwnership';
 import { fieldCapabilities } from '../core/soql/fieldEditor';
 import savedSoqlState from './savedSoqlState';
+import objectPanelState from './objectPanelState';
 
 
 
@@ -165,6 +166,7 @@ import savedSoqlState from './savedSoqlState';
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement = index;
             const query = queryState.queryElemnts[currentElement];
+            objectPanelState.getState().resetTab();
             let action ='sobject';
             let path = '';
             if (query.type === 'RELETED')   {
@@ -350,14 +352,19 @@ import savedSoqlState from './savedSoqlState';
             addCommand({...NODEL_CMD.SELECT_ALL_FIELDS ,     action: () => { get().setSelectAllFields(SelectAllFieldsEnum.ALL); } });
             addCommand({...NODEL_CMD.SELECT_STANDARD_FIELDS, action: () => { get().setSelectAllFields(SelectAllFieldsEnum.STANDARD); } });
             addCommand({...NODEL_CMD.SELECT_CUSTOM_FIELDS,   action: () => { get().setSelectAllFields(SelectAllFieldsEnum.CUSTOM); } });
-            addCommand({...NODEL_CMD.SET_QUERY,              
+            for (const context of [CONTEXT_LEVEL.OBJECT, CONTEXT_LEVEL.SQL_EXECUTION,
+                CONTEXT_LEVEL.SQL_EDITION, CONTEXT_LEVEL.SQL_MANAGEMENT]) addCommand({...NODEL_CMD.SET_QUERY, context,
                 action: (actionParams: AcctionParams) => { 
-                    const {data, application} = actionParams;
+                    const {data, application, view} = actionParams;
                     const params = application.currentCommand.split(' ');
 
-                    const index = parseInt((params[1]==='')?'0':params[1]);
+                    const index = params[1] === undefined || params[1] === '' ? 0 : Number(params[1]);
+                    if (!Number.isInteger(index) || index < 0 || index >= get().queryState.queryElemnts.length)
+                        throw new Error('The selected SOQL object is unavailable.');
                     get().showByqueryElemntsIndex(index);
                     data.loadFields(get().state.orgSfName, get().state.sObjectLocalId);
+                    view.setCurrentView('sobject');
+                    application.setContextLevel(CONTEXT_LEVEL.OBJECT);
                 } 
             });
         }

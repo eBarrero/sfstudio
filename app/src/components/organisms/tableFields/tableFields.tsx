@@ -15,7 +15,11 @@ import { SFFieldTypesEnum} from '../../../core/constants/fields'
     
 
 
-export default function TableFields() {
+interface TableFieldsProps {
+    columnWidths?: readonly [string, string, string];
+}
+
+export default function TableFields({ columnWidths = ['minmax(4rem, 6rem)', 'minmax(8rem, 1fr)', 'minmax(8rem, 2fr)'] }: TableFieldsProps) {
     const {currentSOQLFieldSelection, doFieldAction } = modelState();
     const {sObjectFields}  = dataState();
     const { exeCommandFromUI} = applicationState();
@@ -37,11 +41,11 @@ export default function TableFields() {
     return (
         <section>
             <h2>{sObjectFields.length} Fields</h2>
-            <div className={css.TableFields}>
+            <div className={css.TableFields} style={{ gridTemplateColumns: `50px ${columnWidths.join(' ')}` }}>
                 <GridTable
                 headerOff={true}
                 onActionRow={onActionRowHandle}
-                columns={[{label:'Type'},{label:'Field'}]}
+                columns={[{label:'Type'},{label:'API Name'},{label:'Label'}]}
                 data={sObjectFields.map((field, index):GridTableRow => {
                     const itm = (currentSOQLFieldSelection.has(field.fieldLocalId))? currentSOQLFieldSelection.get(field.fieldLocalId) : undefined    
                     return {
@@ -50,7 +54,8 @@ export default function TableFields() {
                     isSelected: (itm===undefined)?false:itm.isSelected,
                     data:[
                         parseTypeField(field), 
-                        {label:`${field.fieldApiName} - ${field.label}`} 
+                        {label:field.fieldApiName},
+                        {label:field.label}
                     ]}
                 })}
                 />    
