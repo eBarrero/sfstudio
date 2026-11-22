@@ -79,6 +79,7 @@ const dataState = create<DataState>((set, get) => {
         sobjects:[],
         sObjectFields:[],
         childRelationships:[],
+        childRelationshipsObjectId: null,
         sObjectsFilter: objectsFilterInit(),
         fieldsFilter: fieldFilterInit(),
         dataLastErrorMessage: '',
@@ -90,7 +91,7 @@ const dataState = create<DataState>((set, get) => {
             });
             schemaRequestVersion += 1;
             fieldRequestVersion += 1;
-            set({ activeOrgKey: null, sobjects: [], sObjectFields: [], childRelationships: [], dataLastErrorMessage: '' });
+            set({ activeOrgKey: null, sobjects: [], sObjectFields: [], childRelationships: [], childRelationshipsObjectId: null, dataLastErrorMessage: '' });
         },
         activateOrg: (orgKey: string) => {
             const previous = get().activeOrgKey;
@@ -105,7 +106,7 @@ const dataState = create<DataState>((set, get) => {
             set({ activeOrgKey: orgKey,
                 sObjectsFilter: stored ? { ...stored.objects } : objectsFilterInit(),
                 fieldsFilter: stored ? { ...stored.fields } : fieldFilterInit(),
-                sobjects: [], sObjectFields: [], childRelationships: [],
+                sobjects: [], sObjectFields: [], childRelationships: [], childRelationshipsObjectId: null,
                 dataLastErrorMessage: '' });
         },
         refreshMetadata: async (orgKey: string) => {
@@ -120,7 +121,7 @@ const dataState = create<DataState>((set, get) => {
         loadSchema: (orgSfName: SchemaName) => {
             if (orgSfName !== get().activeOrgKey) return;
             const version = ++schemaRequestVersion;
-            set({ sobjects: [], sObjectFields: [], childRelationships: [], dataLastErrorMessage: '' });
+            set({ sobjects: [], sObjectFields: [], childRelationships: [], childRelationshipsObjectId: null, dataLastErrorMessage: '' });
             const f = get().sObjectsFilter;
             Proxy.getSObjectsAdapter(orgSfName, f).then((data) => {
                 if (version === schemaRequestVersion && orgSfName === get().activeOrgKey && data!==null) {
@@ -138,12 +139,14 @@ const dataState = create<DataState>((set, get) => {
             set({sObjectsFilter: {...get().sObjectsFilter, [attrib] :value    }} );
             get().loadSchema(orgSfName);
         },
-        loadFields: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId) => {
+        loadFields: (orgSfName: SchemaName, sObjectIndex: SObjectLocalId, preserveRelationships = false) => {
             if (orgSfName !== get().activeOrgKey) return;
             const version = ++fieldRequestVersion;
             if (sObjectIndex===undefined || sObjectIndex===null) throw new Error('sObjectIndex is undefined or null');
-            clearChildCommands();
-            set({ childRelationships: [] });
+            if (!preserveRelationships) {
+                clearChildCommands();
+                set({ childRelationships: [], childRelationshipsObjectId: null });
+            }
             const filter = get().fieldsFilter;
             Proxy.getFieldsAdapter(orgSfName, sObjectIndex, filter).then((data) => {
                 if (version === fieldRequestVersion && orgSfName === get().activeOrgKey && data!==null) {
@@ -153,7 +156,7 @@ const dataState = create<DataState>((set, get) => {
                     });
                     get().createFieldsCommands(data);
                     get().createLookuoCommands(data);
-                    get().loadChildRelationships(orgSfName, sObjectIndex);
+                    if (!preserveRelationships) get().loadChildRelationships(orgSfName, sObjectIndex);
                 } else if (version === fieldRequestVersion && orgSfName === get().activeOrgKey) {
                     set({dataLastErrorMessage: `#CMD.Object_not_found|${sObjectIndex}`});
                 }
@@ -192,8 +195,10 @@ const dataState = create<DataState>((set, get) => {
             });
         },
         setFieldFilterText: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchText: string) => {
+            if (orgSfName !== get().activeOrgKey) return;
+            const preserveRelationships = get().childRelationshipsObjectId === sObjectIndex;
             set({fieldsFilter: { ...get().fieldsFilter, searchText }});
-            get().loadFields(orgSfName, sObjectIndex);
+            get().loadFields(orgSfName, sObjectIndex, preserveRelationships);
         },    
         setFieldFilterType: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchType: SalesforceFieldTypes) => {
             set({fieldsFilter: { ...get().fieldsFilter, type: searchType }});
@@ -208,7 +213,7 @@ const dataState = create<DataState>((set, get) => {
             if (orgSfName !== get().activeOrgKey) return;
             const version = ++fieldRequestVersion;
             clearChildCommands();
-            set({ childRelationships: [] });
+            set({ childRelationships: [], childRelationshipsObjectId: null });
             Proxy.getFieldsAdapter(orgSfName, referenceToLocalId![0], null).then((data) => {
                 if (data!==null && version === fieldRequestVersion && orgSfName === get().activeOrgKey) {
                     set({sObjectFields:  structuredClone(data), fieldsFilter: fieldFilterInit(), dataLastErrorMessage: ''});
@@ -231,7 +236,7 @@ const dataState = create<DataState>((set, get) => {
             const data = Proxy.getChildRelationships(orgSfName, objectIndex);
             if (data!==null) {
                 get().createChildRelationshipsCommands(data);
-                set({childRelationships: structuredClone(data)});            
+                set({childRelationships: structuredClone(data), childRelationshipsObjectId: objectIndex});
             }
         },
         initializeData: () => {
