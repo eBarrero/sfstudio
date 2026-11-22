@@ -21,3 +21,6 @@
 .containerExtended {
     display:block
 }
+.inactiveCondition {
+  opacity: 0.65;
+}

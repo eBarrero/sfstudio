@@ -3,6 +3,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { IndexedDbSavedSoqlRepository, savedSoqlRepository } from '../src/services/savedSoql/savedSoqlRepository';
 import { listSavedSoql, loadSavedSoql, saveCurrentSoql } from '../src/core/savedSoqlActions';
 import Proxy, { modelReader } from '../src/services/salesforceSchema/proxy';
+import { whereFieldLabel } from '../src/services/salesforceSchema/whereFieldLabel';
 import { CONTEXT_LEVEL, getCommands, getMenus, readCommand } from '../src/core/commandManager';
 import applicationState from '../src/store/applicationState';
 import dataState from '../src/store/dataState';
@@ -33,7 +34,7 @@ test('IndexedDB keeps one shared definition and preserves dates when it is updat
   const first = new IndexedDbSavedSoqlRepository(idb);
   const query = { id: 'query-one', name: 'Accounts', createdDate: '2026-01-01T00:00:00.000Z',
     lastModifiedDate: '2026-01-01T00:00:00.000Z', body: 'SELECT Id FROM Account',
-    createdOrgKey: source, availableOrgKeys: [source], formatVersion: 4 as const, queryState };
+    createdOrgKey: source, availableOrgKeys: [source], formatVersion: 5 as const, queryState };
   await first.put(query);
   const reopened = new IndexedDbSavedSoqlRepository(idb);
   expect(await reopened.get(query.id)).toEqual(query);
@@ -85,6 +86,51 @@ test('saving and loading in another org imports the same query and resolves loca
   expect(updated.createdDate).toBe(saved.createdDate);
   expect(updated.body).toContain('LIMIT 30');
   expect(await listSavedSoql()).toHaveLength(1);
+});
+
+test('a saved inactive condition stays inactive and uses destination metadata for its label', async () => {
+  const state = structuredClone(queryState);
+  const root = state.queryElemnts[0] as PrimaryQuery;
+  root.whereLogic = 'C1 OR C2';
+  root.where = [
+    { field: { fieldApiName: 'Name', fieldIndex: 1 }, operator: '=', value: "'Demo'",
+      sqlString: "Name = 'Demo'", enabled: false },
+    { field: { fieldApiName: 'Type', fieldIndex: 2 }, operator: '=', value: "'Customer'",
+      sqlString: "Type = 'Customer'" },
+  ];
+  sessionState.setState({ publicSession: { version: 1, activeOrgKey: source,
+    connections: [connection(source), connection(target)] } });
+  savedSoqlState.getState().clearCurrent();
+  modelState.setState({ state: { ...modelState.getState().state, orgSfName: source },
+    queryState: state, sqlState: { sql: "SELECT Id FROM Account WHERE Type = 'Customer' LIMIT 50", isValid: true } });
+  const saved = await saveCurrentSoql('Inactive condition');
+  expect(saved.formatVersion).toBe(5);
+
+  sessionState.setState({ publicSession: { version: 1, activeOrgKey: target,
+    connections: [connection(source), connection(target)] } });
+  jest.spyOn(Proxy, 'getSObjectsAdapter').mockResolvedValue([]);
+  jest.spyOn(modelReader, 'getSObjectLocalIdbyName').mockReturnValue(7);
+  jest.spyOn(Proxy, 'getFieldsAdapter').mockResolvedValue([
+    { fieldApiName: 'Id', fieldLocalId: 3 }, { fieldApiName: 'Name', fieldLocalId: 4 },
+    { fieldApiName: 'Type', fieldLocalId: 5 },
+  ] as GetFieldsIndex[]);
+  jest.spyOn(Proxy, 'getChildRelationships').mockReturnValue([]);
+  jest.spyOn(modelReader, 'getSObject').mockReturnValue({ fields: [
+    { fieldLocalId: 3, name: 'Id', label: 'Id' },
+    { fieldLocalId: 4, name: 'Name', label: 'UAT name' },
+    { fieldLocalId: 5, name: 'Type', label: 'UAT type' },
+  ] } as SObject);
+  dataState.setState({ activeOrgKey: target });
+  await loadSavedSoql(saved.id);
+  const restored = modelState.getState().queryState;
+  const restoredRoot = restored.queryElemnts[0] as PrimaryQuery;
+  expect(restoredRoot.whereLogic).toBe('C1 OR C2');
+  expect(restoredRoot.where?.[0].enabled).toBe(false);
+  expect(restoredRoot.where?.[0].field.fieldIndex).toBe(4);
+  expect(modelState.getState().sqlState.sql).toContain("WHERE Type = 'Customer'");
+  expect(modelState.getState().sqlState.sql).not.toContain("Name = 'Demo'");
+  expect(whereFieldLabel(restored, 0, restoredRoot.where![0].field)).toBe('UAT name');
+  expect((await savedSoqlRepository.get(saved.id))?.queryState).toEqual(state);
 });
 
 test('a missing target field leaves the current query and import list unchanged', async () => {

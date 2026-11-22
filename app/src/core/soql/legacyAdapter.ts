@@ -1,6 +1,6 @@
 import type { ChildQuery, Expression, Literal, Predicate, RootQuery, Selection } from './domain';
 import { renderPredicate, renderQuery, validateQuery } from './domain';
-import { defaultWhereLogic, parseWhereLogic, WhereLogicError,
+import { defaultWhereLogic, effectiveWhereLogic, WhereLogicError,
   type WhereLogicNode } from './whereLogic';
 import { qualifiedFieldName } from './whereOwnership';
 
@@ -52,7 +52,9 @@ export function legacyConditionPreview(condition: SimpleCondition | pairConditio
 function conditions(items: (SimpleCondition | pairCondition)[] | undefined,
   logic?: string): Predicate | undefined {
   if (!items?.length) return undefined;
-  const tree = parseWhereLogic(logic ?? defaultWhereLogic(items.length), items.length);
+  const { tree } = effectiveWhereLogic(logic ?? defaultWhereLogic(items.length),
+    items.map(item => item.enabled !== false));
+  if (!tree) return undefined;
   const convert = (node: WhereLogicNode): Predicate => node.kind === 'condition'
     ? legacyConditionToPredicate(items[node.index])
     : { kind: 'logical', operator: node.kind, operands: [convert(node.left), convert(node.right)] };

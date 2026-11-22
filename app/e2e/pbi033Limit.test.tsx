@@ -154,7 +154,7 @@ test('saves and reloads All and child Other selections', async () => {
   modelState.getState().setLimit(0, undefined);
   modelState.getState().setLimit(2, 125);
   const saved = await saveCurrentSoql('Limit choices');
-  expect(saved.formatVersion).toBe(4);
+  expect(saved.formatVersion).toBe(5);
   expect((saved.queryState.queryElemnts[0] as PrimaryQuery).limit).toBeUndefined();
   expect((saved.queryState.queryElemnts[2] as NestedQuery).limit).toBe(125);
   jest.spyOn(Proxy, 'getSObjectsAdapter').mockResolvedValue([]);
@@ -171,5 +171,5 @@ test('saves and reloads All and child Other selections', async () => {
   expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).limit).toBeUndefined();
   expect((modelState.getState().queryState.queryElemnts[2] as NestedQuery).limit).toBe(125);
   expect(modelState.getState().sqlState.sql).toBe('SELECT Id, (SELECT Id FROM Contacts LIMIT 125) FROM Account');
-  expect((await savedSoqlRepository.get(saved.id))?.formatVersion).toBe(4);
+  expect((await savedSoqlRepository.get(saved.id))?.formatVersion).toBe(5);
 });
