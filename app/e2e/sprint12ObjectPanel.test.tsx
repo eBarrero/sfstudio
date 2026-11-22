@@ -62,6 +62,29 @@ test('selecting an object from Child Relationships returns to Fields', () => {
   expect(screen.queryByRole('tabpanel', { name: 'Child Relationships' })).not.toBeInTheDocument();
 });
 
+test('opening a child relationship returns to Fields through the shared command action', () => {
+  jest.spyOn(modelReader, 'getSObject').mockReturnValue({ fields: [] } as unknown as SObject);
+  const child: GetChildRelationships = { orgSfName: 'fixture', sObjectLocalId: 1,
+    childSObject: 'Contact', relationshipName: 'Contacts', fieldNameAPI: 'AccountId' };
+  const root = query().queryElemnts[0];
+  act(() => {
+    modelState.setState({ queryState: { indexCurrentElement: 0, queryElemnts: [root] } });
+    viewState.getState().setCurrentView('sobject');
+    objectPanelState.getState().selectTab('relations');
+    dataState.getState().createChildRelationshipsCommands([child]);
+  });
+  render(<SObjectPanel />);
+  expect(screen.getByRole('tab', { name: 'Child Relationships' })).toHaveAttribute('aria-selected', 'true');
+
+  const command = readCommand('child_Contact', CONTEXT_LEVEL.OBJECT);
+  expect(command).toBeDefined();
+  act(() => command!.action({ model: modelState.getState() } as AcctionParams));
+
+  expect(modelState.getState().state.sObjectApiName).toBe('Contact');
+  expect(screen.getByRole('tab', { name: 'Fields' })).toHaveAttribute('aria-selected', 'true');
+  expect(screen.queryByRole('tabpanel', { name: 'Child Relationships' })).not.toBeInTheDocument();
+});
+
 test.each([CONTEXT_LEVEL.OBJECT, CONTEXT_LEVEL.SQL_EXECUTION,
   CONTEXT_LEVEL.SQL_EDITION, CONTEXT_LEVEL.SQL_MANAGEMENT])('SET_QUERY works in %s', context => {
   jest.spyOn(modelReader, 'getSObject').mockReturnValue({ fields: [] } as unknown as SObject);

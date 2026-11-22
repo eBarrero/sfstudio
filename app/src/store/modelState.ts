@@ -160,6 +160,7 @@ import objectPanelState from './objectPanelState';
                  currentSOQLFieldSelection: createSOQLFieldSelection(queryState, queryState.indexCurrentElement),
                  rankQueryElements: rankQueryElements(queryState.queryElemnts)            
             });
+            objectPanelState.getState().resetTab();
         },
 
         showByqueryElemntsIndex(index: number) {
