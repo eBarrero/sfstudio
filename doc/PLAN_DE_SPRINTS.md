@@ -19,7 +19,7 @@ Este plan convierte los criterios de éxito de [VISION_PRODUCTO.md](./VISION_PRO
 | [Sprint 09](./sprint09/guia%20del%20sprint.md) | PBI-032 implementada: el WHERE del bloque mezcla condiciones locales y de relaciones padre. |
 | [Sprint 10](./sprint10/guia%20del%20sprint.md) | Cerrado: PBI-033 implementó la gestión de `LIMIT` por bloque SOQL. |
 | [Sprint 11](./sprint11/guia%20del%20sprint.md) | Cerrado: FieldDialog accesible, SELECT/WHERE validados y ORDER BY con política de nulos y panel propio. |
-| [Sprint 12](./sprint12/guia%20del%20sprint.md) | Cerrado: PBI-038 separa Limit Clause, corrige la navegación de objetos y mejora las columnas de campos. |
+| [Sprint 12](./sprint12/guia%20del%20sprint.md) | Cerrado: PBI-038 a PBI-042 implementadas. Incluye búsqueda de relaciones, condiciones WHERE, ejecución sin confirmación y log seguro de rutas HTTP. |
 
 ## Trazabilidad con los criterios de éxito
 
@@ -27,11 +27,11 @@ Este plan convierte los criterios de éxito de [VISION_PRODUCTO.md](./VISION_PRO
 | --- | --- | --- |
 | Conectar al menos dos orgs en el mismo workspace | PBI-005, 006, 007, 012 | E2E multi-org y aceptación PBI-028 |
 | Alternar sin confundir contexto | PBI-009, 010, 011, 012 | Selector, etiqueta de destino y E2E |
-| Explorar y consultar cualquiera en solo lectura | PBI-013 a 020, 032 a 038 | E2E explorer/query, editor de campo, filtros, órdenes con nulos, control de `LIMIT` y rechazo de no-SELECT |
+| Explorar y consultar cualquiera en solo lectura | PBI-013 a 020, 032 a 041 | E2E explorer/query, editor de campo, filtros de campos y relaciones hijas, activación de condiciones WHERE, ejecución directa, órdenes con nulos, control de `LIMIT` y rechazo de no-SELECT |
 | Comparar Integración y UAT por objeto, campo y relación | PBI-021 a 026 | Golden tests del diff y E2E comparación |
 | Acciones con ratón y comando gemelo acordadas | PBI-011, 015, 020, 027, 031 | Pruebas de paridad para las acciones que tengan ambas entradas |
 | Reinicio/expiración con reautenticación clara | PBI-007, 008, 025 | Prueba de registro vacío + estado REAUTH_REQUIRED |
-| No guardar tokens ni datos de negocio en MongoDB | PBI-003, 004, 007, 014, 020, 028 | Inspección automatizada de DB, stores y logs |
+| No guardar tokens ni datos de negocio en MongoDB | PBI-003, 004, 007, 014, 020, 028, 042 | Inspección automatizada de DB, stores y logs, incluida la redacción de rutas HTTP |
 | Consultas limitadas y resultados no persistidos | PBI-018, 019, 020, 033 | Tests de límite/paginación, control visual de `LIMIT` y persistencia |
 
 ## Dependencias principales
@@ -49,7 +49,7 @@ flowchart LR
     S8 --> S9[Sprint 09<br/>WHERE de relaciones padre]
     S9 --> S10[Sprint 10<br/>LIMIT por bloque SOQL]
     S10 --> S11[Sprint 11<br/>FieldDialog y ORDER BY]
-    S11 --> S12[Sprint 12<br/>panel de objeto]
+    S11 --> S12[Sprint 12<br/>panel, consulta y logs]
 ```
 
 Sprint 05 y Sprint 06 podrían desarrollarse en paralelo después de Sprint 04 si el equipo tiene capacidad independiente, pero ambos deben terminar antes de la aceptación del Sprint 07. Sprint 08 puede ejecutarse con Sprint 06 y 07 aplazados; no acredita por sí mismo la release de la primera fase.
