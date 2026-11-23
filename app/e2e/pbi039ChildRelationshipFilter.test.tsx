@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { filterChildRelationships } from '../src/core/filterChildRelationships';
+import { SFFieldTypesEnum } from '../src/core/constants/fields';
 import TableChildRelationShips from '../src/components/organisms/tableChildRelationShips/tableChildRelationShips';
 import SObjectPanel from '../src/components/organisms/sObjectPanel/sObjectPanel';
 import Proxy from '../src/services/salesforceSchema/proxy';
@@ -86,4 +87,17 @@ test('the same search survives switching between Fields and Child Relationships'
   expect(dataState.getState().fieldsFilter.searchText).toBe('Policy');
   fireEvent.click(screen.getByRole('tab', { name: 'Child Relationships' }));
   expect(screen.getByText('Policy__c')).toBeInTheDocument();
+});
+
+test('field type and property filters do not restrict child relationships', async () => {
+  dataState.getState().activateOrg(orgKey);
+  jest.spyOn(Proxy, 'getChildRelationships').mockReturnValue(relations);
+  jest.spyOn(Proxy, 'getFieldsAdapter').mockResolvedValue([]);
+  dataState.getState().loadChildRelationships(orgKey, 0);
+  dataState.getState().setFieldFilterType(orgKey, 0, SFFieldTypesEnum.Text);
+  await waitFor(() => expect(dataState.getState().childRelationships).toEqual(relations));
+  dataState.getState().setFieldFilter(orgKey, 0, 'custom', true);
+  await waitFor(() => expect(dataState.getState().childRelationships).toEqual(relations));
+  expect(dataState.getState().fieldsFilter.type).toBe(SFFieldTypesEnum.Text);
+  expect(dataState.getState().fieldsFilter.custom).toBe(true);
 });
