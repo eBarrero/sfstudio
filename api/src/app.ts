@@ -32,7 +32,7 @@ export function createApp(options: AppOptions): express.Express {
     });
     app.use(createHealthRouter(options.readinessProbe));
     app.use(options.apiRouter);
-    app.use(notFoundHandler);
+    app.use((req, res) => notFoundHandler(req, res, options.requestLogger ?? logger));
 
     return app;
 }

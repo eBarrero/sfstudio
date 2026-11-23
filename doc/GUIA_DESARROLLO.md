@@ -93,6 +93,10 @@ El gestor de conexiones distingue las orgs por `OrgKey`, incluso cuando comparte
 
 La consola acepta `org list`, `org use <OrgKey>`, `org close <OrgKey>`, `org reconnect <OrgKey>`, `org connect production|sandbox` y `workspace close`. `OrgKey` tiene la forma `organizationId:userId`. Los botones, menús y comandos del workspace envían el mismo `ActionId` al dispatcher. La consola muestra el resultado o ayuda para comandos de workspace inválidos. Los nombres anteriores (`Select_org_...`, `Disconnect_org_...`, `Reconnect_org_...`, `Login_to_Prod`, `Login_to_Sandbox`, `Close_workspace`) siguen disponibles temporalmente por compatibilidad.
 
+Al explorar un objeto, el filtro de texto de la consola busca campos y relaciones hijas en sus respectivas pestañas. En `Child Relationships`, todos los términos deben aparecer en el nombre API del objeto hijo o en el nombre de relación; no se distingue entre mayúsculas y minúsculas. Vaciar el filtro restaura todas las relaciones. Los filtros de tipo y propiedades de campo no restringen las relaciones.
+
+La vista de objeto muestra el destino y el límite efectivo junto a la SOQL. `query run` ejecuta la consulta válida directamente desde botón, menú o consola, sin diálogo de confirmación. Si la consulta es inválida o la org no está conectada y activa, la petición no se envía.
+
 La suite del Sprint 03 se ejecuta con `npm test`. `api/test/sprint03Journey.test.js` abre un servidor local y usa un driver Salesforce falso y repositorios en memoria; `app/e2e/multiOrgJourney.test.tsx` compara el resultado de las acciones de ratón y consola. No necesita credenciales ni acceso a Salesforce. Si el entorno restringe puertos locales, permite loopback para las pruebas HTTP.
 
 ## Compilación verificada
@@ -199,6 +203,8 @@ El callback valida y consume `state` antes de invocar Salesforce. Los rechazos t
 | Salesforce rechaza autorización, intercambio o identidad | 502 | `SALESFORCE_AUTH_FAILED` |
 
 Todos los errores incluyen un `correlationId` y la respuesta HTTP expone el mismo valor en `X-Correlation-Id`. Los logs son JSON y no deben registrar cookies, códigos OAuth, `state`, tokens, secretos, URLs completas de autorización, correo o nombre de usuario. El logger aplica redacción defensiva, pero los llamadores deben seguir enviando solo los campos mínimos.
+
+Para diagnosticar una ruta inexistente, busca el evento `http.not_found` por su `correlationId`. Su campo `requestedPath` muestra la ruta HTTP sin query string y con segmentos dinámicos o sospechosos como `[REDACTED]`; el evento añade `method` y `status: 404`. `http.request` registra la plantilla de una ruta conocida al terminar la respuesta o un path saneado para recursos estáticos y rutas desconocidas. Nunca copies URLs completas, parámetros, cursores ni consultas SOQL a estos eventos.
 
 `OAuthStateStore` vive en memoria. Tras reiniciar la API o al saltar entre instancias, un callback pendiente se rechazará y habrá que iniciar de nuevo OAuth. En esta fase no se persisten refresh tokens.
 

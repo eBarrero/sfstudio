@@ -268,6 +268,7 @@ interface DataState {
     sobjects: GetSObjectsIndex[];                  // It contains the list of sObjects. Loaded from getSchema()
     sObjectFields: GetFieldsIndex[];               // It contains the list of fields of current sObject. Loaded from getFields() 
     childRelationships: GetChildRelationships[];   // It contains the list of child relationships of current sObject. Loaded from getChildRelationships() 
+    childRelationshipsObjectId: SObjectLocalId | null;
     sObjectsFilter: SObjectsFilter;                // It contains the filter to be applied to the sObjects
     fieldsFilter: FieldsFilter;                    // It contains the filter to be applied to the fields
     dataLastErrorMessage: string;                  // It contains the last error message
@@ -278,7 +279,7 @@ interface DataState {
     setObjectFilterText: (orgSfName: SchemaName, searchText: string) => void;       // It retrieves the index of Salesforce objects based on the provided filter.
     setObjectFilter:  (orgSfName: SchemaName, attrib: string, value: boolean|null) => void;  // set the filter value    
    
-    loadFields: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void;              // It retrieves the fields of a Salesforce object based on the provided index. 
+    loadFields: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, preserveRelationships?: boolean) => void;              // It retrieves the fields of a Salesforce object based on the provided index.
     loadFieldsByName: (orgSfName: SchemaName, sObjectName: string, callBack: (sObjectLocalId: SObjectLocalId) => void) => void; // It retrieves the fields of a Salesforce object based on the provided name.
     loadMetadataFields: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId) => void;      // update the metadata of the fields of a Salesforce object based on the provided index.
     setFieldFilterText: (orgSfName: SchemaName,  sObjectIndex: SObjectLocalId, searchText: string) => void; // set the filter value

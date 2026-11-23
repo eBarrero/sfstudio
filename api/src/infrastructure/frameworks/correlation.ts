@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextFunction, Request, Response } from "express";
 import { logger, StructuredLogger } from "./structuredLogger";
+import { safeRequestPath } from './safeRequestPath';
 
 export const CORRELATION_HEADER = "X-Correlation-Id";
 
@@ -13,9 +14,13 @@ export function correlationMiddleware(
             ? incoming : randomUUID();
         request.correlationId = correlationId;
         response.setHeader(CORRELATION_HEADER, correlationId);
-        requestLogger.info("http.request", {
-            correlationId,
-            method: request.method,
+        response.once('finish', () => {
+            const template = typeof request.route?.path === 'string' ? request.route.path : undefined;
+            requestLogger.info('http.request', {
+                correlationId,
+                method: request.method,
+                requestedPath: safeRequestPath(request.path, template),
+            });
         });
         next();
     };

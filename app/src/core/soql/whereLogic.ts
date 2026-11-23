@@ -62,3 +62,24 @@ export function parseWhereLogic(input: string, conditionCount: number): WhereLog
   if (position !== tokens.length) throw new WhereLogicError('SYNTAX');
   return node;
 }
+
+/** Preserve the editable expression and omit disabled references from its executable tree. */
+export function effectiveWhereLogic(input: string, enabled: readonly boolean[]): {
+  tree: WhereLogicNode | null; expression: string | null;
+} {
+  const source = parseWhereLogic(input, enabled.length);
+  const prune = (node: WhereLogicNode): WhereLogicNode | null => {
+    if (node.kind === 'condition') return enabled[node.index] ? node : null;
+    const left = prune(node.left);
+    const right = prune(node.right);
+    return left && right ? { kind: node.kind, left, right } : left ?? right;
+  };
+  const tree = prune(source);
+  const render = (node: WhereLogicNode, parentPrecedence = 0): string => {
+    if (node.kind === 'condition') return `C${node.index + 1}`;
+    const precedence = node.kind === 'AND' ? 2 : 1;
+    const expression = `${render(node.left, precedence)} ${node.kind} ${render(node.right, precedence)}`;
+    return precedence < parentPrecedence ? `(${expression})` : expression;
+  };
+  return { tree, expression: tree ? render(tree) : null };
+}

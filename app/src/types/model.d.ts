@@ -11,6 +11,7 @@ type LogicalOperator = 'AND' | 'OR' | '(' | ')';
 
 interface SimpleCondition {
     sqlString: string;
+    enabled?: boolean;
     field: FieldId;
     operator: OperatorType;
     value: Any;
@@ -149,6 +150,7 @@ interface ModelState {
     setSelectAllFields: (value: SelectAllFields) => void;
     addWhere: (SimpleCondition: SimpleCondition) => void;
     setWhereLogic: (elementIndex: number, expression: string) => void;
+    setWhereConditionEnabled: (elementIndex: number, conditionIndex: number, enabled: boolean) => void;
     setLimit: (elementIndex: number, limit: number | undefined) => void;
     addOrderBy: (field: GetFieldsIndex, direction: 'ASC' | 'DESC', nulls?: 'FIRST' | 'LAST') => void;
     removeOrderBy: (elementIndex: number, orderIndex: number) => void;

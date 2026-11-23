@@ -3,6 +3,7 @@ import TableFields, {TableFieldsExtend}  from "../tableFields/tableFields";
 import TableChildRelationShips from '../tableChildRelationShips/tableChildRelationShips';
 import WhereClausePanel from './whereClausePanel';
 import OrderClausePanel from './orderClausePanel';
+import LimitClausePanel from './limitClausePanel';
 import viewState from '../../../store/viewState';
 import { useSyncExternalStore } from 'react';
 import sessionState from '../../../store/sessionState';
@@ -16,10 +17,10 @@ import type { KeyboardEvent } from 'react';
 
 const statusText = { EMPTY: 'No data', FRESH: 'Current', STALE: 'Outdated',
     REFRESHING: 'Refreshing', ERROR: 'Refresh failed' } as const;
-const tabOrder: ObjectPanelTab[] = ['fields', 'relations', 'where', 'order'];
+const tabOrder: ObjectPanelTab[] = ['fields', 'relations', 'where', 'order', 'limit'];
 const tabActions = [OBJECT_PANEL_ACTION.SHOW_FIELDS, OBJECT_PANEL_ACTION.SHOW_RELATIONS,
-    OBJECT_PANEL_ACTION.SHOW_WHERE, OBJECT_PANEL_ACTION.SHOW_ORDER] as const;
-const tabIds = ['object-fields-tab', 'object-relations-tab', 'object-where-tab', 'object-order-tab'] as const;
+    OBJECT_PANEL_ACTION.SHOW_WHERE, OBJECT_PANEL_ACTION.SHOW_ORDER, OBJECT_PANEL_ACTION.SHOW_LIMIT] as const;
+const tabIds = ['object-fields-tab', 'object-relations-tab', 'object-where-tab', 'object-order-tab', 'object-limit-tab'] as const;
 
 
 
@@ -76,6 +77,12 @@ const status = useSyncExternalStore(subscribeMetadata,
                     onClick={() => dispatchObjectPanelAction(OBJECT_PANEL_ACTION.SHOW_ORDER)}>
                     Order Clause
                 </button>
+                <button type="button" role="tab" id="object-limit-tab" aria-controls="object-limit-panel"
+                    aria-selected={activeTab === 'limit'} tabIndex={activeTab === 'limit' ? 0 : -1}
+                    data-action-id={OBJECT_PANEL_ACTION.SHOW_LIMIT}
+                    onClick={() => dispatchObjectPanelAction(OBJECT_PANEL_ACTION.SHOW_LIMIT)}>
+                    Limit Clause
+                </button>
             </div>
             <div className={css.container}>
                 {activeTab === 'fields' &&
@@ -86,6 +93,8 @@ const status = useSyncExternalStore(subscribeMetadata,
                     <div role="tabpanel" id="object-where-panel" aria-labelledby="object-where-tab"><WhereClausePanel/></div>}
                 {activeTab === 'order' &&
                     <div role="tabpanel" id="object-order-panel" aria-labelledby="object-order-tab"><OrderClausePanel/></div>}
+                {activeTab === 'limit' &&
+                    <div role="tabpanel" id="object-limit-panel" aria-labelledby="object-limit-tab"><LimitClausePanel/></div>}
             </div>
         </div>
         )}

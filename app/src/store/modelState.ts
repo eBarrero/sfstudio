@@ -1,14 +1,15 @@
 import {create} from 'zustand';
 import { modelReader } from '../services/salesforceSchema/proxy';
 import constants from '../components/constants';
-import { addCommand, NODEL_CMD } from '../core/commandManager';
+import { addCommand, CONTEXT_LEVEL, NODEL_CMD } from '../core/commandManager';
 import { SelectAllFieldsEnum } from "../core/constants/fields";
 import { legacySqlState } from '../core/soql/legacyAdapter';
 import { MAX_PARENT_TO_CHILD_LEVELS } from '../core/soql/domain';
-import { defaultWhereLogic, parseWhereLogic } from '../core/soql/whereLogic';
+import { defaultWhereLogic, effectiveWhereLogic, parseWhereLogic, type WhereLogicNode } from '../core/soql/whereLogic';
 import { qualifiedFieldName, whereOwner } from '../core/soql/whereOwnership';
 import { fieldCapabilities } from '../core/soql/fieldEditor';
 import savedSoqlState from './savedSoqlState';
+import objectPanelState from './objectPanelState';
 
 
 
@@ -159,12 +160,14 @@ import savedSoqlState from './savedSoqlState';
                  currentSOQLFieldSelection: createSOQLFieldSelection(queryState, queryState.indexCurrentElement),
                  rankQueryElements: rankQueryElements(queryState.queryElemnts)            
             });
+            objectPanelState.getState().resetTab();
         },
 
         showByqueryElemntsIndex(index: number) {
             const queryState = structuredClone(get().queryState);
             const currentElement = queryState.indexCurrentElement = index;
             const query = queryState.queryElemnts[currentElement];
+            objectPanelState.getState().resetTab();
             let action ='sobject';
             let path = '';
             if (query.type === 'RELETED')   {
@@ -291,6 +294,19 @@ import savedSoqlState from './savedSoqlState';
             (queryState.queryElemnts[ownerIndex] as PrimaryQuery | NestedQuery).whereLogic = normalized;
             set({queryState, sqlState: sqlState(queryState)});
         },
+        setWhereConditionEnabled: (elementIndex: number, conditionIndex: number, enabled: boolean) => {
+            const current = get().queryState;
+            const element = current.queryElemnts[elementIndex];
+            if (!Number.isInteger(elementIndex) || !element || element.type === 'RELETED' ||
+                !Number.isInteger(conditionIndex) || conditionIndex < 0 ||
+                conditionIndex >= (element.where?.length ?? 0))
+                throw new Error('The selected WHERE condition is unavailable.');
+            const queryState = structuredClone(current);
+            const block = queryState.queryElemnts[elementIndex] as PrimaryQuery | NestedQuery;
+            block.where![conditionIndex] = { ...block.where![conditionIndex], enabled };
+            set({ queryState, sqlState: sqlState(queryState),
+                currentSOQLFieldSelection: createSOQLFieldSelection(queryState, queryState.indexCurrentElement) });
+        },
         setLimit: (elementIndex: number, limit: number | undefined) => {
             const current = get().queryState;
             const element = current.queryElemnts[elementIndex];
@@ -350,14 +366,19 @@ import savedSoqlState from './savedSoqlState';
             addCommand({...NODEL_CMD.SELECT_ALL_FIELDS ,     action: () => { get().setSelectAllFields(SelectAllFieldsEnum.ALL); } });
             addCommand({...NODEL_CMD.SELECT_STANDARD_FIELDS, action: () => { get().setSelectAllFields(SelectAllFieldsEnum.STANDARD); } });
             addCommand({...NODEL_CMD.SELECT_CUSTOM_FIELDS,   action: () => { get().setSelectAllFields(SelectAllFieldsEnum.CUSTOM); } });
-            addCommand({...NODEL_CMD.SET_QUERY,              
+            for (const context of [CONTEXT_LEVEL.OBJECT, CONTEXT_LEVEL.SQL_EXECUTION,
+                CONTEXT_LEVEL.SQL_EDITION, CONTEXT_LEVEL.SQL_MANAGEMENT]) addCommand({...NODEL_CMD.SET_QUERY, context,
                 action: (actionParams: AcctionParams) => { 
-                    const {data, application} = actionParams;
+                    const {data, application, view} = actionParams;
                     const params = application.currentCommand.split(' ');
 
-                    const index = parseInt((params[1]==='')?'0':params[1]);
+                    const index = params[1] === undefined || params[1] === '' ? 0 : Number(params[1]);
+                    if (!Number.isInteger(index) || index < 0 || index >= get().queryState.queryElemnts.length)
+                        throw new Error('The selected SOQL object is unavailable.');
                     get().showByqueryElemntsIndex(index);
                     data.loadFields(get().state.orgSfName, get().state.sObjectLocalId);
+                    view.setCurrentView('sobject');
+                    application.setContextLevel(CONTEXT_LEVEL.OBJECT);
                 } 
             });
         }
@@ -405,7 +426,19 @@ function createSOQLFieldSelection(queryState: QueryState, index: number): Map<Fi
             selectFunction: [...current.selectFunction, field.soqlFunction]});
     });
 
-    owner.where?.filter(where => (where.field.relationshipPath ?? []).join('.') === relationshipPath.join('.'))
+    const referencedConditions = new Set<number>();
+    if (owner.where?.length) {
+        const { tree } = effectiveWhereLogic(owner.whereLogic ?? defaultWhereLogic(owner.where.length),
+            owner.where.map(condition => condition.enabled !== false));
+        const collect = (node: WhereLogicNode | null): void => {
+            if (!node) return;
+            if (node.kind === 'condition') referencedConditions.add(node.index);
+            else { collect(node.left); collect(node.right); }
+        };
+        collect(tree);
+    }
+    owner.where?.filter((where, conditionIndex) => referencedConditions.has(conditionIndex) &&
+      (where.field.relationshipPath ?? []).join('.') === relationshipPath.join('.'))
       .forEach((where) => {
         if (map.has(where.field.fieldIndex)) {
             const item = map.get(where.field.fieldIndex);

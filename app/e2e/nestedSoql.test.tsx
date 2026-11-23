@@ -55,7 +55,7 @@ it('shows and executes SOQL with a child of a child under the correct parent', (
   render(<SOQLEdit />);
   expect(screen.getByRole('textbox', { name: 'SOQL actual · solo lectura' })).toHaveValue(expected);
 
-  jest.spyOn(globalThis, 'confirm').mockReturnValue(true);
+  const confirm = jest.spyOn(globalThis, 'confirm').mockImplementation(() => { throw new Error('Unexpected confirmation'); });
   const execute = jest.spyOn(Proxy, 'sendSoqlAdapter').mockResolvedValue({
     done: true, totalSize: 0, records: [], limit: 200,
   });
@@ -63,5 +63,6 @@ it('shows and executes SOQL with a child of a child under the correct parent', (
   act(() => run.action({ model: modelState.getState(), view: viewState.getState(),
     application: applicationState.getState(), data: dataState.getState() }));
   expect(execute).toHaveBeenCalledWith(orgKey, expected, expect.any(AbortSignal), 50);
+  expect(confirm).not.toHaveBeenCalled();
   expect(viewState.getState().currentView).toBe('SQL_RESULT');
 });

@@ -4,7 +4,7 @@
 .TableFields {
     font-family: 'arial';
     display: grid;
-    grid-template-columns: 50px 1fr 3fr;
+    grid-template-columns: 50px minmax(4rem, 6rem) minmax(8rem, 1fr) minmax(8rem, 2fr);
     grid-template-rows: repeat(auto-fill, minmax(22px, 1fr));
     gap: 1px;
     width: 100%;

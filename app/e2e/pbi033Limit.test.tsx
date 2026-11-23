@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import 'fake-indexeddb/auto';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import WhereClausePanel from '../src/components/organisms/sObjectPanel/whereClausePanel';
+import LimitClausePanel from '../src/components/organisms/sObjectPanel/limitClausePanel';
 import { CONTEXT_LEVEL, readCommand } from '../src/core/commandManager';
 import { saveCurrentSoql, loadSavedSoql } from '../src/core/savedSoqlActions';
 import { savedSoqlRepository } from '../src/services/savedSoql/savedSoqlRepository';
@@ -56,7 +56,7 @@ test('uses default limits when creating a root and a child query', () => {
   modelState.getState().setSObject(0);
   modelState.getState().gotoChild({ orgSfName: orgKey, sObjectLocalId: 2,
     childSObject: 'Contact', relationshipName: 'Contacts', fieldNameAPI: 'AccountId' });
-  render(<WhereClausePanel />);
+  render(<LimitClausePanel />);
   expect(screen.getByRole('spinbutton', { name: 'Other Account 0' })).toHaveValue(50);
   expect(screen.getByRole('checkbox', { name: '1 Contact 1' })).toBeChecked();
 });
@@ -80,13 +80,12 @@ test('sets independent limits atomically and renders or omits LIMIT in the right
 
 test('shows four columns, exclusive modes and an accessible error without WHERE conditions', () => {
   setup();
-  render(<WhereClausePanel />);
+  render(<LimitClausePanel />);
   const table = screen.getByRole('table', { name: 'LIMIT by object' });
   expect(within(table).getAllByRole('columnheader').map(cell => cell.textContent))
     .toEqual(['Object', 'All', '1', 'Other']);
   expect(within(table).getAllByRole('row')).toHaveLength(3);
   expect(within(table).queryByText('User')).not.toBeInTheDocument();
-  expect(screen.getByText('No WHERE conditions have been added.')).toBeInTheDocument();
   const rootAll = screen.getByRole('checkbox', { name: 'All Account 0' });
   const rootOne = screen.getByRole('checkbox', { name: '1 Account 0' });
   const rootOther = screen.getByRole('spinbutton', { name: 'Other Account 0' });
@@ -120,7 +119,7 @@ test.each([250, 2000, undefined])('uses the root limit %s for API execution and 
   modelState.getState().setLimit(0, rootLimit);
   applicationState.getState().setContextLevel(CONTEXT_LEVEL.OBJECT);
   sqlExecutionState.getState().initializeSqlExecution();
-  jest.spyOn(globalThis, 'confirm').mockReturnValue(true);
+  const confirm = jest.spyOn(globalThis, 'confirm').mockImplementation(() => { throw new Error('Unexpected confirmation'); });
   const send = jest.spyOn(Proxy, 'sendSoqlAdapter').mockResolvedValue({
     done: false, totalSize: 2, records: [{ Id: 'one' }], limit: rootLimit ?? 2000, cursor: 'next',
   });
@@ -133,7 +132,7 @@ test.each([250, 2000, undefined])('uses the root limit %s for API execution and 
   await waitFor(() => expect(sqlExecutionState.getState().sqlExecutionStatus).toBe('PARTIAL'));
   expect(send).toHaveBeenCalledWith(orgKey, modelState.getState().sqlState.sql,
     expect.any(AbortSignal), rootLimit ?? 2000);
-  expect(globalThis.confirm).toHaveBeenCalledWith(expect.stringContaining(`límite de ${rootLimit ?? 2000} filas`));
+  expect(confirm).not.toHaveBeenCalled();
   act(() => sqlExecutionState.getState().nextPage());
   await waitFor(() => expect(sqlExecutionState.getState().sqlExecutionStatus).toBe('DONE'));
   expect(next).toHaveBeenCalledTimes(1);
@@ -155,7 +154,7 @@ test('saves and reloads All and child Other selections', async () => {
   modelState.getState().setLimit(0, undefined);
   modelState.getState().setLimit(2, 125);
   const saved = await saveCurrentSoql('Limit choices');
-  expect(saved.formatVersion).toBe(4);
+  expect(saved.formatVersion).toBe(5);
   expect((saved.queryState.queryElemnts[0] as PrimaryQuery).limit).toBeUndefined();
   expect((saved.queryState.queryElemnts[2] as NestedQuery).limit).toBe(125);
   jest.spyOn(Proxy, 'getSObjectsAdapter').mockResolvedValue([]);
@@ -172,5 +171,5 @@ test('saves and reloads All and child Other selections', async () => {
   expect((modelState.getState().queryState.queryElemnts[0] as PrimaryQuery).limit).toBeUndefined();
   expect((modelState.getState().queryState.queryElemnts[2] as NestedQuery).limit).toBe(125);
   expect(modelState.getState().sqlState.sql).toBe('SELECT Id, (SELECT Id FROM Contacts LIMIT 125) FROM Account');
-  expect((await savedSoqlRepository.get(saved.id))?.formatVersion).toBe(4);
+  expect((await savedSoqlRepository.get(saved.id))?.formatVersion).toBe(5);
 });
