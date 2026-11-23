@@ -51,12 +51,22 @@ it('logs route templates and unknown safe paths with a matching correlation ID',
     assert.equal(entries.filter(entry => entry.event === 'http.not_found').at(-1).requestedPath,
       '/pagina-inexistente');
 
+    for (const requestedPath of ['/favicon.ico', '/robots.txt', '/.env', '/wp-login.php', '/Admin/Index.HTML']) {
+      const missingFile = await fetch(`${base}${requestedPath}?state=hidden`);
+      assert.equal(missingFile.status, 404);
+      const fileLog = entries.filter(entry => entry.event === 'http.not_found').at(-1);
+      assert.equal(fileLog.requestedPath, requestedPath);
+      assert.equal(fileLog.correlationId, missingFile.headers.get('x-correlation-id'));
+      assert.equal(entries.filter(entry => entry.event === 'http.request').at(-1).requestedPath, requestedPath);
+    }
+
     const sensitive = await fetch(`${base}/api/00D000000000001:005000000000001?cursor=opaque-secret`);
     assert.equal(sensitive.status, 404);
     const sensitiveLog = entries.filter(entry => entry.event === 'http.not_found').at(-1);
     assert.equal(sensitiveLog.requestedPath, '/api/[REDACTED]');
     assert.equal(JSON.stringify(entries).includes('00D000000000001'), false);
     assert.equal(JSON.stringify(entries).includes('opaque-secret'), false);
+    assert.equal(JSON.stringify(entries).includes('hidden'), false);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }
