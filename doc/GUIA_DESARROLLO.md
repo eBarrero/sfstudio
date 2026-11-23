@@ -95,6 +95,8 @@ La consola acepta `org list`, `org use <OrgKey>`, `org close <OrgKey>`, `org rec
 
 Al explorar un objeto, el filtro de texto de la consola busca campos y relaciones hijas en sus respectivas pestañas. En `Child Relationships`, todos los términos deben aparecer en el nombre API del objeto hijo o en el nombre de relación; no se distingue entre mayúsculas y minúsculas. Vaciar el filtro restaura todas las relaciones. Los filtros de tipo y propiedades de campo no restringen las relaciones.
 
+La vista de objeto muestra el destino y el límite efectivo junto a la SOQL. `query run` ejecuta la consulta válida directamente desde botón, menú o consola, sin diálogo de confirmación. Si la consulta es inválida o la org no está conectada y activa, la petición no se envía.
+
 La suite del Sprint 03 se ejecuta con `npm test`. `api/test/sprint03Journey.test.js` abre un servidor local y usa un driver Salesforce falso y repositorios en memoria; `app/e2e/multiOrgJourney.test.tsx` compara el resultado de las acciones de ratón y consola. No necesita credenciales ni acceso a Salesforce. Si el entorno restringe puertos locales, permite loopback para las pruebas HTTP.
 
 ## Compilación verificada

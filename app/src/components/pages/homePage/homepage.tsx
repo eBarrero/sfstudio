@@ -11,6 +11,7 @@ import Console from '../../organisms/console/console';
 import ResultSheet from '../../organisms/resultSheet/resultSheet';
 import SOQLEdit from '../../organisms/SOQLEdit/soqlEdit';
 import SOQLManagement from '../../organisms/SOQLManagement/soqlManagement';
+import SOQLPanel from '../../organisms/SOQLPanel/soqlPanel';
 
 
 
@@ -34,7 +35,7 @@ const HomePage = () => {
                     <section className={css.frame_editor}>
                         {currentView==='INIT' && <AppIntro/> }
                         {currentView==='org' && <SchemaPanel/> }
-                        {currentView==='sobject' && <SObjectPanel/> }     
+                        {currentView==='sobject' && <><SOQLPanel/><SObjectPanel/></> }
                         {currentView==='OBJECT_EXTEND' && <SObjectPanel/> }
                         {currentView==='SQL_RESULT' && <ResultSheet/> }                   
                         {currentView==='SOQL_EDIT' && <SOQLEdit/> }

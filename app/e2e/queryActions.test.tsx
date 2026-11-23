@@ -10,7 +10,7 @@ import modelState from '../src/store/modelState';
 import sessionState from '../src/store/sessionState';
 import sqlExecutionState from '../src/store/sqlExecutionState';
 import viewState from '../src/store/viewState';
-import { CONTEXT_LEVEL } from '../src/core/commandManager';
+import { CONTEXT_LEVEL, getMenus, readCommand } from '../src/core/commandManager';
 import * as sessionService from '../src/services/session/model';
 
 const orgKey = '00D000000000001:005000000000001';
@@ -39,7 +39,7 @@ it('runs, paginates and clears from UI and console without storing records', asy
     sqlState: { sql: 'SELECT Name FROM Account LIMIT 2', isValid: true } });
   applicationState.setState({ context_level: CONTEXT_LEVEL.OBJECT });
   sqlExecutionState.getState().initializeSqlExecution();
-  jest.spyOn(globalThis, 'confirm').mockReturnValue(true);
+  const confirm = jest.spyOn(globalThis, 'confirm').mockImplementation(() => { throw new Error('Unexpected confirmation'); });
   const save = jest.spyOn(Storage.prototype, 'setItem');
   const indexedDb = jest.spyOn(indexedDB, 'open');
   const first = jest.spyOn(Proxy, 'sendSoqlAdapter').mockResolvedValue({ done: false,
@@ -49,10 +49,13 @@ it('runs, paginates and clears from UI and console without storing records', asy
 
   const editor = render(<SOQLPanel />);
   expect(screen.getByText(/Destino: Integration/)).toBeInTheDocument();
+  expect(getMenus(CONTEXT_LEVEL.OBJECT).find(menu => menu.label === 'SOQL')?.options)
+    .toContainEqual({ label: 'Run SOQL', command: 'query run' });
   fireEvent.click(screen.getByRole('button', { name: 'Ejecutar en Integration' }));
   expect(executeConfirmed()).toBe('query.run');
   await waitFor(() => expect(sqlExecutionState.getState().sqlExecutionStatus).toBe('PARTIAL'));
   expect(first).toHaveBeenCalledTimes(1);
+  expect(confirm).not.toHaveBeenCalled();
   editor.unmount();
 
   const sheet = render(<ResultSheet />);
@@ -78,6 +81,29 @@ it('runs, paginates and clears from UI and console without storing records', asy
   expect(sqlExecutionState.getState().records).toEqual([]);
   expect(save).not.toHaveBeenCalled();
   expect(indexedDb).not.toHaveBeenCalled();
+});
+
+it('rejects invalid queries and disconnected targets without sending a request or opening results', () => {
+  sessionState.setState({ publicSession: workspace });
+  applicationState.setState({ context_level: CONTEXT_LEVEL.OBJECT });
+  sqlExecutionState.getState().initializeSqlExecution();
+  const send = jest.spyOn(Proxy, 'sendSoqlAdapter');
+  const command = readCommand('query run', CONTEXT_LEVEL.OBJECT)!;
+  const execute = () => command.action({ model: modelState.getState(), view: viewState.getState(),
+    application: applicationState.getState(), data: dataState.getState() });
+  modelState.setState({ state: { ...modelState.getState().state, orgSfName: orgKey },
+    sqlState: { sql: '', isValid: false } });
+  viewState.getState().setCurrentView('sobject');
+  expect(execute).toThrow('#Error.SQL_NOT_VALID');
+  expect(send).not.toHaveBeenCalled();
+  expect(viewState.getState().currentView).toBe('sobject');
+
+  modelState.setState({ sqlState: { sql: 'SELECT Id FROM Account LIMIT 50', isValid: true } });
+  sessionState.setState({ publicSession: { ...workspace,
+    connections: [{ ...workspace.connections[0], status: 'REAUTH_REQUIRED' }] } });
+  expect(execute).toThrow('Reautentica y selecciona el destino');
+  expect(send).not.toHaveBeenCalled();
+  expect(viewState.getState().currentView).toBe('sobject');
 });
 
 it('cancels pending query through the same UI and command action', () => {

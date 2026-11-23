@@ -96,7 +96,6 @@ const sqlExecutionState = create<SqlExecutionState>((set, get) => ({
                 if (!target) throw new Error('Reautentica y selecciona el destino de la consulta.');
                 const root = model.queryState.queryElemnts[0];
                 const limit = root?.type === 'ROOT' ? root.limit ?? 2000 : 200;
-                if (!globalThis.confirm(`Ejecutar SELECT en ${target.alias} (${target.orgKey}) con límite de ${limit} filas?`)) return;
                 get().executeSql(model.state.orgSfName, model.sqlState.sql, limit);
                 view.setCurrentView('SQL_RESULT');
                 application.setContextLevel(CONTEXT_LEVEL.SQL_EXECUTION);

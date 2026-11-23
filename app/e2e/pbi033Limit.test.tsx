@@ -119,7 +119,7 @@ test.each([250, 2000, undefined])('uses the root limit %s for API execution and 
   modelState.getState().setLimit(0, rootLimit);
   applicationState.getState().setContextLevel(CONTEXT_LEVEL.OBJECT);
   sqlExecutionState.getState().initializeSqlExecution();
-  jest.spyOn(globalThis, 'confirm').mockReturnValue(true);
+  const confirm = jest.spyOn(globalThis, 'confirm').mockImplementation(() => { throw new Error('Unexpected confirmation'); });
   const send = jest.spyOn(Proxy, 'sendSoqlAdapter').mockResolvedValue({
     done: false, totalSize: 2, records: [{ Id: 'one' }], limit: rootLimit ?? 2000, cursor: 'next',
   });
@@ -132,7 +132,7 @@ test.each([250, 2000, undefined])('uses the root limit %s for API execution and 
   await waitFor(() => expect(sqlExecutionState.getState().sqlExecutionStatus).toBe('PARTIAL'));
   expect(send).toHaveBeenCalledWith(orgKey, modelState.getState().sqlState.sql,
     expect.any(AbortSignal), rootLimit ?? 2000);
-  expect(globalThis.confirm).toHaveBeenCalledWith(expect.stringContaining(`límite de ${rootLimit ?? 2000} filas`));
+  expect(confirm).not.toHaveBeenCalled();
   act(() => sqlExecutionState.getState().nextPage());
   await waitFor(() => expect(sqlExecutionState.getState().sqlExecutionStatus).toBe('DONE'));
   expect(next).toHaveBeenCalledTimes(1);
