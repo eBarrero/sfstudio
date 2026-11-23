@@ -204,6 +204,8 @@ El callback valida y consume `state` antes de invocar Salesforce. Los rechazos t
 
 Todos los errores incluyen un `correlationId` y la respuesta HTTP expone el mismo valor en `X-Correlation-Id`. Los logs son JSON y no deben registrar cookies, códigos OAuth, `state`, tokens, secretos, URLs completas de autorización, correo o nombre de usuario. El logger aplica redacción defensiva, pero los llamadores deben seguir enviando solo los campos mínimos.
 
+Para diagnosticar una ruta inexistente, busca el evento `http.not_found` por su `correlationId`. Su campo `requestedPath` muestra la ruta HTTP sin query string y con segmentos dinámicos o sospechosos como `[REDACTED]`; el evento añade `method` y `status: 404`. `http.request` registra la plantilla de una ruta conocida al terminar la respuesta o un path saneado para recursos estáticos y rutas desconocidas. Nunca copies URLs completas, parámetros, cursores ni consultas SOQL a estos eventos.
+
 `OAuthStateStore` vive en memoria. Tras reiniciar la API o al saltar entre instancias, un callback pendiente se rechazará y habrá que iniciar de nuevo OAuth. En esta fase no se persisten refresh tokens.
 
 ### Verificación manual controlada de PBI-006

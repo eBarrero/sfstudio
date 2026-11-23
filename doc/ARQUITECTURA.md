@@ -105,6 +105,8 @@ El store OAuth vive en memoria y no contiene tokens. Un reinicio o el uso de var
 
 La API emite logs JSON mediante un logger estructurado. Cada petición obtiene un `correlationId`, que también se devuelve en `X-Correlation-Id` y en los errores. El logger redacta cookies, códigos OAuth, `state`, tokens, secretos, URLs de autorización e identificadores personales sensibles.
 
+Los eventos `http.request` y `http.not_found` incluyen `requestedPath` sin query string ni valores dinámicos sensibles. Tras terminar una petición, `http.request` usa la plantilla de la ruta Express cuando existe; para recursos estáticos o rutas desconocidas se conserva solo un path de segmentos cortos y estáticos. Segmentos codificados, identificadores, valores de aspecto sensible o demasiado largos se sustituyen por `[REDACTED]`. `http.not_found` añade `status: 404`. La respuesta pública no incluye la ruta solicitada.
+
 ## 3. Frontend
 
 ### Stores Zustand

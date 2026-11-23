@@ -3,7 +3,8 @@ import { SessionError } from '../../sessionManager/domain/exceptions/sessionErro
 import { OAuthContextError } from '../../sessionManager/domain/entities/salesforceLoginHost';
 import { SalesforceOAuthError } from '../../sessionManager/domain/exceptions/salesforceOAuthError';
 import { ReauthRequiredError } from '../../sessionManager/domain/exceptions/reauthRequiredError';
-import { logger } from './structuredLogger';
+import { logger, StructuredLogger } from './structuredLogger';
+import { safeRequestPath } from './safeRequestPath';
 import { QueryRequestError } from '../../sessionManager/domain/entities/queryContract';
 
 
@@ -72,10 +73,12 @@ export function errorHandler(error: Error, req: Request, res: Response) {
 }
 
 
-export function notFoundHandler(req: Request, res: Response) {
-    logger.warn("http.not_found", {
+export function notFoundHandler(req: Request, res: Response, requestLogger: StructuredLogger = logger) {
+    requestLogger.warn("http.not_found", {
         correlationId: req.correlationId,
         method: req.method,
+        requestedPath: safeRequestPath(req.path),
+        status: 404,
     });
     res.status(404).json({
         error: {
